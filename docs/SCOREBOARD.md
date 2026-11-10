@@ -8,10 +8,10 @@
 | Status | Keluarga | Catatan |
 |---|---|---|
 | Verified | **0** | belum ada aset masuk engine |
-| Decoded | 25 | +**`facedata.bin` ✓ CLOSED** = 358 face ×3 slot layer-idx (ANNA 0,4,8; global .cms image pool) — pemilih ekspresi potret; +`/s` scene 198/198; +system.cmp 16/16; sweep `.tpl/.cms` 0-fail; `/window` UI; C4+binding+potret (BRV-GFX-001); `.gcf`, STM, VM, model 3D |
-| Partial | 14 | +**rect tables** (hdr [size/tableOff/cnt/sub] ×3 ✓, grid koordinat; semantik P4); +`/zmap dispos_c` = stream spawn+AI (PID_/SEQ_, grammar P1); SE `gcfesnd`; dsb. |
-| Investigating | 5 | **`.samp` payload ≠ DSP standar (bukti LSQ+ZCR — P2 target)**; dsb. |
-| Discovered | 11 | hanya magic/eksistensi |
+| Decoded | 26 | +**staffroll KREDIT TERBACA** (#F04 tags, nama staff, ts build); +`/Face|.bin`≡facedata CLOSED; +**NATIVE CATALOG 390/390** (BRV-SCT-004); +facedata 358×3-slot; +`/s` 198/198; sweep `.tpl/.cms` 0-fail; C4+binding+potret; `.gcf`, STM, VM, 3D |
+| Partial | 16 | +rect tables ×3; +`shopitem_h/m/n` (pool IID_*, difficulty; field P5); +`dispos_c` stream AI; SE bank 8-file; dsb. |
+| Investigating | 3 | **`.samp` payload ≠ DSP standar (P2 target)**; tut_data_en; dsb. |
+| Discovered | 10 | hanya magic/eksistensi |
 | Deferred | 2+ | THP/ending/JP-dup dst., dengan fase penerima |
 
 ## Papan 2 — Functional parity (`FE9_TEST_MATRIX.csv` + `FE9_BEHAVIOR_SPEC.md`) — 2026-11-10
@@ -19,7 +19,7 @@
 | Metrik | Nilai |
 |---|---|
 | Test PASS / total | **1 / 53** — T-BASE-001 PASS 2026-11-10 (fresh clone → generator → diff normalisasi-EOL nol; `.gitattributes eol=lf` ditetapkan) |
-| BRV terverifikasi | 21 entri (12 seed + SCT×3 + EVT-002 + AUD-002/003 + FNT-001 + GFX-001 + **ANM-004** mode skinning) — 3 domain masih `Unknown` penuh |
+| BRV terverifikasi | 22 entri (12 seed + SCT×4 (incl **SCT-004 native catalog 390/390**) + EVT-002 + AUD-002/003 + FNT-001 + GFX-001 + ANM-004) — 3 domain masih `Unknown` penuh |
 | Chapter parity | 0/30 |
 | Milestone P1 | (1) MODEL+ANIMASI visual ✓ archer; (2) SCRIPT VM ✓ (C00 Opening0 terbaca data); (3) **BGM DECODED ✓** — `bin/stm.mjs` → WAV 32kHz stereo (boss1 61.1s); (4) **FONT DECODED ✓** — `bin/gcf.mjs` → PGM atlas+CSV, fe/talk/alpha/biggana/system(.gcf+.cms); (5) **TEXTURE+SKIN ✓** — C4 fixed, binding `tex_<idx>` + layered face + bone-skinning (AM-009/047 CLOSED, BRV-GFX-001/ANM-004) |
 | Gate P1→P2 | **font `.gcf` ✅ Decoded (AM-024)** + BGM ✅; tinggal: PoC-inputs + T-RE-CAP1 (SE gcfesnd = opsional P1, target P2) |
