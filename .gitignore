@@ -1,0 +1,10 @@
+out/
+third_party/
+tmp/
+*.zip
+*.dol
+*.elf
+*.bnr
+*.rvz
+*.iso
+node_modules/

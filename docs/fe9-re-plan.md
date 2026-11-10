@@ -1,0 +1,195 @@
+# RE Plan — Fire Emblem: Path of Radiance (GFEE01, NTSC-U, Disc 1)
+
+Status: DRAFT untuk review. Tidak ada kode implementasi (di luar draft scratch `fe9-rvz/rvz.mjs`) yang ditulis sebelum plan disetujui.
+
+## 0. Tujuan & non-goal
+
+**Tujuan:** pipeline reverse-engineering lokal yang reproducible atas disc ini:
+1. Baca kontainer RVZ → ISO virtual (random access) tanpa tool eksternal.
+2. Enumerasi filesystem (FST) + ekstraksi selektif yang terverifikasi.
+3. Analisis `main.dol` (PPC Gekko) → peta kode/struktur.
+4. Decode lapisan data game (pack `.cmp`, teks `.m`, tabel `system.cmp`, aset) sampai level dokumen format.
+
+**Non-goal (sesuai keputusan proyek):** bukan bikin mod/rebalance; bukan distribusi konten berhak cipta; runtime verification (boot di emulator/hardware) dilakukan manusia, bukan agent.
+
+## 1. Fakta terverifikasi hari ini
+
+| Item | Nilai | Sumber |
+|---|---|---|
+| File | `Fire Emblem - Path of Radiance (USA).rvz`, 1,109,615,104 B | disk |
+| Magic | `RVZ\x01` v1.0, compat 0x30000 | hexdump |
+| ISO virtual | 1,459,978,240 B (miniDVD 1.36 GiB) | file head |
+| Disc struct | type=1 (GC), compression=5 (**zstd**, level 19), chunk=**0x20000** (128 KiB) | hexdump |
+| Tabel | raw=1 entry (whole-disc), partitions=0 (GC), groups=**11,139** (compressed 0x10218) | hexdump |
+| Integritas | SHA-1 `disc struct` ✓, SHA-1 `file head` ✓. **KOREKSI AUDIT:** spec v1 TIDAK mendefinisikan SHA-1 utk raw/group table (hanya `part_hash` yg tak dipakai GC) — draft `rvz.mjs` sebelumnya membaca slot hash yang tidak ada → harus dibuang | spec WiaAndRvz |
+| Game code | `GFEE01` = FE9 USA; disc-number byte 0x06=0 → **disc 1 ✓**. Klaim "disc 2 = GFEQ01" [UNVERIFIED, dari memori] — jangan dikutip sebagai fakta | disc header |
+| Runtime | Bun 1.4.4 (native `zstdDecompress`, sha1/sha256), node 22+ tersedia; **Python TIDAK terpasang** | cek |
+| REA | v6.8.0 terpasang; `rea inspect --target-format gamecube-dol` tersedia | `rea --help` |
+| Ghidra | **TIDAK terpasang** (`GHIDRA_INSTALL_DIR` kosong) — prasyarat M2 | cek |
+| Java | **JDK 21.0.13 LTS (Temurin) TERPASANG** — syarat runtime Ghidra sudah terpenuhi | `java -version` |
+
+## 2. Referensi otoritatif (bibliografi kerja)
+
+**Kontainer RVZ**
+- [Dolphin `WiaAndRvz.md`](https://raw.githubusercontent.com/dolphin-emu/dolphin/master/docs/WiaAndRvz.md) — spec WIA/RVZ kanonik: struct, exception list, **RVZ packing + PRNG padding lengkap dengan kode** (sudah difetch; padding PRNG Lagged-Fibonacci xor j=32 k=521 wajib diimplementasi, karena disc GC penuh padding pseudorandom).
+- [RVZSharp docs/format/rvz.md](https://github.com/purelogiccode/RVZSharp/blob/master/docs/format/rvz.md) — ringkasan layout terverifikasi implementasi (sudah difetch).
+
+**Format disc GC**
+- [YAGCD ch.14](https://hitmen.c02.at/files/yagcd/yagcd/chap14.html) — BNR, DOL (header 256 B: 7 text + 11 data, entry @0xE0) (sudah difetch).
+- [Custom Mario Kart: DOL format](https://old.tockdom.com/wiki/DOL_(File_Format)) & [Retro Modding Wiki: DOL](https://www.metroid2002.com/retromodding/wiki/DOL_(File_Format)) — detail slot/BSS.
+- [Retro Modding Wiki: REL format](https://www.metroid2002.com/retromodding/wiki/REL_(File_Format)) — bila FST ternyata memuat REL (dicek M1).
+- [Console Research Wiki: GameCube](https://wiki.raregamingdump.ca/index.php?title=GameCube) — FST/DI/AXART latar belakang.
+
+**Analisis PPC Gekko**
+- [REA docs ghidra-dol.md](https://github.com/morluto/rea/docs/ghidra-dol.md) (`morluto/rea`) — lane import DOL via Ghidra: format `gamecube-dol`, provider **Ghidra saja**, window `0x80000000..0x81800000`, default language `PowerPC:BE:32:default`, opsi `REA_GHIDRA_LANGUAGE_ID=PowerPC:BE:32:Gekko_Broadway` (butuh extension GameCubeLoader), REL **tidak didukung** (sudah difetch penuh).
+
+**FE9 spesifik**
+- [[FE9] File structure notes (Jespoke, FEU)](https://feuniverse.us/t/fe9-file-structure-notes/5020) — peta folder (`zmap/xcam/Mess/Fonts/illust/Movie/gmap/Face/etc/s/Scripts/shop/Sound/xwp/yme/ymu/zbg/zu`), format `.cmp` ("pack" header), `.m` teks, `.dbx` (plaintext Shift-JIS), `.cmb`, `.tlp`, `.gcf`, struktur entri karakter/kelas/item `system.cmp` + `dispos.cmp` (0x54/0x64/0x6C-byte entries) (sudah difetch penuh).
+- [tellius-forge](https://github.com/ltra043/tellius-forge) — riset + tool `.gs/.g/.ga` (model/skeleton/anim overworld `ymu/model*/pack.cmp`, `zmap/map*/map.cmp`), folder `research/{animation,body,skeleton}` = dokumen format; tool pack/unpack `.cmp` python di `tools/` = ground-truth codec (sudah difetch README + listing research/).
+- [Zheneq/Noesis-Plugins](https://github.com/Zheneq/Noesis-Plugins) — cikal bakal importer FE9/FE10.
+- [Universal FE Randomizer — FE9Data.java](https://github.com/lushen124/Universal-FE-Randomizer/blob/master/Universal%20FE%20Randomizer/src/fedata/gcnwii/fe9/FE9Data.java) — tabel ID known-good untuk cross-check.
+- Lumina (thane98), BrawlCrate — referensi BRRES/BRLYT bila `.tlp` = BRLYT (dicek magic di M4).
+
+## 3. Keputusan tooling
+
+| Kebutuhan | Pilihan | Alasan |
+|---|---|---|
+| Container RVZ + FS | **JS/Bun** (satu-satunya runtime lengkap: zstd+crypto native) | tanpa install; Python tidak ada |
+| Disasm/decomp PPC | **REA + Ghidra `gamecube-dol`** | jalur resmi; fallback: install rizin (`--target-format raw-binary` REA tidak dukung PPC) |
+| Codec `.cmp`/.gs/etc | port dari python tellius-forge → JS (kecil, deterministik) | jaga satu runtime; verifikasi vs output tool asli |
+| Verifikasi visual aset | Blender + tellius-forge (opsional, user-side) | sudah supported upstream |
+
+## 4. Fase
+
+### M0 — Reader RVZ final (JS) — **probes dulu, implementasi belakangan**
+**M0-probe (langsung, murah, jawab ambiguitas spec sebelum nulis kode):**
+1. Layout exception-list: grup pertama → cek di mana magic zstd `28 B5 2F FD` (offset 0 = nol list [interpretasi WIA utk raw-data]; offset 2 dengan `00 00` di depan = satu list kosong [interpretasi RVZSharp `max(1,...)`]). WIA vs RVZSharp **kontradiktif** untuk raw-data GC; zstd frame-checksum = oracle otomatis.
+2. `rvz_packed_size`: hitung berapa grup packed ≠ 0 → tentukan apakah jalur PRNG dibutuhkan ATAU self-check padding mustahil (maka pakai bukti tak langsung: FST+DOL+BNR valid).
+3. Dekode 1 grup packed manual: verifikasi parser packing + PRNG verbatim spec (catatan ganjil: output word `>>24, >>18 // NB: 18, bukan 16` — implement literal; byte-exact gagal → coba `>>16`, laporkan temuan).
+4. Validasi raw-entry pertama vs aturan wit (offset dibulatkan turun ke 0x8000-an; size 0x80→0).
+5. Probe `Bun.zstdDecompressSync` pada frame asli (frame-content-checksum xxhash): gagal → fallback wuzstd (pure JS, no-deps).
+**Implementasi** (hanya setelah probe hijau): decode grup final (zero-group, flag uncompressed+padding-align, packing/PRNG bila packed>0), buang pemeriksaan hash tabel fiktif dari draft, LRU cache, CLI `info | ls | cat | extract | padcheck`.
+Verifikasi: apploader region == `dhead`; jumlah grup ter-decode = 11,139; ≥ 100 grup random round-trip tanpa error frame zstd.
+
+### M1 — Inventaris ISO
+- **Rewrite bersih parser FST** (draft lama punya sisa kode kacau; aturan kanonik: entry 12 B BE, `0x80000000` = file, dir size = jumlah entry incl. diri sendiri, nama = C-string rel. string-table setelah akhir tabel entry).
+- Dump disc header **penuh 0x430** dan dokumentasikan byte maker/disc/maks-disc (byte 0x08=0x01 belum diinterpretasi — jangan menebak).
+- Parse apploader (entry point utk verifikasi silang M2), ekstrak: `main.dol`, `opening.bnr` (cek magic BNR1/2 + teks gamename), sampel 1 file per ekstensi unik.
+- Sanity: semua entri in-bounds, FST end ≤ first file offset, total byte terpetakan ≤ ISO.
+Output: `inventory/` + ringkasan jumlah file/ekstensi/folder vs peta folder Jespoke (deviasi = temuan).
+
+### M2 — Analisis main.dol (prasyarat: Ghidra + JDK 21+)
+- Install: **JDK 21 sudah ada ✓** — tinggal Ghidra 11.x/12 (download resmi; ±600 MB; user approve) — opsional GameCubeLoader extension untuk Gekko/Broadway (URL release belum diverifikasi).
+- **Pra-validasi offline:** parse 256 B header DOL sendiri (≤18 slot, rentang file monotonic, entry ∈ segmen text, cek apakah ada slot di luar `0x80000000..0x81800000` — bila YA, REA lane bisa menolak; fallback: rizin raw-PPC atau normalisasi header).
+- `rea inspect out/exec/main.dol --target-format gamecube-dol --provider ghidra --json`; lanjut MCP `open_binary {format:"gamecube-dol", provider_id:"ghidra"}`.
+- Deliverable: `docs/code-map.md` — entry `__start`, segmen text/data/BSS, fungsi terbesar, tabel vtable/RTTI-ish, string region; seed nama dari `FE9Data.java` + string debug dalam DOL.
+Verifikasi: entry == header; decompile salah satu fungsi yang string-nya muncul di game (user cek).
+
+### M3 — Lapisan data game
+- Decoder `.cmp` (LZ77 variant dari tool tellius-forge) + parser header "pack" → unpack `system.cmp`, 1 sampel `dispos.cmp`, `Mess/*.m`.
+- Dump tabel karakter/kelas/item (`system.cmp`) → CSV; cross-check 10 record vs `FE9Data.java`.
+- `.m`: tentukan encoding (UTF-16BE/Shift-JIS/ASCII) empiris → `docs/text-format.md`.
+Verifikasi: jumlah/nama file dalam pack konsisten; ID tabel match known-good.
+
+### M4 — Aset
+- Magic-survey semua sampel: `.tlp`(→BRLYT/CMPR?), `.cms`, `.gcf`, `.dbx`(plaintext?), `.cmb`, `.thp`, `.pak`, `.ga/.g/.gs`.
+- 1 render-path per format: tekstur → PNG (gctex/BRLYT reader JS atau tool existing), model `.gs` → obj (port dari tellius-forge), `.thp` → playable via ffmpeg (cek demuxer tersedia).
+Verifikasi: PNG/obj/vid bisa dibuka manusia (bukan sekadar header parse).
+
+### M5 — Dokumentasi & reproduksi
+- `docs/formats/*.md` (hasil M0–M4, semua temuan terverifikasi + yang masih open), `inventory/`, tool `bin/` CLI rapi.
+- Repro-check dari nol: hapus `out/`, jalankan ulang satu command, byte-identik.
+
+### M6 — Runtime verification (user-side, opsional)
+- Install Dolphin, boot GFEE01 + Gecko capture untuk memvalidasi hipotesis tabel (mis. breakpoint baca `system.cmp`). Diserahkan sebagai langkah terdokumentasi, dijalankan manusia.
+
+## 5. Workspace
+
+```
+fe9-re/
+  bin/         rvz.mjs fst.mjs cmp.mjs ...   (CLI JS)
+  inventory/   files.csv, magic-survey.csv
+  out/disc/    mirror FST (hasil extract)
+  out/exec/    main.dol + artifacts REA
+  out/assets/  sampel per format
+  docs/        code-map.md, text-format.md, formats/*, notes.md
+```
+
+## 6. Risiko & mitigasi
+
+| Risiko | Mitigasi |
+|---|---|
+| `.cmp` bukan LZ77 standar (variant IS) | **verifikasi dulu** tool pack/unpack benar-benar ada di tree `tools/` tellius-forge (belum dicek) → port, lalu diff output vs tool |
+| RVZ packing/PRNG salah implement | self-check M0 (padding byte-exact vs generator spec) |
+| Ghidra belum ada / download 600MB | disetujui user; fallback rizin raw PPC (tanpa decompiler) |
+| REA DOL lane tolak file: slot di luar window MEM1 (PoR mungkin pakai MEM2 utk suatu segmen) — **belum diketahui sebelum header DOL dibaca** | parser header offline M2; fallback rizin / normalisasi header (dengan catatan deviasi) |
+| Derivative license: port codec/dok tellius-forge = **GPL-3.0** | OK utk use pribadi; WAJIB sertakan sumber+lisensi bila tool pernah didistribusikan |
+| FE9 pakai REL (REA tak dukung) | cek FST M1; kalau ada → loader REL→flat-bin sendiri (spec REL lengkap ada) |
+| Disc 2 tidak tersedia | semua analisis disc1; fitur lintas-disc (endgame) ditandai OPEN |
+| paired-single Gekko tak ter-decode (language stock) | pasang extension Gekko_Broadway (opsional) |
+
+## 7. Kriteria selesai (acceptance)
+
+1. `node bin/rvz.mjs ls /` menampilkan FST penuh tanpa error; bukti integritas: padding self-check byte-exact **jika** packed>0, ATAU rantai bukti tak-langsung (apploader==dhead, FST in-bounds, magic BNR/DOL valid) — dinyatakan eksplisit di notes mana yang dipakai.
+2. `inventory/files.csv` ≥ seluruh FST, 0 entri out-of-bounds.
+3. `main.dol` termuat di REA-Ghidra; ≥ 3 fungsi ter-decompile dengan nama/string yang dikenali komunitas.
+4. Tabel karakter `system.cmp` → CSV match spot-check vs FE9Data.
+5. ≥ 1 tekstur PNG + 1 model + 1 video + 1 file teks terbaca manusia.
+6. Semua di atas reproducible dari nol dengan command tercatat.
+
+## 8. Keputusan user (terkunci sesi ini)
+
+- [x] Ghidra: **boleh download** (M2 jadi jalan; JDK 21 sudah ada).
+- [x] Disc 2: **tidak ada — disc 1 saja**; analisis lintas-disc = OPEN, jangan dijanjikan.
+- [ ] Persetujuan final plan pasca-audit — status: **menunggu review kamu**.
+
+## 9. Audit changelog (pass skeptis #1, temuan yang sudah ditanam di atas)
+
+1. **Fiktif:** verifikasi SHA-1 raw/group table — field-nya tidak ada di spec; hapus dari desain (draft kode juga salah baca slice).
+2. **Kontradiksi antar-sumber** (WIA: list utk Wii-partition saja vs RVZSharp: `max(1,..)` utk semua): layout exception-list GC raw = **probe empiris** M0-probe#1, bukan asumsi.
+3. **Claim tak diverifikasi** dibuang/di-mark: "disc2=GFEQ01", byte maker/disc header, ffmpeg-thp, URL release GameCubeLoader, keberadaan script cmp di repo tellius.
+4. **Risiko baru:** REA ghidra-dol hanya terima window MEM1 — slot MEM2 pada DOL PoR belum diketahui → pra-validasi offline + fallback.
+5. **Spec quirk** PRNG output `>>18 // NB: not 16` — implement literal, fallback terdokumentasi bila byte-exact gagal.
+6. **Bukti integritas M0** tidak boleh dijanjikan absolut (tergantung packed>0) → kriteria acceptance dibuat kondisional + rantai alternatif.
+7. **License** tellius-forge GPL-3.0 → konsekuensi distribusi tool dicatat.
+8. Draft `fe9-rvz/rvz.mjs` = scratch pra-plan; dianggap **buang-atau-rewrite** setelah approval, bukan fondasi. (scratch sudah dihapus; API final = `fe9-re/bin/rvz.mjs`)
+
+## 10. Record M0+M1 SELESAI (2026-11-10) — koreksi & temuan lapangan
+
+**Koreksi interpretasi disc header** (YAGCD menyesatkan; bukti empiris + `DiscUtils.cpp` Dolphin):
+- `0x420` = DOL offset ✓ (0x20300). `0x424` = **FST offset** (0x2C6100) — BUKAN "dol size". `0x428` = **FST size** (0x1A2DA). `0x42C` = unused (di disc ini duplikat 0x1A2DA — asal "junk identical").
+- Ukuran DOL tidak disimpan di header: dihitung dari max(section foff+size) = **0x2A5DC0** (DOL berakhir 0x2C60C0; FST mulai 0x2C6100, slack 0x40).
+
+**Temuan skema FST GFEE01 — menyimpang dari textbook** (divalidasi: 0 anomali, tiling 100%, 4623 entri; 4077 file + 545 dir; layout pos file sequential gap ≤ 3 B):
+- Flag direktori = bit **`0x01000000`** pada word-0 (BUKAN `0x80000000`; bit31 tidak pernah terlihat).
+- Field size direktori = **indeks entri akhir-subtree (absolut, exclusive)** — bukan jumlah entry rel. diri sendiri.
+- String table mulai di `total*12`; string nama root tidak ada (root = "").
+- Semua penemuan string (`system.cmp`, `zmap`, dst.) selama ini memang ADA di region string-table (0x2D3974–0x2E03DA) — scan negatif dulu murni karena salah offset FST. Disc TIDAK scrubbed/patched.
+
+**Artefak:** `out/exec/main.dol` (2.776.512 B, md5 `74da02bee130b88bedc0ade4f20dda98`, validateDol: 0 overlap, entry 0x80003154 ∈ text, semua ≤ MEM2). `out/banner/opening.bnr` (magic **BNR1** ✓, 6496 B, md5 `656161b9517e75c63aab8a8002eadbc6`). `out/samples/<ext>/` 22 ekstensi (thp trunc 8 MB). `inventory/files.csv` 4077 baris.
+**Oracle gagal:** wit 3.05a (2022) tidak baca RVZ (format lahir 2023) — ganti oracle: source Dolphin (`DiscUtils.cpp`, `FileSystemGCWii.cpp`) + self-consistency.
+
+**Status kriteria §7:** #2 ✓ tercapai. #1 ✓ (CLI ls/extract/fstinfo/dolinfo di node murni). #3 ✓ lihat §10b.
+
+## 10b. Record M2 SELESAI (2026-11-10) — jalur analisis final
+
+**Kematian jalur REA di Windows (semua terdokumentasi empiris, `out/rea_m2_probe.json` + `out/rea_elf_probe.json`):**
+- REA 6.8.0 ghidra-lane butuh Ghidra **12.1.x** + **JDK 25**; dan `gamecube-dol` **POSIX-only** (hard rule, versi benar pun tetap tolak).
+- `rea inspect main.elf` (PPC32 BE) → `unsupported ELF architecture` — lane Windows hanya x86/x64/ARMNT/ARM64. Skill `reverse-engineer-anything` mengonfirmasi boundary ini. **Kesimpulan: PPC = selalu `analyzeHeadless.bat` langsung.**
+
+**Pipeline final (terbukti jalan, simpan untuk re-produksi):**
+```
+JAVA_HOME=<jdk-25.0.5+8>   # Ghidra 12.2 WAJIB JDK 25+ (bukan 21!)
+node bin/dol2elf.mjs out/exec/main.dol out/exec/main.elf
+analyzeHeadless <projdir> FE9m4 -import out/exec/main.elf -processor PowerPC:BE:32:default \
+  -scriptPath bin/ghidra -postScript DumpFns.java <fns.tsv> <strings.tsv>
+# dump ulang tanpa analisis: -process main.elf -noanalysis -postScript ...
+```
+- Tanpa `-processor`, Ghidra 12.2 gagal "No load spec found" (ELF→PPC tak auto-map).
+- `-deleteProject` = proyek **sementara** (dihapus saat selesai) — jangan dipakai kalau ingin simpan rep.
+- API Ghidra 12.2: `Address.getUnsignedOffset()`, `AddressRange.getLength()/getMinAddress()` (getValue/getStart/getEnd hilang).
+- Auto-analysis penuh 2,7 MB PPC = **65 detik**.
+
+**Hasil:** 8125 fungsi (`out/ghidra/functions.tsv`), 5690 string (`strings.tsv`), 4 fungsi ter-decompile (`out/ghidra/dec/`). **Penerimaan §7#3 ✓**: `entry` @0x80003154 = `__start` khas Nintendo GC (koreksi r13/r2 `_SDA2_BASE_/_SDA_BASE_`, cek BootFlag, rantai OSInit); `FUN_80005c8c` = pemanggil literal `"system.cmp"` (xref string→fungsi via `DecompileSome.java s:`); literal lain: `FE8Data.bin` @0x80267c26, `mess/common.m` @0x80267c51.
+**Proyek Ghidra persisten:** `out/ghidra/FE9m4` (jangan dihapus; `-process` untuk query ulang).
+**Repo publik:** kerja dipush ke `github.com/valdifebrian/Fire-Emblem---PA-Port` (kode+docs+inventori saja; konten disc di-gitignore).
