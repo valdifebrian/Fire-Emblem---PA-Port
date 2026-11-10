@@ -150,6 +150,30 @@ roughness 0.43–0.87 vs noise 1.35–1.55, L≈R pada `_lp`, energi bass 42% (n
 loop point kontinu (step 605–1377 ≈ RMS lokal), durasi 47–61 s. Confidence: Confirmed.
 Test: T-RE-AUD1 (dengar vs Dolphin), T-AUD-MIX. [AM-015]
 
+### BRV-FNT-001 — `.gcf` = font metrics + sheet tekstur GX I4 polos — DECODED
+Header (semua BE): **u32@0x00 = magic 0x20**; u16@0x08 ascent / @0x0a descent / @0x0c lineH
+(fe 29/3, talk 22/5, alpha 28/6); u32@0x14 = BYTES per sheet (0x2000 = 128×128 I4,
+0x8000 = 256×256 I4); u32@0x18 = jumlah sheet (fe 3, talk/system 20, alpha/biggana 1);
+u32@0x1c = lebar=tinggi sheet px; u16@0x22 = offset metrics; u32@0x24 = END metrics = awal
+region glyph; u32@0x28 = bytes region = sheet-count×sheet-bytes exact.
+Record metrics 16 B di @0x22 stride 16: `[u16 code (ASCII/SJIS)][u16 sheet][u16 x][u16 y]
+[u8 w][u8 h][s8 dx][u8 dy][u8 adv][3×0]` — `x,y` = ink top-left LANGSUNG dalam koordinat
+sheet; trailing `code==0` = padding. Trailing records.
+Sheet = **tekstur GX I4 (GX_TL_NONE, tanpa kompresi)**: block 8×8, pitch = lebar/8 block,
+baris kontigu dalam block, nibble TINGGI = piksel genap:
+`byte = region + sheet·sb + ((y>>3)·(W/8) + (x>>3))·32 + (y&7)·4 + ((x&7)>>1)`;
+`lum = nibble·17`. Upload = blok `[u8 0x10][u24]` + LZ77 tanpa tag stream (`cmp.mjs
+lzStream(buf,4)`); hasil = .gcf utuh (system.cms = varian font, 3988 glyph ≠ system.gcf 4005).
+Verifikasi render (tool `bin/gcf.mjs`, PGM+CSV per sheet): fe_font `0 1 7 9 ？ a` (sheet
+dipilih field[2]: `1`/`7`/`9` sheet1, `！` sheet2); talk `1 A 7` (sheet15/13/18 — field[2]
+= indeks sheet s.d. 19 ✓); alpha `0 7 &` = elips/7/ampersand bersih; bigkana = font ASCII
+BOLD 95 glyph (kana diremap engine dari kode script, bukan SJIS); system.gcf + system.cms
+= 4005/3988 glyph SJIS penuh (kanji/kana 16×17 terverifikasi `0x82a0`).
+Catatan: `fe_font.gcf` = font angka/lowercase (damage/stats) — record A–Z = placeholder
+junk (42×28, duplikat posisi) — ABAIKAN. Engine Android: render via LUT 16→255 (n·17)
+ke atlas GL; atlas + CSV = out/gcf. Confidence: Confirmed (6/6 file render glif terbaca).
+Test: T-C1-UI teks layar + angka damage vs Dolphin. [AM-024]
+
 ### BRV-SYS-001 — Varian aset region/bahasa
 Model pack battle punya varian sufiks `_ja/_no` (`amr1_ja.pak`, `kni2_no.pak`) — runtime memilih
 set per region. Port WAJIB meniru pemilihan varian disc USA sebelum bake (bukan asal pilih).
