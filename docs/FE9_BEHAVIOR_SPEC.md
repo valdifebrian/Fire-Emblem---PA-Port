@@ -150,6 +150,28 @@ roughness 0.43–0.87 vs noise 1.35–1.55, L≈R pada `_lp`, energi bass 42% (n
 loop point kontinu (step 605–1377 ≈ RMS lokal), durasi 47–61 s. Confidence: Confirmed.
 Test: T-RE-AUD1 (dengar vs Dolphin), T-AUD-MIX. [AM-015]
 
+### BRV-AUD-003 — Arsitektur bank SE `gcfesnd.*` (sequencer internal) — STRUKTUR DECODED, PAYLOAD `.samp` OPEN
+Bank = 7-file satu engine SE proprietary (BUKAN CRI/SQS standar): `.stbl` (32B-rec: nama
+`SE1_EVT_*` 24B + trailer — event→slot), `.etbl` (32B-rec 2 string null-term: event+part,
+mis. `SE2_DUMMY`+`AGON_ROAR2_0`, 70 recs), `.proj` (chain record `[u32 delta-byte][u16 id]
+[payload]` sentinel −1; rec id6 = list u32 308×; id≥0x251 = token map 10B
+`[ff0a][rate][3c00][streamId][?]` — token = id stream, walk proven via pola `FUN_80258d94/
+80258ae8`), `.sdir` (hdr 12B + record 16B×850, tipe di u16[0]: **0x3C00** = fmt
+`[rate=0x7d00(32k)][ch 0/1/2][?][u32][u32]`; **0x0000** = stream `[u16 libOff +0x28·i]
+[id sequential][0][u32 cumOffset .samp]` — 425 stream, offset kumulatif TERBUKTI (stream1
+@78912 ✓); **0x0008** = blok `[id][0][0]+16×s16` di tail — kandidat tabel koef), `.slib`
+(hdr chain `[u32 next@0][FF×]` →0xe40→0x2ee0; per-stream sequence `[u16 op,param]` @libOff
+stride 40B), `.pool`/`.bin` (tabel rantai; `.bin` u32@0 = size), `.samp` (4.26MB payload).
+**PAYLOAD `.samp` BUKAN DSP IIR standar:** byte-header frame (stride 8) lolos uji
+scale≤12/idx≤7 2000/2000 DI OFFSET 0 (stream sorted, start@0) TAPI (a) LSQ-fit 16 koef
+per-idx konvergen kosong (model IIR tidak konsisten), (b) decode koef stm/standar →
+ZCR 3.8k/s (noise), rough 40–72 (audio asli 0.4–3), (c) tak ada 32B koef valid di
+sdir/slib/proj (scan sum-pair Q11 = 0 hit). Hipotesis: format delta custom ucode AX FE9
+atau interleaving pra-ucode. **P1 dihentikan di sini (gate SE = opsional) → target P2
+(butuh: trace ucode AX buffer / capture RAM via Dolphin).** Confidence: Confirmed (struktur
+directory/chain/stride), Unknown (encoding payload). Test: T-RE-AUD1 (SE play vs Dolphin).
+[AM-048..AM-055 partial]
+
 ### BRV-FNT-001 — `.gcf` = font metrics + sheet tekstur GX I4 polos — DECODED
 Header (semua BE): **u32@0x00 = magic 0x20**; u16@0x08 ascent / @0x0a descent / @0x0c lineH
 (fe 29/3, talk 22/5, alpha 28/6); u32@0x14 = BYTES per sheet (0x2000 = 128×128 I4,
