@@ -46,7 +46,7 @@ AM-044,"/gmap",.cms,1,LZ77(TPL) [probe],"tpl2png","PNG",Decoded,"probe ✓ (gmap
 AM-045,"/Movie",.none,1,THP [probe],"-","-",Deferred,"dummy juga THP","-",Cutscene,""
 AM-046,"/opening.bnr",.bnr,1,UNKNOWN [probe],"-","?",Discovered,"-","-",?,"Pending Format Investigation"
 AM-047,"/s",.bin,1,TBL hdr [probe],"-","?",Investigating,"rect.bin = s/rect.bin dlm system.cmp (identik); +window/rectdesc.bin & RectUnitList.bin (butai.cmp) array koordinat pixel — parse P4","-",Map Engine,""
-AM-048,"/Sound",.bin,1,TBL [probe: u32@0=size 81863],"-","?",Investigating,"gcfesnd.bin; record pool @0x9ea9-an (marker 0c065540)","-",Audio,""
+AM-048,"/Sound",.bin,1,TBL [u32@0=size],"-","bank master",Partial,"gcfesnd.bin 81863 = master bank; role map bank 8-file: .bin master/.etbl+.stbl tabel string nama SE/.pool directory stream/.proj event-map/.sdir directory sample 16B/.slib sequencer/.samp payload 4.2MB","-",Audio,"BRV-AUD-003"
 AM-049,"/Sound",.etbl,1,32B-rec 2-str [probe✓],"-","tabel nama SE2",Partial,"2 nama null-term/record (event+part 'AGON_ROAR2_0'); 2240/32=70","-",Audio,""
 AM-050,"/Sound",.slib,1,SEQ [probe+Ghidra],"-","sequence ops",Partial,"BRV-AUD-003: hdr u32 next-chain@0/0xe40/0x2ee0; stream seq @sdir.off ×16B-entry [u16 op,param] stride 0x28; op semantics pending","-",Audio,"bank gcfesnd sequencer"
 AM-051,"/Sound",.stbl,1,32B-rec [probe✓],"-","tabel SFX event",Partial,"'SE1_EVT_*' 24B nama+pad + u32 trailing; stride 32 exact (3360/32=105)","-",Audio/Script,"tabel SFX per event!"
