@@ -8,9 +8,9 @@
 | Status | Keluarga | Catatan |
 |---|---|---|
 | Verified | **0** | belum ada aset masuk engine |
-| Decoded | 26 | +**staffroll KREDIT TERBACA** (#F04 tags, nama staff, ts build); +`/Face|.bin`≡facedata CLOSED; +**NATIVE CATALOG 390/390** (BRV-SCT-004); +facedata 358×3-slot; +`/s` 198/198; sweep `.tpl/.cms` 0-fail; C4+binding+potret; `.gcf`, STM, VM, 3D |
-| Partial | 16 | +rect tables ×3; +`shopitem_h/m/n` (pool IID_*, difficulty; field P5); +`dispos_c` stream AI; SE bank 8-file; dsb. |
-| Investigating | 3 | **`.samp` payload ≠ DSP standar (P2 target)**; tut_data_en; dsb. |
+| Decoded | 26 | +**staffroll KREDIT TERBACA**; +`Face|.bin`≡facedata CLOSED; **+NATIVE CATALOG 390/390** (BRV-SCT-004); +facedata 358×3-slot; +`/s` 198/198; sweep `.tpl/.cms` 0-fail; C4+binding+potret; `.gcf`, STM, VM, 3D |
+| Partial | 18 | **keluarga tabel rekuren `[size/tableOff/cnt/sub]`** terpetakan di rect×3/RectBases/shopitem×3/staffroll/RectFinale/tut_data/soundroom; +`dispos_c` AI-stream; SE bank; dsb. |
+| Investigating | **1** | **HANYA `.samp` payload** (≠ DSP standar, bukti LSQ+ZCR — butuh trace ucode AX, P2) |
 | Discovered | 10 | hanya magic/eksistensi |
 | Deferred | 2+ | THP/ending/JP-dup dst., dengan fase penerima |
 
