@@ -23,7 +23,7 @@ export function parseGa(d, name = "") {
     const keys = [];
     for (let k = 0; k < kc; k++) {
       const o = keyOff + (fk + k) * 4;
-      keys.push([u16(o), i16(o) / (1 << fb)]);
+      keys.push([u16(o), i16(o + 2) / (1 << fb)]);
     }
     curves.push({ c, channel, fb, eF, keys });
   }
@@ -36,7 +36,7 @@ export function parseGa(d, name = "") {
     if (ev) {
       const kc = u16(ev.p);
       for (let i = 0; i < kc; i++) {
-        const ko = ev.p + u16(ev.p + 4 + i * 2);
+        const ko = ev.p + u16(ev.p + 8 + i * 2);
         const frame = u16(ko), cc = u16(ko + 2);
         const codes = [];
         for (let j = 0; j < cc; j++) codes.push(u16(ko + 4 + j * 2));
@@ -53,7 +53,9 @@ export function parseGa(d, name = "") {
 }
 
 const [, , cmd, ...rest] = process.argv;
-if (cmd === "json" && rest.length >= 1) {
+const { pathToFileURL } = await import("url");
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain && cmd === "json" && rest.length >= 1) {
   await mkdir("out/ga", { recursive: true });
   for (const f of rest) {
     const d = await readFile(f);
@@ -62,4 +64,4 @@ if (cmd === "json" && rest.length >= 1) {
     await writeFile(`out/ga/${base}.json`, JSON.stringify(ga));
     console.log(`${base}: bones=${ga.boneCount} curves=${ga.curveCount} frames=${ga.startFrame}..${ga.endFrame} loop=${ga.loop} events=${ga.footer ? ga.footer.events.length : 0}`);
   }
-} else console.error("usage: node bin/ga.mjs json <files...>");
+} else if (isMain) console.error("usage: node bin/ga.mjs json <files...>");

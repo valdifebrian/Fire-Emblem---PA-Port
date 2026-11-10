@@ -117,7 +117,9 @@ export function parseTpl(d, name = "tex") {
 }
 
 const [, , mode, ...rest] = process.argv;
-if (mode === "png" && rest.length >= 1) {
+const { pathToFileURL } = await import("url");
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain && mode === "png" && rest.length >= 1) {
   const { lz77ExDecode } = await import("./lz77.mjs");
   const files = rest;
   for (const f of files) {
@@ -136,7 +138,7 @@ if (mode === "png" && rest.length >= 1) {
     }
     console.log(`  -> ${n} png in out/png/`);
   }
-} else if (mode === "face" && rest.length === 1) {
+} else if (isMain && mode === "face" && rest.length === 1) {
   // node bin/tpl2png.mjs face <outdir> — extract+decode all /Face/*.cms from disc
   const { openRvz, readFST, walkFiles } = await import("./rvz.mjs");
   const { lz77ExDecode } = await import("./lz77.mjs");
@@ -163,6 +165,6 @@ if (mode === "png" && rest.length >= 1) {
     if (done % 25 === 0) console.log(`  ${done}/${faces.length}`);
   }
   console.log(`done: ${done} portraits -> ${outDir}`);
-} else {
+} else if (isMain) {
   console.error("usage: node bin/tpl2png.mjs png <files...> | face <outdir>");
 }
