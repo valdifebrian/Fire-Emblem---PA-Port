@@ -8,10 +8,10 @@
 | Status | Keluarga | Catatan |
 |---|---|---|
 | Verified | **0** | belum ada aset masuk engine |
-| Decoded | 22 | +**sweep SEMUA .tpl/.cms disc (0 fail, 1566 img)**: `/zu` 539✓ (battle tex), `/ending` 102✓ (fin_0 608×448 CG vision), `/etc` 16✓, `/gmap` 7✓; +`/window` UI lengkap (965 img, icon atlas vision-ok); +`/illust` 174✓ (Geoffrey); C4-CMPR GX dikunci + binding `tex_<charIdx>` + potret berlapis (BRV-GFX-001); `.gcf`, STM, Script VM, model 3D |
-| Partial | 11 | Bank SE `gcfesnd` struktur (BRV-AUD-003); window `.cmp` pack semantics; dsb. |
-| Investigating | 8 | **`.samp` payload ≠ DSP standar (bukti LSQ+ZCR — P2 target)**; `.bin`/`.pool` tabel; dsb. |
-| Discovered | 14 | hanya magic/eksistensi |
+| Decoded | 24 | +**system.cmp master bundle 16/16✓** (FE8Data/Anim/Effect/cp_data/rects/facedata + route/xinfo/icon + mess/common.m + 4 gcf; root identik) +title.cmp✓ +xwp/zu `.gs` parse✓; +sweep `.tpl/.cms` 0-fail (fin_0 CG vision, 1566 img); `/window` UI lengkap (965 img); C4-CMPR dikunci + binding + potret berlapis (BRV-GFX-001); `.gcf`, STM, Script VM, model 3D |
+| Partial | 13 | Bank SE `gcfesnd` (BRV-AUD-003); `facedata.bin` (pool '.cms'✓ count 1075≈3×358, semantik open); yme/zbg/butai pack contents listed+parsed✓; dsb. |
+| Investigating | 7 | **`.samp` payload ≠ DSP standar (bukti LSQ+ZCR — P2 target)**; `dispos_c.bin` (spawn unit BRV-MAP), dsb. |
+| Discovered | 11 | hanya magic/eksistensi |
 | Deferred | 2+ | THP/ending/JP-dup dst., dengan fase penerima |
 
 ## Papan 2 — Functional parity (`FE9_TEST_MATRIX.csv` + `FE9_BEHAVIOR_SPEC.md`) — 2026-11-10
