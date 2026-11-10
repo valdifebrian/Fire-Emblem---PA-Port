@@ -66,3 +66,17 @@ Lalu chat: `captured, di C:\Kodingan\fe9-captures`
 | CAP-3 | battle lengkap + F1-F4 + spam-fire | cap3_battle.dmo + states + png | ☐ |
 | CAP-3b | replay identik dari F1 | cap3b_replay.dmo | ☐ |
 | CAP-4 | kamera/UI panel | cap4_ui.dmo + 3 png | ☐ |
+
+## Autonomous harness (agent-run, verified 2026-11-11)
+The agent drives Dolphin itself — no manual GUI needed:
+```
+Dolphin.exe -b -e <disc.rvz>                 # batch launch, no GUI dialogs
+bin/winshot.ps1  -Pid2 <pid> -Out shot.png   # PrintWindow PW_RENDERFULLCONTENT (D3D-safe frame grab)
+bin/sendkey.ps1  -Pid2 <pid> -Vks 0x0D       # keybd_event scan-free VK taps w/ SetForegroundWindow
+bin/autoloop.ps1 -Pid2 <pid> -Loops N -SleepSec 4 -Keys 0x0D,0x1B -Dir out  # shot+keys timeline
+bin/montage.ps1  -Dir out -Out grid.png -Cols 5 -Scale 3   # tile frames, read in ONE vision pass
+bin/genmovie.mjs                              # DTM v-current writer (256B hdr + 8B ControllerState)
+```
+**CRITICAL FIX**: `Dolphin.ini` had `SIDevice0 = 7` = GC **Keyboard adapter** -> pad never polled -> EVERY input path (OS keys, .dtm movies) silently dead. Must be `SIDevice0 = 6` (Standard Controller). After fix, OS keyboard + menu nav verified live (title -> Continue list -> Restart Chapter).
+Key map (GCPadNew): Enter=X B=Esc Z=Space T/F/G/H=dpad U/J/K/L=stick; menu cursor moves on DPAD reliably; hold>~250ms triggers auto-repeat (double-step) -> tap <=150ms and screenshot-verify before Enter.
+DTM movie input did NOT visibly register (timing assumption 60 polls/s or load issue) - OS-key path is primary; movie path = backlog.
