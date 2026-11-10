@@ -8,8 +8,8 @@
 | Status | Keluarga | Catatan |
 |---|---|---|
 | Verified | **0** | belum ada aset masuk engine |
-| Decoded | 18 | +**`/window` UI complete**: 34/34 `.tpl` (380 img) + 85/85 `.cms` (585 img) — icon atlas & back vision-ok; +`/illust` 174/174 CG (Geoffrey terbaca; efek fix C4); `/ymu|.tpl`: C4-CMPR GX dikunci (BE, idx3-opaque; bug off-by-1 diperbaiki), binding `tex_<charIdx>` ✓ + potret BERLAPIS (BRV-GFX-001); `.gcf` (FNT-001), STM (AUD-002), Script VM, model 3D |
-| Partial | 15 | Bank SE `gcfesnd` struktur (BRV-AUD-003: `.sdir`/`.slib`/`.proj`/`.stbl`/`.etbl`); window `.cmp` pack semantics |
+| Decoded | 22 | +**sweep SEMUA .tpl/.cms disc (0 fail, 1566 img)**: `/zu` 539✓ (battle tex), `/ending` 102✓ (fin_0 608×448 CG vision), `/etc` 16✓, `/gmap` 7✓; +`/window` UI lengkap (965 img, icon atlas vision-ok); +`/illust` 174✓ (Geoffrey); C4-CMPR GX dikunci + binding `tex_<charIdx>` + potret berlapis (BRV-GFX-001); `.gcf`, STM, Script VM, model 3D |
+| Partial | 11 | Bank SE `gcfesnd` struktur (BRV-AUD-003); window `.cmp` pack semantics; dsb. |
 | Investigating | 8 | **`.samp` payload ≠ DSP standar (bukti LSQ+ZCR — P2 target)**; `.bin`/`.pool` tabel; dsb. |
 | Discovered | 14 | hanya magic/eksistensi |
 | Deferred | 2+ | THP/ending/JP-dup dst., dengan fase penerima |
