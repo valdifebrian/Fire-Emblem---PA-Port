@@ -9,8 +9,8 @@
 |---|---|---|
 | Verified | **0** | belum ada aset masuk engine |
 | Decoded | 25 | +**`/s` scene full-screen 198/198✓** (semua magic TPL; 0xw cloudscape vision-ok; 319 img); +system.cmp master bundle 16/16✓ +title.cmp✓ +xwp/zu `.gs`✓; sweep `.tpl/.cms` 0-fail (1566 img); `/window` UI lengkap; C4 dikunci + binding + potret berlapis (BRV-GFX-001); `.gcf`, STM, Script VM, model 3D |
-| Partial | 13 | Bank SE `gcfesnd` (BRV-AUD-003); `facedata.bin` (count 1075≈3×358, semantik open); yme/zbg/butai contents; dsb. |
-| Investigating | 6 | **`.samp` payload ≠ DSP standar (bukti LSQ+ZCR — P2 target)**; `dispos_c.bin` (628×20B+pool str ✓ struktur; semantik P1-map), dsb. |
+| Partial | 13 | +**`/zmap dispos_c`** = stream scripting spawn+AI (PID_*/SEQ_*+pool 136; grammar penuh P1); Bank SE `gcfesnd` (BRV-AUD-003); `facedata.bin`; yme/zbg/butai contents; dsb. |
+| Investigating | 6 | **`.samp` payload ≠ DSP standar (bukti LSQ+ZCR — P2 target)**; rect tables, dsb. |
 | Discovered | 11 | hanya magic/eksistensi |
 | Deferred | 2+ | THP/ending/JP-dup dst., dengan fase penerima |
 
