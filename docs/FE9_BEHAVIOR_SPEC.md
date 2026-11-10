@@ -69,9 +69,56 @@ nama JP; classList job→unit. Confidence: Confirmed (teks terbaca). **Partial:*
 field per kolom dbx. Test: T-AM-LINK.
 
 ### BRV-EVT-001 — Kontainer script chapter
-`/Scripts/C??.cmb` = magic `"cmb\0"` + nama-diri ASCII (`C01.cmb`) + blok `cmb` berulang
-(probe 2026-11-10). Isi/opcode = `Unknown`; investigasi = P1 #1 (metodologi §7 master plan).
-Confidence: Confirmed (kontainer), Unknown (semantik). Test: T-RE-SCRIPT1/2, T-SCT-VM.
+`/Scripts/C??.cmb` = magic `"cmb\0"` + selfname ASCII + header LE: pool-off @0x24,
+entries-off @0x28 (u32 stride4 terminasi-0). Record 0x14 field: name-ptr u32 (0=anonim,
+nama inline tepat setelah field), code-ptr u32, +08 u16, +0a u16, +0c flag u8,
++0d argc i8, +0e u8, +0f u8, +0x10 id u16, +0x12 nLocals u16; lalu nama inline (opsional)
+dan stream bytecode sampai batas record berikutnya (ptr terdekat). Engine BE PPC me-reverse
+pointer u32 + += base saat load (FUN_800140b4). Bukti: `bin/cmb.mjs` parse 43/43 script —
+2075/2075 fungsi ter-disassemble bersih, SEMUA berakhir RET (0x39); C00 walkthrough
+(`dis out/raw/C00.cmb 11` = "Opening0": MapLoad("Map6")→InstantDispos→Fade(2,500)→FadeWait).
+Confidence: Confirmed. Test: T-RE-SCRIPT1/2, T-SCT-VM. [AM-017]
+
+### BRV-SCT-001 — Model frame VM script
+Interpreter = switch opcode 1 byte (FUN_80011edc, 902 baris, 65 case + default-err).
+Frame: +0x04, +0x08 record-ptr, +0x0C PC(u8 stream), +0x0D i8 (argc callee), +0x10 globals
+window base, +0x12 nLocals(i16), +0x14 LP (locals u32[]), +0x18 SP (u32 push/pop),
++0x1C yield flag. Global array G base = slot global (r13-0x7c08); pump (FUN_800138f4)
+push frame: PC=rec+0x04, window = G + u16(rec+0x20)*4 (endianness varian bertopeng nama
+[INFERENCE]), locals nol-kan dari rec+0xd*4 s/d rec+0x12*4. RET restore frame; PC==0 ⇒
+exit script. Error code via FUN_800142b0: 0=ok, 5=named-func-not-found, 8=locals-overflow.
+Bukti: decompile `out/ghidra/dec/FUN_80011edc.c`, `FUN_800138f4.c`.
+Confidence: Confirmed (switch bytecode langsung). Test: T-SCT-VM.
+
+### BRV-SCT-002 — Set opcode (65 ops, operand BE)
+Tabel lengkap di komentar `bin/cmb.mjs`; ringkas: 0x01–0x18 akses locals/globals
+(window-indexed: push/load/deref/add-idx; operand u8 / u16-BE), 0x19/1a/1b push imm
+(i8/i16-BE/i32-BE), 0x1c/1d/1e push pool+off→cstring (i8/u16/u32-BE), 0x1f DUP, 0x20 DROP,
+0x21 OVER, 0x22–0x34 aritmatika/compare/shift/bitwise (0x31/0x33 varian signed [Partial]),
+0x35/0x36 STR_EQ/NE, 0x37 CALL_LOCAL u8 (indeks entries-array), 0x38 CALL u16BE pool-off
++ u8 argclean (call by NAME via hash global — native ATAU script), 0x39 RET,
+0x3a–0x3e JMP/JZ/JNZ rel i16-BE (0x3c/0x3e push 1/0 saat branch), 0x3f YIELD, 0x40 SKIP4,
+0x41 CALLN u8 argcount 1..9 (target ptr dari stack — jalur GameBind). Default ⇒ error.
+Statistik 43 script: semua 65 opcode terpakai; 0 DB non-padding di dalam code (112 byte
+= string trailing setelah RET). Bukti: `FUN_80011edc.c` per-case + `cmb dis` bersih 100%.
+Confidence: Confirmed (0x31/0x33 Partial). Test: T-SCT-VM.
+
+### BRV-SCT-003 — Interning nama & native GameBind
+Saat load (FUN_800140b4): tiap record di-intern ke hash global 509 bucket (FUN_8000d3ec,
+key = C-string) — registrasi ulang oleh CmSleepScript (tulis 'S'@block+3, re-init);
+call-by-name (FUN_80013a90→FUN_8000d354) miss ⇒ error 5. Native terikat via registry
+GameBind (FUN_801262f0: CmLoadScript/CmSleepScript/ArcLoad/TutorialCall dll).
+Katalog native hasil `cmb all`: **404 nama** unik (Fade, FadeWait, set, MapLoad,
+UnitGetByPID, UnitAddSkill, InstantDispos, SallySetByGroup, VisitIn/Out, MindGetItem,
+NetuzoInit, IID_*/PID_*/SID_* pool string). Test: T-SCT-VM (replay C00 Opening0).
+Confidence: Confirmed.
+
+### BRV-EVT-002 — Data chapter C00 (prolog) terbaca penuh
+C00 func[11] "Opening0" = setup scene pembuka: MapLoad Map6 → disposisi grup
+`Map6_mikata_n`/`Map6_first_n` → Fade(2,500)+FadeWait. func[12] = unit setup:
+UnitGetByPID PID_TIAMAT/PID_BOLE/PID_IKE + UnitAddSkill SID_TRI_A; PID_WAYU +
+SID_IMMORTAL. Menunjukkan skrip chapter = data posisi-unit+skill+scene — engine wajib
+menyajinya (bukan hardcode). Confidence: Confirmed (disassembly). [AM-017][BRV-PROG seed]
 
 ### BRV-ANM-003 — Kamera battle per (job, animasi, senjata)
 `/xcam/<job>/*.dbx` = teks SJIS satu file per variasi (mis. `fig1_cr2_ax.dbx`), header `#` +

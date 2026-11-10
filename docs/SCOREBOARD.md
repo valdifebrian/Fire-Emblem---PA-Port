@@ -8,9 +8,9 @@
 | Status | Keluarga | Catatan |
 |---|---|---|
 | Verified | **0** | belum ada aset masuk engine |
-| Decoded | 11 | +`skeleton.g`+`body.gs`+pack `/ymu .cmp` pipeline lengkap (parser+render terbukti visual: archer 3D, 26 bone, 590 tri, pose anim beda); contoh lain: `.ga` (+fix keyframe), `.m`, portrait `.cms`, CSV tabel, lookup `.dbx` |
+| Decoded | 12 | +Script VM `.cmb`: 43/43 script, 2075/2075 fungsi ter-disassemble bersih, 65 opcode dari interpreter asli `FUN_80011edc`; sebelumnya `skeleton.g`+`body.gs`+pack `/ymu` pipeline (archer 3D render) |
 | Partial | 14 | container/decoder jalan; isi/semantik belum (`.tpl`: CMPR benar ✓ tapi binding img↔tpl file belum fixed) |
-| Investigating | 16 | bukti struktur; parser belum (script `.cmb`, audio bank, font `.gcf`, STM) |
+| Investigating | 15 | bukti struktur; parser belum (audio bank, font `.gcf`, STM) |
 | Discovered | 14 | hanya magic/eksistensi |
 | Deferred | 2+ | THP/ending/JP-dup dst., dengan fase penerima |
 
@@ -19,12 +19,12 @@
 | Metrik | Nilai |
 |---|---|
 | Test PASS / total | **1 / 53** — T-BASE-001 PASS 2026-11-10 (fresh clone → generator → diff normalisasi-EOL nol; `.gitattributes eol=lf` ditetapkan) |
-| BRV terverifikasi | 12 entri seed (4 Confirmed-sebagian, 8 Partial/Strong) — dari 11 domain, 4 domain masih `Unknown` penuh |
+| BRV terverifikasi | 16 entri (12 seed + **BRV-SCT-001..003 + BRV-EVT-002** — VM script Confirmed dari bytecode interpreter) — dari 11 domain, 3 domain masih `Unknown` penuh |
 | Chapter parity | 0/30 |
-| Milestone P1 | **MODEL+ANIMASI TERBUKTI VISUAL** 2026-11-10: satu unit FE9 (archer) tampil 3D utuh — skeleton 26 bone, skinning palette→bone, animasi asli (`wait_N/wait_BW/move_N`) menghasilkan pose berbeda (`bin/meshview.mjs` → `out/render/archer_*.png`); flat/lit mode membuktikan rasterizer+normal bersih |
+| Milestone P1 | (1) **MODEL+ANIMASI TERBUKTI VISUAL** — archer 3D utuh (`out/render/archer_*.png`); (2) **SCRIPT VM TERBUKA** — bytecode FE9 terbaca penuh: `Opening0` C00 = MapLoad Map6→Fade(2,500); setup unit prolog PID_IKE/PID_WAYU+skill terbaca sebagai DATA (`bin/cmb.mjs dis`) |
 | Fase aktif | **P1** |
 
 ## Gap tertinggi
-1. `AM-017` Script VM `.cmb` (risiko kredial) — P1 berikutnya (reviewer order: model→anim→**script**).
-2. `AM-009` binding img-index↔file `.tpl` pada pack unit (body atlas mana) + path blend-skinning `/zu` (butuh raw-pack entry di `cmp.mjs`).
+1. `AM-009` binding img-index↔file `.tpl` pada pack unit + path blend-skinning `/zu` (butuh raw-pack entry di `cmp.mjs`) — P1 berikutnya (reviewer queue: audio/behavior PoC).
+2. 404 native `.cmb` — signature/semantik per nama belum (pool names + argcount saja); sebagian butuh Ghidra xref per fungsi.
 3. Domain BRV battle/AI/map/rng `Unknown` — butuh capture human (T-RE-CAP1).
