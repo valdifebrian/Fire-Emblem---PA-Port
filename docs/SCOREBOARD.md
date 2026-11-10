@@ -18,7 +18,7 @@
 
 | Metrik | Nilai |
 |---|---|
-| Test PASS / total | **0 / 53** (semua Planned; gate berikutnya T-BASE-001) |
+| Test PASS / total | **1 / 53** — T-BASE-001 PASS 2026-11-10 (fresh clone → generator → diff normalisasi-EOL nol; `.gitattributes eol=lf` ditetapkan) |
 | BRV terverifikasi | 12 entri seed (4 Confirmed-sebagian, 8 Partial/Strong) — dari 11 domain, 4 domain masih `Unknown` penuh |
 | Chapter parity | 0/30 |
 | Fase aktif | **P0** (baseline+validasi; D1–D5 disetujui) |

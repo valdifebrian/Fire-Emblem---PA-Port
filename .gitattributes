@@ -1,0 +1,9 @@
+# Normalisasi line-ending: repo = LF, checkout-agnostic (deterministic generators, T-BASE-001)
+* text=auto eol=lf
+*.png binary
+*.cmp binary
+*.rvz binary
+*.bin binary
+*.elf binary
+*.tpl binary
+*.cms binary

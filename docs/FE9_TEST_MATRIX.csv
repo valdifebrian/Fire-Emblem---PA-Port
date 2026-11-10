@@ -1,5 +1,5 @@
 id,phase,name,method,signature_ref,device,status
-T-BASE-001,P0,Reproducible baseline fresh-clone,clone bersih + jalankan semua tool + sha256 5 artefak kunci,-,PC,Planned
+T-BASE-001,P0,Reproducible baseline fresh-clone,fresh clone + generator + diff eol-normalized + sha256 artefak kunci,-,PC,PASS-2026-11-10
 T-BASE-002,P0,Leftover triage closed,baris .gcf/.sdir/.stbl dkk = Deferred dengan alasan,-,PC,Planned
 T-RE-SCRIPT1,P1,Script opcode inventory 43 file,stat-diff + strings Ghidra korelasi,AM-017,PC,Planned
 T-RE-SCRIPT2,P1,Script branch/condition map dua chapter cabang,parse block vs capture route diverge,AM-017,PC,Planned
