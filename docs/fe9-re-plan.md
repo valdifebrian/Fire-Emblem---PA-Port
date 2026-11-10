@@ -169,7 +169,7 @@ fe9-re/
 **Artefak:** `out/exec/main.dol` (2.776.512 B, md5 `74da02bee130b88bedc0ade4f20dda98`, validateDol: 0 overlap, entry 0x80003154 ∈ text, semua ≤ MEM2). `out/banner/opening.bnr` (magic **BNR1** ✓, 6496 B, md5 `656161b9517e75c63aab8a8002eadbc6`). `out/samples/<ext>/` 22 ekstensi (thp trunc 8 MB). `inventory/files.csv` 4077 baris.
 **Oracle gagal:** wit 3.05a (2022) tidak baca RVZ (format lahir 2023) — ganti oracle: source Dolphin (`DiscUtils.cpp`, `FileSystemGCWii.cpp`) + self-consistency.
 
-**Status kriteria §7:** #2 ✓ tercapai. #1 ✓ (CLI ls/extract/fstinfo/dolinfo di node murni). #3 ✓ lihat §10b.
+**Status kriteria §7:** #2 ✓ tercapai. #1 sebagian (API `readFST`/`walkFiles` ✓; CLI `ls` belum ditulis). #3 berikutnya (M2).
 
 ## 10b. Record M2 SELESAI (2026-11-10) — jalur analisis final
 
@@ -193,3 +193,43 @@ analyzeHeadless <projdir> FE9m4 -import out/exec/main.elf -processor PowerPC:BE:
 **Hasil:** 8125 fungsi (`out/ghidra/functions.tsv`), 5690 string (`strings.tsv`), 4 fungsi ter-decompile (`out/ghidra/dec/`). **Penerimaan §7#3 ✓**: `entry` @0x80003154 = `__start` khas Nintendo GC (koreksi r13/r2 `_SDA2_BASE_/_SDA_BASE_`, cek BootFlag, rantai OSInit); `FUN_80005c8c` = pemanggil literal `"system.cmp"` (xref string→fungsi via `DecompileSome.java s:`); literal lain: `FE8Data.bin` @0x80267c26, `mess/common.m` @0x80267c51.
 **Proyek Ghidra persisten:** `out/ghidra/FE9m4` (jangan dihapus; `-process` untuk query ulang).
 **Repo publik:** kerja dipush ke `github.com/valdifebrian/Fire-Emblem---PA-Port` (kode+docs+inventori saja; konten disc di-gitignore).
+
+## 10c. Record M3 SELESAI (2026-11-10) — LZ77 + .cmp + FE8DATA tables + .m
+
+**Crack LZ77 (varian GC "0x10")** — metode: ground-truth diff. File `/FE8Data.bin`, `/FE8Anim.bin`,
+`/cp_data.bin` ADA UTUH (uncompressed) di root disc → decode sebagian dari `system.cmp` lalu diff
+vs salinan root menemukan aturan yg salah. Format terverifikasi byte-identical:
+- Header: `[u8 0x10][u24 BE size]` — **field size di system.cmp (0xA0A61A) PALSU/lebih besar dari
+  blob nyata** (~1.75 MB); decoder jalan sampai sumber habis, bukan sampai size.
+- Stream: flag byte 8 item MSB-first. bit=0 → literal. bit=1 → 2 byte: `off=((b0&0xF)<<8|b1)+1`,
+  `len=(b0>>4)+3` (nibble 0..0xF semua valid 3..18; TIDAK ADA escape 0xF). Overlap copy byte-per-byte,
+  off=1 → RLE.
+- Kegagalan awal = bug sendiri (4 item/flag byte), bukan format.
+
+**Container `.cmp`** (`bin/cmp.mjs`): `[pack-header?]` tidak — langsung LZ77 stream-chain: tiap blok
+`[0x10][size][...]`; hasil decompress = blob `"pack"`: u32 magic @0, u16BE count @4, entri @8 stride
+0x10: `[u32 0][u32 namePtr][u32 dataPtr][u32 len]`, pointer absolut dari awal blob. Terverifikasi:
+system.cmp 16 entri; isi FE8Data.bin/FE8Anim.bin/cp_data.bin byte-identical dgn salinan root;
+title.cmp + zdbx.cmp (449 entri) ikut decode. CLI: `node bin/cmp.mjs ls|extract <file> <outdir> [prefix]`.
+
+**FE8Data.bin (di dlm system.cmp) — tabel data** (`bin/fe8data.mjs` → CSV):
+- Header 0x20: `[u32 len][ptr][ptr][112]`; subheader @0x20 `[0][ptr bigID 0x14a3e][ptr JP 0x1c8ab][u32 nChars]`.
+- KARAKTER @0x30 stride **0x54 ×340** ✓ (entri terakhir PID_DAYNE_PLD_1; entri 50 = IKE lvl 8, base 5 5 0 6 6 6 4 1,
+  grow 60 40 30 45 45 25 35 30 — cocok dokumen FEU). Field: f00 PID, f04 MPID, f08=0, f0c FID, f10 JID,
+  f14 affil, f18-f28 SID/AID ptr, f36 lvl, f37 build, f38 weight, f39 base×8, f41 grow×8, f49 u8[8], f51 tail.
+- KELAS: u32 count @0x6FC0 = 0x73 (115), entri @0x6FC4 stride **0x64** (f00 JID, f04 MJID nama, dst hex-dump).
+- ITEM: u32 count @0x9CB0 = 0xBD (189), entri @0x9CB4 stride **0x60** (bukan 0x64!) — f00 IID, f04 MJID.
+- **String pool = suffix pool**: pointer boleh mendarat di tengah string tetangga ("PEGASUSKNIGHT/F"
+  ⊃ "NIGHT/F"; "STEELSWORD" ⊃ "EELSWORD") — ini normal, bukan bug; game baca dari pointer s/d NUL.
+  41 slot item kosong (iid=0) = ID bolong.
+- Output: `out/data/{characters,classes,items}.csv` (340/115/189 baris).
+
+**Format `.m`** (`bin/m.mjs`): header `[u32 len][u32 tableHint][0][u32 count]`; text region @0x20..tabel;
+tabel = pasangan interleave **`[u32 strOff][u32 msgId]` stride 8**, id ascending; lokasi tabel =
+hint + 0x20..0x40 (auto-scan; common.m +0x20, c09.m +0x34). Entri = string NUL-terminated dengan
+control-code: `$c1GREIL3|` (portrait/speaker), `$s1` (nama), `$K` (baris), `$w2/$w4` (wait), `$d1` (selesai).
+Validasi: common.m 2530 pesan UI ("Restart Chapter", "Sound Room"); `/Mess/c09.m` (extract disc, 62779 B)
+75 pesan → dialog Greil prolog ch.9 utuh. File `/Mess/cNN.m` per chapter (c01.. dst, di inventory).
+
+**Koreksi tools:** `bin/lz77.mjs` ditulis ulang sesuai aturan terverifikasi (escape 0xF dihapus);
+`bin/fe8data.mjs` count u32 (bukan u16) + stride item 0x60.
