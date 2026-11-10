@@ -192,6 +192,15 @@ putih), image1..13 = lapisan ekspresi kecil (16×32 potongan mata dll) — engin
 komposit lapisan + mapping ekspresi (kerja P2). Confidence: Confirmed (a–d render).
 Test: T-C1-GFX (skin unit & potret vs Dolphin).
 
+### BRV-ANM-004 — Mode skinning submesh `.gs` — DECODED (flag bit0/bit1)
+Submesh flags: **bit0 = BLEND** — byte `skin` per vertex = indeks bone skeleton `.g`;
+matriks akhir = `animWorlds(g,ga)` (meshview membuktikan posing berjalan — thus "blend-
+skinning gap" AM-009 = SUDAH TERJALANI lewat pipeline g/ga; amr1 28 submesh semua bit0 ✓).
+**bit1 = PALETTE** — submesh menyimpan array u8 `palette` (mis. archer body `[2,4]` dan array
+13..24); byte skin vertex = indeks array tsb → slot tekstur/kedua-gabungan (multi-texture per-
+vertex, TCI0-style). arketipe 0x3802=palette, 0x3801/0x380d=blend. Confidence: Confirmed (blend,
+render); Partial (palette-semantik detail). Test: T-C1-MODEL battle pose A/B.
+
 ### BRV-FNT-001 — `.gcf` = font metrics + sheet tekstur GX I4 polos — DECODED
 Header (semua BE): **u32@0x00 = magic 0x20**; u16@0x08 ascent / @0x0a descent / @0x0c lineH
 (fe 29/3, talk 22/5, alpha 28/6); u32@0x14 = BYTES per sheet (0x2000 = 128×128 I4,
