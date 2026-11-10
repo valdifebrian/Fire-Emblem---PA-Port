@@ -113,6 +113,17 @@ UnitGetByPID, UnitAddSkill, InstantDispos, SallySetByGroup, VisitIn/Out, MindGet
 NetuzoInit, IID_*/PID_*/SID_* pool string). Test: T-SCT-VM (replay C00 Opening0).
 Confidence: Confirmed.
 
+### BRV-SCT-004 — Katalog native penuh (name→impl→argc→calls) — DECODED
+Seluruh native GameBind terdaftar via pola statis `FUN_80013ae8(name, impl, argc)` —
+**407 call-site ⇒ 390 native unik** (17 duplikat/nama-hash). Ekstraktor `bin/natcatalog.mjs`
+→ `out/data/native_catalog.csv` sorted-by-call-count; **312/390 terlihat dipanggil script disc**
+(Top: WaitM 41, InstantDispos 41, MapLoad 41, UnitGetByPID 40, BGMFadeOut 39,
+SallySetByGroup 39, InstantSetMapCamera 39, FocusHardWait 38, regist 38, ENVSilentOn 38).
+Impl = alamat ELF (pseudocode per fungsi tersedia di `out/ghidra/decAll/`) ⇒ implementasi
+engine = translasi per-fungsi, BUKAN riset terbuka lagi.argc native = argcount switch
+FUN_80011a5c (0..9). Confidence: Confirmed (registry grep exhaustive 407/407).
+Test: T-SCT-NATIVE (replay C00 call-sites vs impl semantik).
+
 ### BRV-EVT-002 — Data chapter C00 (prolog) terbaca penuh
 C00 func[11] "Opening0" = setup scene pembuka: MapLoad Map6 → disposisi grup
 `Map6_mikata_n`/`Map6_first_n` → Fade(2,500)+FadeWait. func[12] = unit setup:
