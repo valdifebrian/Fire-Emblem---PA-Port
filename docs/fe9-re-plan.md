@@ -233,3 +233,39 @@ Validasi: common.m 2530 pesan UI ("Restart Chapter", "Sound Room"); `/Mess/c09.m
 
 **Koreksi tools:** `bin/lz77.mjs` ditulis ulang sesuai aturan terverifikasi (escape 0xF dihapus);
 `bin/fe8data.mjs` count u32 (bukan u16) + stride item 0x60.
+
+## 10d. Record M4 SEBAGIAN (2026-11-10) — tpl/.cms/.ga ter crack + pipeline aset
+
+**`.tpl` GFEE01 = magic `0x0020AF30`** (spesifikasi cocok dgn `mila` crates/thane98):
+- Header: `[u32 magic][u32 count][u32 tableOff(=0xC)]`; tabel = count×`(u32 imgPtr, u32 palPtr)`.
+- Image: `[u16 h][u16 w][u32 fmt][u32 dataPtr][u32 wrapS wrapT minF magF][f32 lodBias][u8×4]`.
+- Palette: `[u16 n][u8 unpacked pad][u32 fmt][u32 dataPtr]` (fmt IA8/RGB565/RGB5A3).
+- Format GX: 0=I4,1=I8,2=IA4,3=IA8,4=RGB565,5=RGB5A3,6=RGBA8,8=CI4,9=CI8,10=CI14X2,14=CMPR.
+- **Tiling per format** (blok linier → baris): I4/CI4/CMPR 8×8; I8/IA4/CI8 8×4; IA8/RGB565/
+  RGB5A3/RGBA8 4×4; alamat unit per-pixel `block*bsize+(y%bh)*bw+(x%bw)`, I4/CI4 nibble
+  MSB-first 2px/byte (`(y%bh)*4+(x%bw)>>1`). RGB5A3 opaque=RGB5G3B4, transparent=a3r4g4b4.
+- Validasi visual (vision model): icon.tpl atlas 768×216 → grid ikon FE bersih tajam;
+  crop match paragon (affinity 216×24 @y0, item 24×24 mulai y=72, skill 32×32 di tex1 1024×96).
+- **CMPR belum diimplementasi** (stub hitam) — route/xinfo sebagian pakai fmt14. TODO M4b.
+- Tool: `bin/tpl2png.mjs png <file...>` (auto-LZ77 utk .cms) → `out/png/`.
+
+**`.cms` = LZ77(`.tpl`)** — 1 blok 0x10 (field size bisa iseng, sama spt .cmp). Verified:
+`/Face/IKE.cms` → tpl 14 image (base 192×128 + overlay mata/mulut 24×24/16×16 + 64×64) = sistem
+wajah FE (base blank + part overlays; blok putih di base = BUKAN bug). Batch **360/360 portrait
+`/Face/*.cms` → 4347 PNG, 5.7 detik, 0 gagal** (`node bin/tpl2png.mjs face out/faces`).
+
+**`.ga` (animasi)**: format SUDAH terdokumentasi byte-exact → `mila`(exalt) & **tellius-forge
+research/animation/tellius-animation-file-format.md v2.0.1** (klg-tellius rebuild byte-perfect
+seluruh disc FE9 — TIDAK perlu riset ulang; reader .g/.gs juga ada: TelliusModding klg-tellius).
+Struktur: header 0x30 (footer_off, game_flag@0x08: 00=FE9, fmt=0x11, loop, start/end, bone_count,
+ptr3 section); bone 16B (idx, mask s/r/t=8/16/32, first_curve, n); curve 12B (channel 0-8/12-14,
+frac_bits<<8, end_frame, key_count, first_key); key 4B (u16 frame, i16 value×2^-fb, ABSOLUT,
+interpolasi linear); footer FE9 = 9 slot ptr (slot0 = event track: frame+codes; code 0/1 hit/swing,
+2 throw, 3/4 loop, 0x14-0x1B trail, ≥1000 SE). Tool: `bin/ga.mjs json <file...>` → `out/ga/*.json`
+(header+bone+curve+key+events tervalidasi: `/ymu/archer/atk1_bw.ga` 19 bones/58 curves/6 events,
+bone0=hip idx1 mask0x30, code 1 @39 + SE @1550/1570 + trail 0x17 ✓ cocok semantik dokumen).
+
+**Pending M4**: CMPR decoder; `.g`/`.gs` parser (specs tellius ada di repo third_party); `.stm`
+(audio GC ADPCM); `.pak`; `.cmb`; `.thp` (ffmpeg TIDAK terpasang di dev box — defer ke M6/human
+atau portable ffmpeg). 786 `.cmp` lainnya (di /bmd dll) = container pack yg sama → sudah bisa
+`bin/cmp.mjs extract` lalu tpl/ga decode per isi.
