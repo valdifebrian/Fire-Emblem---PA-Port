@@ -8,8 +8,8 @@
 | Status | Keluarga | Catatan |
 |---|---|---|
 | Verified | **0** | belum ada aset masuk engine |
-| Decoded | 15 | +**`/ymu|.tpl` unit textures**: C4-CMPR GX dikunci (BE colors, idx3-opaque; bug off-by-1 c1 → semua render C4 lama rusak, kini fixed — wajah portrait & atlas Lofa terbaca); binding skin `tex_<charIdx>` ✓ + potret BERLAPIS (BRV-GFX-001); sebelumnya font `.gcf` (BRV-FNT-001), STM BGM (BRV-AUD-002), Script VM + pipeline model 3D |
-| Partial | 18 | Bank SE `gcfesnd` struktur (BRV-AUD-003: `.sdir`/`.slib`/`.proj`/`.stbl`/`.etbl`); `.tpl` lain (window/illust) batch pending |
+| Decoded | 16 | +**`/illust` CG card** 174/174 render (Geoffrey terbaca; efek samping fix C4); `/ymu|.tpl` unit textures: C4-CMPR GX dikunci (BE colors, idx3-opaque; bug off-by-1 c1 → semua render C4 lama rusak; atlas Lofa terbaca); binding skin `tex_<charIdx>` ✓ + potret BERLAPIS (BRV-GFX-001); font `.gcf` (BRV-FNT-001), STM (BRV-AUD-002), Script VM + model 3D |
+| Partial | 17 | Bank SE `gcfesnd` struktur (BRV-AUD-003: `.sdir`/`.slib`/`.proj`/`.stbl`/`.etbl`); `.tpl` window batch pending |
 | Investigating | 8 | **`.samp` payload ≠ DSP standar (bukti LSQ+ZCR — P2 target)**; `.bin`/`.pool` tabel; dsb. |
 | Discovered | 14 | hanya magic/eksistensi |
 | Deferred | 2+ | THP/ending/JP-dup dst., dengan fase penerima |
