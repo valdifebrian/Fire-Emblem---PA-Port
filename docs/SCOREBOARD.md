@@ -19,7 +19,7 @@
 | Metrik | Nilai |
 |---|---|
 | Test PASS / total | **1 / 53** — T-BASE-001 PASS 2026-11-10 (fresh clone → generator → diff normalisasi-EOL nol; `.gitattributes eol=lf` ditetapkan) |
-| BRV terverifikasi | 22 entri (12 seed + SCT×4 (incl **SCT-004 native catalog 390/390**) + EVT-002 + AUD-002/003 + FNT-001 + GFX-001 + ANM-004) — 3 domain masih `Unknown` penuh |
+| BRV terverifikasi | 23 entri (12 seed + SCT×5 (incl **SCT-004 native catalog 390/390**, **SCT-005 protokol wait/arg/antrean aksi**) + EVT-002 + AUD-002/003 + FNT-001 + GFX-001 + ANM-004) — 3 domain masih `Unknown` penuh |
 | Chapter parity | 0/30 |
 | Milestone P1 | (1) MODEL+ANIMASI visual ✓ archer; (2) SCRIPT VM ✓ (C00 Opening0 terbaca data); (3) **BGM DECODED ✓** — `bin/stm.mjs` → WAV 32kHz stereo (boss1 61.1s); (4) **FONT DECODED ✓** — `bin/gcf.mjs` → PGM atlas+CSV, fe/talk/alpha/biggana/system(.gcf+.cms); (5) **TEXTURE+SKIN ✓** — C4 fixed, binding `tex_<idx>` + layered face + bone-skinning (AM-009/047 CLOSED, BRV-GFX-001/ANM-004) |
 | Gate P1→P2 | **font `.gcf` ✅ Decoded (AM-024)** + BGM ✅; tinggal: PoC-inputs + T-RE-CAP1 (SE gcfesnd = opsional P1, target P2) |

@@ -124,6 +124,49 @@ engine = translasi per-fungsi, BUKAN riset terbuka lagi.argc native = argcount s
 FUN_80011a5c (0..9). Confidence: Confirmed (registry grep exhaustive 407/407).
 Test: T-SCT-NATIVE (replay C00 call-sites vs impl semantik).
 
+### BRV-SCT-005 — Protokol & semantik native top-40 — DECODED
+Hasil baca impl (pseudocode decAll) 40 native teratas, pola protokol universal:
+
+**P0 Protokol wait**: native blocking (WaitF/WaitM/*Wait) = self-register timer ke antrean
+`DAT_8028d22c` (rec+0x60 = frame tersisa) via `FUN_8000caa0(getSelf)`; return 1=lanjut,
+0=sleep; pump `FUN_800138f4` memanggil ulang sampai timer habis. WaitM/WaitF = int frames
+(PUSH16 750 = 750 frame; konversi float internal hanya utk skala kecepatan scene). Flag
+skrip busy `(-0x7c90)(r13) & 1` skip register saat replay skip.
+
+**P1 Bentuk argumen (verified call-site nyata C01)**: operand di-push sebagai `PUSH8/16/32`
+(int, spt `PUSH16 750; CALL WaitM 1` = **WaitM(750 frames)**) atau `PUSH_POOL` (string SJIS
+dr name-pool: MapLoad "Map6", regist "<nama script>" — regist mendaftarkan script by-name).
+Native float (Focus/SetMapCamera) memakai idiom i2f `2^52+u − bias` (Ghidra) + konstanta
+skala runtime (r2−0x6e68/6c) — dekode float raw utk native ini diverifikasi ulang saat
+porting (P2); koordinat unit = int grid, float hanya utk kamera/gerakan halus.
+
+**P2 Antrean aksi unit** (`DAT_80296f90` dsb): UnitWalkDir(dir nibble→rec+0x34 bit0-3;
+grid-visi DAT_803307a8→+0x33; +0x3c=1), SetCircle(f radius outline), UnitFadeOut/Off,
+UnitMoveWait (self-register ke `DAT_80296fcc` selama gerak aktif) = command-queue per-frame
+bukan langsung-eksekusi.
+
+**Tabel semantik (name argc ⇒ semantik terverifikasi)**:
+MapLoad(1=str/nama map)→BMAP init 0x80330708; InstantDispos(1)→spawn/despawn instan
+(0x80105f0c(a,0,0)); Dispos(1)=spawn antre fallback unit aktif; UnitGetByPID(1)→flag
+existensi rec+0x198; Focus(2 x,y float)→kamera lerp (return 0 = non-blocking);
+InstantFocus(2); UnitFocus(1 unit); SetMapCamera(3 xyz float→rec+4/8/c ++0x70);
+InstantSetMapCamera(3)→+4/+8 (+0x10 duplikasi bug-asli port-replika) +FN_800193cc(z)+
+apply; SallySetByGroup(1 group); regist(1)=daftarkan skrip ctx ke list 0x803307bc;
+BGMPlay(2: ch u8, f32 track)→bank ch stride 0x30 vol=100 +record last; BGMFadeIn(3:
+ch,f,flag); BGMFadeOut(2: ch,frames)→fun(vtable+8) isPlaying?+fade; BGMSetVol(3: ch,u8,
+s16); BGMQuietOn/Off(0/1); ENVSilentOn/Off(0/1 flag); Create/Set/Start/Delete/SetAt/
+SetRot/SetPrec/Past/Copy/Wait EventCamera ( kamera event stack 0x8019fc08-fce);
+RectBuild(1=nama→lookup RID_GMAP→RectBases+callback), RectLeave/Kill(1 nama), RectSet/
+SetCurve/SetPos/Move/MoveOffset/FadeIn/Out/Delete — Rect = nama→RID→tabel RectBases(.bin);
+TalkEvent(1=nama E_Talk intern→dispatch), TalkExist/Resume(0), TalkEventDirect(1);
+SetGrid(int %0-100; negatif=restore dari rec+0x33); SetCircle/SetTerrain(3);
+MindGetMe/Target/GetMoney(0-1 getter mind ctx), BMGetPhase/BMGetTurn(0 getter BMAP state);
+ForceGetCount/First(idx→array 0x802ca264 stride 0xC); AllUnitEscape/UnitEscape(2);
+Comeback; TimeiShow; ChapterMoviePlay; DisableSkip/EnableSkip(flag skip bit 0x80013864).
+Konfirmasi 4 pola global di atas = prasyarat translasi 390 native engine (P2 PoC script runner).
+Confidence: Confirmed (40 impl dibaca penuh; pola P0-P2 konsisten di semua yang dibaca).
+Test: T-SCT-PROTO (WaitF(30) replay; MapLoad C00; BGMPlay ch0).
+
 ### BRV-EVT-002 — Data chapter C00 (prolog) terbaca penuh
 C00 func[11] "Opening0" = setup scene pembuka: MapLoad Map6 → disposisi grup
 `Map6_mikata_n`/`Map6_first_n` → Fade(2,500)+FadeWait. func[12] = unit setup:
