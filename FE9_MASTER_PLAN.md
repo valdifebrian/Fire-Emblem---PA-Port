@@ -57,15 +57,15 @@ Constraint produk (regresi historis — tiap butir = test wajib CI):
 
 ---
 
-## 2. Keputusan fundamental (D1–D5, menunggu sign-off formal)
+## 2. Keputusan fundamental (D1–D5 — **DISETUJUI 2026-11-10**)
 
 | ID | Keputusan | Status |
 |---|---|---|
-| D1 | Baseline **C++20 + Kotlin + JNI + CMake/NDK + GLES3.0 + Oboe + NativeActivity**, **terkunci hanya setelah P2 PoC lulus**; Vulkan ditunda sampai profiling membuktikan perlu | ⏳ sign-off |
-| D2 | Target pertama = **Chapter 1 playable penuh** (bukan demo visual), DoD §8-P4 | ⏳ sign-off |
-| D3 | **Semua chapter direproduksi** (event, dialog, animasi, ending) — tanpa subset | ⏳ sign-off |
-| D4 | **Aset asli dipertahankan**, konversi hanya optimasi (ASTC/OGG/JSON) | ⏳ sign-off |
-| D5 | Android hp = target utama; desktop = dev/test tool saja | ⏳ sign-off |
+| D1 | Baseline **C++20 + Kotlin + JNI + CMake/NDK + GLES3.0 + Oboe + NativeActivity**, terkunci setelah P2 PoC lulus; Vulkan ditunda sampai profiling perlu. **Setuju — dengan catatan reviewer: persetujuan BUKAN immutabilitas; jika PoC gagal, baseline dibuka kembali tanpa dianggap kegagalan proyek.** | ✅ |
+| D2 | Target pertama = **Chapter 1 playable penuh** (bukan demo visual), DoD §8-P4. | ✅ |
+| D3 | **Semua chapter direproduksi** (event, dialog, animasi, ending) — tanpa subset. | ✅ |
+| D4 | **Aset asli dipertahankan**, konversi hanya optimasi (ASTC/OGG/JSON). | ✅ |
+| D5 | Android hp = target utama; desktop = dev/test tool saja. | ✅ |
 
 ---
 
@@ -145,6 +145,44 @@ async load tanpa halt (REQ-LOAD).
 ---
 
 ## 5. Pipeline aset & disiplin status
+
+### 5.1 Dua scoreboard TERPISAH (revisi review v2-B)
+
+Snapshot di `docs/SCOREBOARD.md`, digabung manual per commit:
+
+1. **Asset readiness** — agregat status `FE9_ASSET_MATRIX.csv` (berapa keluarga per status).
+   Mengukur KESIAPAN DATA, bukan selesai sistem.
+2. **Functional parity** — pass-rate `FE9_TEST_MATRIX.csv` + paritas per chapter/sistem
+   (BRV-### terverifikasi). **Inilah satu-satunya angka kemajuan proyek.**
+   Contoh: model family = Decoded ≠ Animation System selesai — skeleton/material/anim/render
+   masing-masing butuh T- sendiri.
+
+### 5.2 Format identification by probe (2026-11-10, `docs/FE9_MAGIC_PROBE.csv`)
+
+Setiap keluarga aset diprobes magic 16B per-file (±3 sampel/keluarga) — output matriks WAJIB
+mengutip bukti ini, bukan asumsi ekstensi:
+
+- **Semua `.cmp` disc = LZ77 → blob `pack`** (magic terverifikasi `007061636b`); `.pak` = pack
+  RAW (mis. `/zu/amr1_amr1_ja.pak` varian bahasa `_ja/_no`).
+- **Unit model = pack berisi**: `skeleton.g` + `body.gs` + anim `.ga` + `tex_*.tpl`
+  (dibuktikan dari `/ymu/archer/pack.cmp` 8/8 entri) → `.g` unit TIDAK di root (root cuma 3
+  prop); `.gs` = body/shell (spec tellius body). `/xwp/*.cmp` senjata, `/xcam/cam.cmp` kamera,
+  `/yme/EID_*.cmp` efek, `/s` stage campur (sampel = TPL ground tex).
+- `/Scripts/*.cmb` = magic `"cmb\0"` + self-name + blok berulang — investigasi P1 #1.
+- `/Movie` = **THP** (+`dummy` THP); `/opening.bnr` = BNR1.
+- `/Sound` = bank `gcfesnd` (`.slib .sdir .pool .proj .samp .stbl .etbl`) + `.stm` TANPA
+  header SEMh (kemungkinan raw/STM-headerless; nama `_lp` = loop variant); `stbl` memuat
+  string `SE1_EVT_*` (tabel SFX per event!).
+- `/Fonts` = `.cms` (LZ77 TPL atlas) + `.gcf` (metrics, investigasi).
+- `/xcam/<job>/*.dbx` teks per (anim,wpn) = tabel kamera battle. `*.bin` root/window/shop =
+  tabel header `[u32 …]` pola FE8Data.
+- Inventori terekonsiliasi: re-walk FST vs `docs/inventory/files.csv` = 4077↔4077 diff NOL
+  (path|pos|size).
+
+Kebijakan anti-salah-klasifikasi (reviewer A): kolom `format` hanya boleh diisi magic terbukti
+`[probe]`; sisanya `UNKNOWN [probe]` + status `Discovered/Investigating` +
+notes `Pending Format Investigation`. Generator = `bin/assetmatrix.mjs` (reads
+`docs/inventory/files.csv`).
 
 ```
 disc RVZ → tool node (fe9-re/bin) → bake → assets/*.fpk → APK (atau data pack side-load)
@@ -316,6 +354,13 @@ Gradle signed release (keystore lokal, tidak di repo), versioning+changelog, ins
 - **Ritual:** agent = RE/bake/code/docs/CI; human = capture Dolphin, qa hp, gate review P1/P2/
   P4/P6/P8, keputusan terbuka (mis. video cutscene: still+SFX default vs MP4; >600MB →
   side-load/split/zip; shader tier; stack bila PoC gagal).
-- **Restart-session protocol:** baca FE9_MASTER_PLAN.md + status matrix/TEST_MATRIX, baru
-  lanjut; jangan pernah percaya memori sesi untuk status proyek.
+- **Restart-session protocol:** baca `FE9_MASTER_PLAN.md` → `docs/FE9_ASSET_MATRIX.csv` →
+  `docs/FE9_BEHAVIOR_SPEC.md` → `docs/FE9_TEST_MATRIX.csv` → `docs/SCOREBOARD.md`, baru lanjut;
+  jangan pernah percaya memori sesi untuk status proyek.
+- **Urutan kerja wajib (instruksi reviewer v2):** (1) validasi asset matrix — selesai via
+  magic probe §5.2, jaga saat berubah; (2) dokumen konsisten di repo (reproducible fresh-clone,
+  T-BASE-001); (3) rekonsiliasi inventori vs source (done: 4077↔4077 diff nol); (4) RE prioritas
+  tinggi: model (`skeleton.g`/`body.gs`) → animasi → script `.cmb`; (5) PoC teruji di Android
+  fisik; (6) **tunggu hasil PoC sebelum mengunci arsitektur** dan full engine.
+  Jangan mulai full engine implementation hanya karena master plan selesai.
 - Keputusan terbuka non-blocking dicatat di `docs/OPEN_DECISIONS.md` (dibuat P0).

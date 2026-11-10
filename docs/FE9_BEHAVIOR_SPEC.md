@@ -16,6 +16,14 @@ Domain (status awal): battle `Unknown` · character `Partial` · ai `Unknown` ·
 animation `Partial` · event `Unknown` · dialogue `Partial` · progression `Unknown` · ui
 `Unknown` · save `Unknown` · rng `Unknown`.
 
+### Prioritas pengisian (instruksi reviewer v2-C)
+1. BRV-BAT battle calculation → 2. BRV-MAP movement/terrain → 3. BRV-CHR growth/level-up →
+4. BRV-AI enemy AI → 5. BRV-EVT chapter event/script → 6. BRV-PROG recruitment/progression.
+Sumber bukti berjenjang: tabel hasil RE > capture Dolphin (Confirmed) > Ghidra oracle >
+FEU wiki (mulai `Reported`, naik setelah golden test). **Entri `Reported` TIDAK boleh jadi
+gerbang implementasi — minimal `Strong`.**
+
+
 ---
 
 ## Seed entri (terbukti dari data yang sudah ada; bukan asumsi)
@@ -60,6 +68,24 @@ jobList.dbx (`PID_...=alias`). Confidence: Strong. Test: T-DLG-002.
 nama JP; classList job→unit. Confidence: Confirmed (teks terbaca). **Partial:** semantik
 field per kolom dbx. Test: T-AM-LINK.
 
-*(Entri kosong `Unknown` diisi selama P1/P4 lewat observasi capture + tabel — bukan dari
-kira-kira. Domain battle formula (damage, triangle, crit, effectiveness, arena) = BRV-BAT-*:
-status Unknown sampai golden battle cases capture tersedia.)*
+### BRV-EVT-001 — Kontainer script chapter
+`/Scripts/C??.cmb` = magic `"cmb\0"` + nama-diri ASCII (`C01.cmb`) + blok `cmb` berulang
+(probe 2026-11-10). Isi/opcode = `Unknown`; investigasi = P1 #1 (metodologi §7 master plan).
+Confidence: Confirmed (kontainer), Unknown (semantik). Test: T-RE-SCRIPT1/2, T-SCT-VM.
+
+### BRV-ANM-003 — Kamera battle per (job, animasi, senjata)
+`/xcam/<job>/*.dbx` = teks SJIS satu file per variasi (mis. `fig1_cr2_ax.dbx`), header `#` +
+nama kamera JP (probe). Menentukan setup kamera battle utk kombinasi job×anim×wpn;
+`/xcam/*/cam.cmp` = pack data kamera. Confidence: Confirmed (eksistensi/granularitas),
+Partial (semantik field). Test: T-C1-ANIM (A/B video). → masuk BRV-BAT saat dipetakan.
+
+### BRV-AUD-001 — Pemetaan SFX per event
+`/Sound/gcfesnd.stbl` memuat string `SE1_EVT_FOREST1` dst. (probe) = tabel event→SFX;
+bank = `gcfesnd.{slib,sdir,pool,proj,samp}` + `.stm` (STM-headerless, `_lp`=loop).
+Confidence: Confirmed (eksistensi), Unknown (format). Test: T-RE-AUD1, T-AUD-MIX.
+
+### BRV-SYS-001 — Varian aset region/bahasa
+Model pack battle punya varian sufiks `_ja/_no` (`amr1_ja.pak`, `kni2_no.pak`) — runtime memilih
+set per region. Port WAJIB meniru pemilihan varian disc USA sebelum bake (bukan asal pilih).
+Confidence: Strong (pola nama + disc USA). Test: T-CNT-CH varian check.
+
