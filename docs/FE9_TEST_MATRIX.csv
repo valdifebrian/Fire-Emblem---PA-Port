@@ -1,0 +1,53 @@
+id,phase,name,method,signature_ref,device,status
+T-BASE-001,P0,Reproducible baseline fresh-clone,clone bersih + jalankan semua tool + sha256 5 artefak kunci,-,PC,Planned
+T-BASE-002,P0,Leftover triage closed,baris .gcf/.sdir/.stbl dkk = Deferred dengan alasan,-,PC,Planned
+T-RE-SCRIPT1,P1,Script opcode inventory 43 file,stat-diff + strings Ghidra korelasi,AM-017,PC,Planned
+T-RE-SCRIPT2,P1,Script branch/condition map dua chapter cabang,parse block vs capture route diverge,AM-017,PC,Planned
+T-RE-MODEL1,P1,Skeleton unit locate + parser .g/render wireframe,wireframe IKE+KNIGHT vision-check,-,PC,Planned
+T-RE-PAK1,P1,.pak + /s magic + stage unpack,daftar isi + 1 stage terbaca,AM-004/006,PC,Planned
+T-RE-AUD1,P1,.stm decode round-trip,dengar 3 track + wave form sanity,AM-Sound,PC,Planned
+T-RE-FONT1,P1,Font atlas parse + glyph coverage,string semua karakter .m tampil,AM-Fonts,PC,Planned
+T-RE-DBX1,P1,dbx2json SJIS->UTF8 spot 40 entri,banding vs wiki FEU names,AM-013,PC,Planned
+T-RE-CAP1,P1,Capture Dolphin b1-2 (input+video+SRAM),file capture diterima human,semua,Human,Planned
+T-POC-TEX,P2,PoC-1 render tekstur FE9 di hp,screenshot device (atlas ikon+3 portrait),-,Android,Planned
+T-POC-MESH,P2,PoC-2 model 3D Ike di hp + kamera,video/screenshot,-,Android,Planned
+T-POC-ANIM,P2,PoC-3 animasi .ga + event codes tercetak,log event vs frame,AM-ga,Android,Planned
+T-POC-AUD,P2,PoC-4 BGM+1 SFX mixing,log + rekaman mikrofon sanity,-,Android,Planned
+T-POC-INPUT,P2,PoC-5 touch latency+rapid+4arah,latency meter <50ms; 600 tap; hold arah,§1.5,Android,Planned
+T-POC-PERF,P2,PoC profiling + thermal readout,laporan fps/jam suhu,REQ-PERF-1,Android,Planned
+T-GSM-001,P3,Boot->ATTRACT->(START)->TITLE mesin state,cold boot 20x selalu ATTRACT dulu,§1.6,Desktop+Android,Planned
+T-GSM-002,P3,Scene round-trip title->debug->title,frame counter maju terus,§1.7,Desktop,Planned
+T-IN-001,P3,Satu action enum 3 sumber input,pilih karakter menu->stage->action hidup,§1.4,Desktop+Android,Planned
+T-IN-002,P3,Rapid-fire 4 arah,600 tap + hold fwd/back/up/down,§1.5,Android,Planned
+T-TIME-001,P3,Fixed timestep 60Hz vs device lambat,sim 2x lambat = same tick count,REQ-TIME-1,Desktop,Planned
+T-TIME-002,P3,Determinisme replay,input log+seed = state hash sama,REQ-TIME-2,Desktop,Planned
+T-MEM-001,P3,Texture cache budget + evict scene,peak GPU<=160MB Mali+Adreno,REQ-MEM-1,Android,Planned
+T-LOAD-001,P3,Async load tanpa UI freeze >2 frame,scene switch monitor,REQ-LOAD-1,Android,Planned
+T-ERR-001,P3,Save korup terdeteksi+fallback backup,CRC fuzz file save,REQ-ERR-1,Android,Planned
+T-SAVE-001,P3,Atomic save + rotasi + kill-process saat write,force-kill saat save; load valid,REQ-SAVE-1,Android,Planned
+T-LIFE-001,P3,Lifecycle pause/resume/process-kill,swipe-away -> cold resume state benar,REQ-LIFE-1,Android,Planned
+T-DISP-001,P3,4:3 letterbox multi-resolusi,screenshot 3 aspect,REQ-DISP-1,Android,Planned
+T-C1-START,P4,Ch1 mulai dari menu,alur nyata human,-,Android,Planned
+T-C1-MAP,P4,Ch1 map+unit tampil benar,A/B vs capture video,-,Android,Planned
+T-C1-MOVE,P4,Movement+terrain cost,golden steps 3 unit,BRV-MAP,Desktop+Android,Planned
+T-C1-CALC,P4,Damage calc golden battle cases,diff vs capture (hit/dmg/crit),BRV-BAT,Desktop,Planned
+T-C1-ANIM,P4,Battle animation trigger+timing,event 0/1 di frame benar vs video,BRV-ANM-001,Android,Planned
+T-C1-EVT,P4,Dialog+event c01 via VM,replay capture c01 step,BRV-DLG,Android,Planned
+T-C1-END,P4,Victory/defeat + chapter completion,dua jalur tamat,-,Android,Planned
+T-C1-SAVE,P4,Save/load lanjut progres ch1,save tiap phase -> resume,-,Android,Planned
+T-C1-FREEZE,P4,Stress replay 10 mnt spam input,watchdog nol BUG-REG,§1.7,Android,Planned
+T-SYS-GROW,P5,Growth/level-up paritas,golden 100 level-up vs capture seed,BRV-CHR-001,Desktop,Planned
+T-SYS-EFF,P5,Effectiveness/triangle/arena/crit/break,kasus golden per aturan,BRV-BAT,Desktop,Planned
+T-SYS-AI,P5,Enemy AI golden (pursue/engage/retreat),replay 5 skenario,BRV-AI,Desktop,Planned
+T-SYS-PROG,P5,Recruitment/promotion/seal/convo/shop,gapless alur capture,BRV-PROG,Android,Planned
+T-SCT-VM,P5,Script VM semua chapter load-able,parse 43/43 + smoke run,§7,Desktop,Planned
+T-SCT-1,P5,Branch route chapter divergensi benar,capture dua route,§7.3,Desktop,Planned
+T-AUD-MIX,P6,BGM loop points+duck dialog vs capture,A/B audio human,REQ-AUD-1,Android,Planned
+T-CNT-CH,P6,30 chapter load + parity scoreboard,tracker per chapter,§8P6,Desktop,Planned
+T-PAR-VIS,P7,A/B visual per kategori scene vs Dolphin,daftar screenshot pair,§8P7,Human,Planned
+T-PAR-CAMP,P7,Playthrough penuh campaign,finish ending tanpa blocker,D3,Android,Planned
+T-PERF-SOAK,P7,Thermal soak 30mnt battle terberat,degradasi fps <15%,REQ-PERF-1,Android,Planned
+T-COMP-001,P7,Device matrix Adreno+Mali+lowRAM,laporan 3 device,REQ-COMP-1,Human,Planned
+T-SAVE-FUZZ,P7,Save integrity fuzz 1000x,fuzz byte-flip -> recovery,REQ-SAVE-1,Desktop,Planned
+T-REL-001,P8,Build WhatsApp di hp non-dev,instal+dari file WA + main 10 mnt,§8P8,Human,Planned
+T-REL-002,P8,Repo bersih dari aset,grep payload check + hook aktif,§10,PC,Planned
