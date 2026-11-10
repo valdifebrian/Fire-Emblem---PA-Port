@@ -78,5 +78,5 @@ bin/montage.ps1  -Dir out -Out grid.png -Cols 5 -Scale 3   # tile frames, read i
 bin/genmovie.mjs                              # DTM v-current writer (256B hdr + 8B ControllerState)
 ```
 **CRITICAL FIX**: `Dolphin.ini` had `SIDevice0 = 7` = GC **Keyboard adapter** -> pad never polled -> EVERY input path (OS keys, .dtm movies) silently dead. Must be `SIDevice0 = 6` (Standard Controller). After fix, OS keyboard + menu nav verified live (title -> Continue list -> Restart Chapter).
-Key map (GCPadNew): Enter=X B=Esc Z=Space T/F/G/H=dpad U/J/K/L=stick; menu cursor moves on DPAD reliably; hold>~250ms triggers auto-repeat (double-step) -> tap <=150ms and screenshot-verify before Enter.
+Key map (actual GCPadNew.ini): **A=`X` key (confirm)** B=`Z` X=`C` Y=`S` GC-Z=`D` Start=RETURN, T/F/G/H=d-pad, arrows=main stick, I/J/K/L=c-stick, Q/W=L/R. Menu confirm is A (=X key), NOT Start. Cursor moves on d-pad reliably; hold>~250ms triggers auto-repeat (double-step) -> tap <=200ms and screenshot-verify before confirm.
 DTM movie input did NOT visibly register (timing assumption 60 polls/s or load issue) - OS-key path is primary; movie path = backlog.
