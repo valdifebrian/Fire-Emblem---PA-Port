@@ -269,3 +269,10 @@ bone0=hip idx1 mask0x30, code 1 @39 + SE @1550/1570 + trail 0x17 ✓ cocok seman
 (audio GC ADPCM); `.pak`; `.cmb`; `.thp` (ffmpeg TIDAK terpasang di dev box — defer ke M6/human
 atau portable ffmpeg). 786 `.cmp` lainnya (di /bmd dll) = container pack yg sama → sudah bisa
 `bin/cmp.mjs extract` lalu tpl/ga decode per isi.
+
+**zdbx.cmp isi 449 file = `.dbx` TABEL TEKS SHIFT-JIS** (bukan biner): komentar `#` + baris
+`JID_XXX<TAB>alias3D<TAB>#NamaJP` — jobList (job→alias model/anim battle), weaponList, classList,
+skill, param, battle, camera, bgList, effectList, lensflare + ztool/* + zbg/*/param.dbx per-scene.
+= jembatan ID-tabel→aset 3D (valuable utk port). Semua extracted → `out/cmp/zdbx/`.
+CMPR (DXT1, fmt14) ter-implementasi+visual-verified (garis march biru route.tpl; addressing BE
+langsung c0,c1,idx rows — TIDAK perlu swizzle). xinfo 78/78 ok.

@@ -72,8 +72,20 @@ function decodeFmt(fmt, w, h, data, pal) {
         const p = pal && pal[idx] ? pal[idx] : [0, 0, 0, 0]; px(x, y, ...p); break;
       }
       case 10: break; // CI14X2 unused by window textures
-      case 14: { // CMPR/BC4/BC5: sub-block linear inside each 8x8 block stream
-        px(x, y, 0, 0, 0, 0); break;
+      case 14: { // CMPR (DXT1): 8x8 block = 4 sub-blocks linear, 8B each; GC swaps c0/c1 order
+        const bpr = aw / 8;
+        const bl = Math.floor(x / 8) + Math.floor(y / 8) * bpr;
+        const sub = ((y & 7) >> 2) * 2 + ((x & 7) >> 2);
+        const q = bl * 32 + sub * 8;
+        const c0 = u16(q), c1 = u16(q + 1);
+        const idx = (data[q + 2 + (y & 3)] >> ((3 - (x & 3)) * 2)) & 3;
+        const A = r565(c0), B = r565(c1);
+        let p;
+        if (idx === 0) p = A;
+        else if (idx === 1) p = B;
+        else if (c0 > c1) p = idx === 2 ? [(2 * A[0] + B[0]) >> 1, (2 * A[1] + B[1]) >> 1, (2 * A[2] + B[2]) >> 1, 255] : [(A[0] + 2 * B[0]) >> 1, (A[1] + 2 * B[1]) >> 1, (A[2] + 2 * B[2]) >> 1, 255];
+        else p = idx === 2 ? [(A[0] + B[0]) >> 1, (A[1] + B[1]) >> 1, (A[2] + B[2]) >> 1, 255] : [0, 0, 0, 0];
+        px(x, y, ...p); break;
       }
     }
   }
