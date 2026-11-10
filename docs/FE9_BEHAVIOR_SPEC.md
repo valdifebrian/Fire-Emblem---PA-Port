@@ -130,6 +130,25 @@ Partial (semantik field). Test: T-C1-ANIM (A/B video). → masuk BRV-BAT saat di
 `/Sound/gcfesnd.stbl` memuat string `SE1_EVT_FOREST1` dst. (probe) = tabel event→SFX;
 bank = `gcfesnd.{slib,sdir,pool,proj,samp}` + `.stm` (STM-headerless, `_lp`=loop).
 Confidence: Confirmed (eksistensi), Unknown (format). Test: T-RE-AUD1, T-AUD-MIX.
+UPDATE 2026-11-10: container `.stm` DIKUNCI → lihat BRV-AUD-002; bank `gcfesnd.*` masih
+Investigating (`.sdir` stride16 `[?][len][@?]`, `.samp` 6.7MB block, `.etbl` nama `SE2_*`).
+
+### BRV-AUD-002 — `.stm` = GC-DSP ADPCM stereo (dua mono terkonkatenasi) — DECODED
+Kontainer (semua BE): `u16@2` sample-rate (0x7d00=32000); `u32@4`=2 (ch); `u32@8` = BYTES
+per stream mono (total data = 2×, L di `0x8100`, R di `0x8100+len`); `u32@0xc` = loop point
+dalam NIBBLE (konversi vgmstream `nib/16*14 + max(0,nib%16−2)`); `0x40/0x44` = record loop
+(intro-vs-`_lp`); **`0x5c..0x7f` = 8 pasang s16 = tabel koefisien IIR** (idx≤7).
+Frame 8B: byte0 = `[idx4|scale4]` (skala = `1<<nibble_bawah`, teramati 2..11; idx 0..7),
+byte1..7 = 14 nibble (nibble TINGGI dulu per byte), 14 sample/frame.
+Rumus per sample (predictor, BUKAN integrator — identitas vgmstream `decode_ngc_dsp`/DSP_STM):
+`sample = clamp16(((nib_signed*scale)<<11) + 1024 + c0*hist1 + c1*hist2) >> 11; hist2=hist1; hist1=sample`.
+Konsistensi: `0x1dd7a0 (field@0x40) = frames×14` exact; jumlah frame = bytes/8 exact.
+Game-side: `FUN_800b080c` buka `"%s%s.stm"` via `FUN_800b4a84` dua kali (intro+loop record) —
+decode di ucode DSP AX (tak ada decoder CPU di 8110 fungsi; grep `>>4`=0) → engine Android
+WAJIB decode CPU-side (vgmstream-style) lalu mix. Bukti decode: boss1/ashnard_lp/classchg —
+roughness 0.43–0.87 vs noise 1.35–1.55, L≈R pada `_lp`, energi bass 42% (noise 6%),
+loop point kontinu (step 605–1377 ≈ RMS lokal), durasi 47–61 s. Confidence: Confirmed.
+Test: T-RE-AUD1 (dengar vs Dolphin), T-AUD-MIX. [AM-015]
 
 ### BRV-SYS-001 — Varian aset region/bahasa
 Model pack battle punya varian sufiks `_ja/_no` (`amr1_ja.pak`, `kni2_no.pak`) — runtime memilih
