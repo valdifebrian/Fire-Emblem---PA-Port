@@ -175,6 +175,23 @@ atau interleaving pra-ucode. **P1 dihentikan di sini (gate SE = opsional) → ta
 directory/chain/stride), Unknown (encoding payload). Test: T-RE-AUD1 (SE play vs Dolphin).
 [AM-048..AM-055 partial]
 
+### BRV-GFX-001 — Binding skin unit & potret berlapis — CONFIRMED (render bukti)
+(a) **`.tpl` FE9** = magic `0x0020AF30`; hdr [u32 count][u32 tableOff=0x0C]; entry (u32 imgPtr,
+u32 palPtr); imgHdr 16B [u16 h][u16 w][u32 fmt][u32 dataOff][…]. (b) **`/ymu/<jobdir>/tex_<N>.tpl`
+N = IDX baris tabel karakter FE8Data** (`out/data/characters.csv` kolom idx): `archer2/tex_195`
+= row195 = `ID_LOFA` ✓; job→dir + override via JobList.dbx (`JID_ARCHER: PID_LOFA=arc2`);
+IDX sama beda byte per karakter = varian skin per-PID (md5 archer/tex_32 ≠ archer2/tex_32 ✓);
+dalam `pack.cmp` = `tex_4/tex_5` (slot base pack; aturan pack-relatif vs eksternal = minor open).
+(c) **C4/CMPR GX (terkoreksi 2026-11-10)**: tiled 8×8 = 4 makro TL,TR,BL,BR 8B; warna **BE
+RGB565** di `+0`/`+2` (BUG lama: off-by-one `+1` — merusak SEMUA render C4), indeks 2-bit/px
+baris `+4..7`; blend 3/8 `(3B+5A)>>3`; **idx3 OPAQUE midpoint** (tanpa transparansi DXT1 —
+asset FE9 pakai slot itu sebagai warna; alpha 0 = wajah terensor blok putih). Bukti: skor
+smoothness 27.6 vs 87.7 terburuk dari 48 hipotesis + atlas Lofa terbaca (kulit sawo matang
+coklat ✓ kanonik). (d) **Potret `/Face` = BERLAPIS**: image0 kanvas 192×128 (orb socket
+putih), image1..13 = lapisan ekspresi kecil (16×32 potongan mata dll) — engine = base +
+komposit lapisan + mapping ekspresi (kerja P2). Confidence: Confirmed (a–d render).
+Test: T-C1-GFX (skin unit & potret vs Dolphin).
+
 ### BRV-FNT-001 — `.gcf` = font metrics + sheet tekstur GX I4 polos — DECODED
 Header (semua BE): **u32@0x00 = magic 0x20**; u16@0x08 ascent / @0x0a descent / @0x0c lineH
 (fe 29/3, talk 22/5, alpha 28/6); u32@0x14 = BYTES per sheet (0x2000 = 128×128 I4,

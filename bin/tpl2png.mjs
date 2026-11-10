@@ -72,19 +72,20 @@ function decodeFmt(fmt, w, h, data, pal) {
         const p = pal && pal[idx] ? pal[idx] : [0, 0, 0, 0]; px(x, y, ...p); break;
       }
       case 10: break; // CI14X2 unused by window textures
-      case 14: { // CMPR (DXT1): 8x8 block = 4 sub-blocks linear, 8B each; GC swaps c0/c1 order
+      case 14: { // CMPR (DXT1-GX): 8x8 tiled 4 macros TL,TR,BL,BR; colors BIG-endian RGB565
+        // (proven 2026-11-10: smoothness 27.6 vs 87.7 worst of 48 hypotheses; atlas islands readable)
         const bpr = aw / 8;
         const bl = Math.floor(x / 8) + Math.floor(y / 8) * bpr;
         const sub = ((y & 7) >> 2) * 2 + ((x & 7) >> 2);
         const q = bl * 32 + sub * 8;
-        const c0 = u16(q), c1 = u16(q + 1);
-        const idx = (data[q + 2 + (y & 3)] >> ((3 - (x & 3)) * 2)) & 3;
+        const c0 = u16(q), c1 = u16(q + 2);
+        const idx = (data[q + 4 + (y & 3)] >> ((3 - (x & 3)) * 2)) & 3;
         const A = r565(c0), B = r565(c1);
         let p;
         if (idx === 0) p = A;
         else if (idx === 1) p = B;
-        else if (c0 > c1) p = idx === 2 ? [(2 * A[0] + B[0]) >> 1, (2 * A[1] + B[1]) >> 1, (2 * A[2] + B[2]) >> 1, 255] : [(A[0] + 2 * B[0]) >> 1, (A[1] + 2 * B[1]) >> 1, (A[2] + 2 * B[2]) >> 1, 255];
-        else p = idx === 2 ? [(A[0] + B[0]) >> 1, (A[1] + B[1]) >> 1, (A[2] + B[2]) >> 1, 255] : [0, 0, 0, 0];
+        else if (c0 > c1) p = idx === 2 ? [(3 * B[0] + 5 * A[0]) >> 3, (3 * B[1] + 5 * A[1]) >> 3, (3 * B[2] + 5 * A[2]) >> 3, 255] : [(3 * A[0] + 5 * B[0]) >> 3, (3 * A[1] + 5 * B[1]) >> 3, (3 * A[2] + 5 * B[2]) >> 3, 255];
+        else p = [(A[0] + B[0]) >> 1, (A[1] + B[1]) >> 1, (A[2] + B[2]) >> 1, 255]; // idx2/3 midpoint OPAQUE — FE9 assets store idx3 color data (no DXT1 transparency)
         px(x, y, ...p); break;
       }
     }
