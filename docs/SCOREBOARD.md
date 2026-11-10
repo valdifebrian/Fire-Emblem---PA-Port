@@ -25,6 +25,6 @@
 | Fase aktif | **P1** |
 
 ## Gap tertinggi
-1. `AM-009` binding img-index↔file `.tpl` pada pack unit + path blend-skinning `/zu` (butuh raw-pack entry di `cmp.mjs`) — P1 berikutnya (reviewer queue: audio/behavior PoC).
+1. `AM-009` binding img-index↔file `.tpl` pada pack unit + path blend-skinning `/zu` (raw-pack entry `cmp.mjs` SUDAH jalan: amr1_ja.pak 9/9).
 2. 404 native `.cmb` — signature/semantik per nama belum (pool names + argcount saja); sebagian butuh Ghidra xref per fungsi.
 3. Domain BRV battle/AI/map/rng `Unknown` — butuh capture human (T-RE-CAP1).

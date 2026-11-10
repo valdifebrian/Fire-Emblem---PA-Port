@@ -2,7 +2,7 @@ id,source_scope,format,count,decoder,output,status,verification,dependencies,eng
 AM-001,"/ymu",.ga,1130,GA [probe✓spec],"bin/ga.mjs","anim bin (target)",Decoded,"keyframe=[u16 frame][i16 value] FIXED; wait_N 15bone/34curv loop1..60; atk1 events 13=>SE,41=>DAMAGE; posing via meshview verified visually","spec tellius v2.0.1",Animation System,""
 AM-002,"/zu",.tpl,539,TPL,"tpl2png","PNG",Partial,"decoder ada","tpl",Battle tex,""
 AM-003,"/Face",.cms,360,LZ77(TPL) [probe],"bin/tpl2png.mjs","PNG RGBA",Decoded,"vision 360/360 (Ike,Mist) + hitungan overlay","lz77,tpl",UI portrait,"4347 PNG; Verified menunggu engine"
-AM-004,"/zu",.pak,300,PACK (raw) [probe],"cmp blob reader","isi pack (model+anim battle)",Partial,"amr1_ja/kni2_no.pak magic 'pack'+count; varian bahasa (_ja/_no)","cmp-blob",Battle Model,"parser entri raw-pack P1"
+AM-004,"/zu",.pak,300,PACK raw [✓same fmt /ymu],"bin/cmp.mjs (raw passthrough)","isi pack (model+anim battle)",Partial,"amr1_ja.pak 9/9 entry: amr1.gs(body 134KB)+amr1.g+6 anim .ga (poi/lda/ldc/dam/ded/dog); entries @0x08 [zero,nameOff,dataOff,len] identik cmp-pack; varian _ja/_no/_sp/_sw","cmp",Battle Model,"gs parser jalan; blend-skinning + img↔tpl binding = gap AM-009"
 AM-005,"/yme",.cmp,292,LZ77(pack) [probe],"cmp.mjs","efek pack (EID_*)",Investigating,"pack magic ✓; isi belum di-list","cmp",Effect System,"Deferred konten P6"
 AM-006,"/s",.none,198,mixed (smp=TPL) [probe],"-","?",Investigating,"sample 02g/0dg/l19 = TPL (ground tex); per-file probe P1","tpl?",Map Engine,"stage prop/ground; kemungkinan mixed format"
 AM-007,"/illust",.tpl,174,TPL [probe],"bin/tpl2png.mjs","PNG",Partial,"probe TPL ✓ (bole/calill/merlinus 99328B); batch pending","tpl",Presentasi CG,""

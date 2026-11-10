@@ -54,6 +54,10 @@ export function lzStream(buf, p) {
 }
 
 export function unpackCmp(buf) {
+  if (buf.subarray(0, 4).toString("latin1") === "pack") {
+    // raw (uncompressed) pack — /zu/*.pak etc: same entry format, no LZ77 container
+    return parsePack(buf, buf.length);
+  }
   if (buf[0] !== 0x10) throw new Error("not a 0x10 container (type=0x" + buf[0].toString(16) + ")");
   const total = buf.readUInt32BE(0) & 0xffffff;
   const data = Buffer.alloc(total);
@@ -72,6 +76,11 @@ export function unpackCmp(buf) {
     p = r.consumed;
   }
   if (data.subarray(0, 4).toString("latin1") !== "pack") throw new Error("blob is not a pack");
+  return parsePack(data, filled, streams);
+}
+
+function parsePack(data, filled, streams = 0) {
+  const total = data.length;
   const count = data.readUInt16BE(4);
   const base = data.readUInt32BE(0x10 + 8); // first file data pointer (info)
   const entries = [];
