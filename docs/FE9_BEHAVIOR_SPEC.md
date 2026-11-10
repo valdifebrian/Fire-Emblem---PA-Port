@@ -123,8 +123,11 @@ menyajinya (bukan hardcode). Confidence: Confirmed (disassembly). [AM-017][BRV-P
 ### BRV-ANM-003 — Kamera battle per (job, animasi, senjata)
 `/xcam/<job>/*.dbx` = teks SJIS satu file per variasi (mis. `fig1_cr2_ax.dbx`), header `#` +
 nama kamera JP (probe). Menentukan setup kamera battle utk kombinasi job×anim×wpn;
-`/xcam/*/cam.cmp` = pack data kamera. Confidence: Confirmed (eksistensi/granularitas),
-Partial (semantik field). Test: T-C1-ANIM (A/B video). → masuk BRV-BAT saat dipetakan.
+`/xcam/*/cam.cmp` = pack data kamera. **UPDATE 2026-11-10: SEMUA 437 `.dbx` ter-JSON-kan
+(`bin/dbx.mjs`, 708 record) — `class CameraAnime {name,caption,camera,pos[],rot[],dist,time}`
+field penuh; JobList = JID_*→model-dir+PID override; Param scene = roomFlag/footEffect/
+footSound.** Confidence: Confirmed (field), Partial (semantik nilai — butuh A/B vs Dolphin).
+Test: T-C1-ANIM (A/B video). → masuk BRV-BAT saat dipetakan.
 
 ### BRV-AUD-001 — Pemetaan SFX per event
 `/Sound/gcfesnd.stbl` memuat string `SE1_EVT_FOREST1` dst. (probe) = tabel event→SFX;

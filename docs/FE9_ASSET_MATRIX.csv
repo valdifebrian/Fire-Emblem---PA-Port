@@ -21,7 +21,7 @@ AM-019,"/window",.tpl,34,TPL [probe],"bin/tpl2png.mjs","PNG",Partial,"decoder te
 AM-020,"/etc",.tpl,16,TPL [probe],"tpl2png","PNG",Partial,"probe ✓ background/gameover","tpl",Presentasi,""
 AM-021,"/Movie",.thp,8,THP [probe 'THP'],"ffmpeg (opsional PC)","mp4/still",Deferred,"-","-",Cutscene,"keputusan P6"
 AM-022,"/gmap",.tpl,7,TPL [probe],"tpl2png","PNG",Partial,"probe ✓ gmap.tpl 12 img","tpl",World map,""
-AM-023,"/xcam",.dbx,6,TEXT SJIS [probe],"-","tabel kamera per serangan",Decoded,"probe: header `#…` + nama kamera JP","cmp?",Battle camera,"satu file per (job,anim,wpn)"
+AM-023,"/xcam",.dbx,6,TEXT SJIS key-val, rec '¥',"bin/dbx.mjs","JSON UTF-8 ✓",Decoded,"CameraAnime rec: class/name/caption/camera/pos[]/rot[]/dist/time","cmp",Battle camera,"satu file per (job,anim,wpn) — BRV-ANM-003 data ready"
 AM-024,"/Fonts",.gcf,5,GCF u32 magic 0x20 [probe],"gcf.mjs","PGM atlas+metrics CSV",Decoded,"BRV-FNT-001: I4 GX sheets, 6/6 fonts render","gcf,i4,gx",UI text,"fe/talk/alpha/biggana/system(.gcf+.cms) — AM-024 done"
 AM-025,"/ending",.bin,4,TBL [probe],"-","?",Discovered,"-","-",Ending,"P7"
 AM-026,"/window",.bin,4,TBL hdr[u32 size…] [probe],"-","?",Investigating,"-","-",UI rect table,"RectBases(.en) = tabel rect UI; parse P4"
