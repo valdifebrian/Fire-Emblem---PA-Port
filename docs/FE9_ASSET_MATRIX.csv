@@ -24,7 +24,7 @@ AM-022,"/gmap",.tpl,7,TPL FE9 7/7✓,"bin/tpl2png.mjs","PNG (27 img)",Decoded,"g
 AM-023,"/xcam",.dbx,6,TEXT SJIS key-val, rec '¥',"bin/dbx.mjs","JSON UTF-8 ✓",Decoded,"CameraAnime rec: class/name/caption/camera/pos[]/rot[]/dist/time","cmp",Battle camera,"satu file per (job,anim,wpn) — BRV-ANM-003 data ready"
 AM-024,"/Fonts",.gcf,5,GCF u32 magic 0x20 [probe],"gcf.mjs","PGM atlas+metrics CSV",Decoded,"BRV-FNT-001: I4 GX sheets, 6/6 fonts render","gcf,i4,gx",UI text,"fe/talk/alpha/biggana/system(.gcf+.cms) — AM-024 done"
 AM-025,"/ending",.bin,4,TBL [probe],"-","?",Discovered,"-","-",Ending,"P7"
-AM-026,"/window",.bin,4,TBL hdr[u32 size…] [probe],"-","?",Investigating,"-","-",UI rect table,"RectBases(.en) = tabel rect UI; parse P4"
+AM-026,"/window",.bin,4,TBL hdr ✓,"-","rect table",Partial,"hdr = [u32 size][u32 tableOff][u32 cnt][u32 sub]: RectUnitList(1181/972/39/1), s_rect(28869/20840/827/195), rectdesc(11036/8524/369/51) — koordinat pixel grid; semantik penuh P4","-",UI rect table,"RectBases(.en) + RectUnitList(butai.cmp)"
 AM-027,"/etc",.g,3,G skeleton [probe✓parser],"bin/g.mjs","skeleton JSON+matrix",Decoded,"archer skeleton.g 26 bone; seed rebuild 26/26 vs invBind ✓; buildLocal/animWorlds dipakai render","spec tellius skeleton + empiris",Skeleton,"parser juga untuk .g dlm pack unit"
 AM-028,"/etc",.gs,3,GS=body [parser],"bin/gs.mjs","mesh JSON",Decoded,"format sama dgn /ymu .gs (parser sama)","spec body",Model,"prop curb/curt/plane"
 AM-029,"/shop",.bin,3,TBL [probe],"-","tabel shop",Investigating,"header pola table; shopitem_h/m","-",Shop system,"parse P5"
