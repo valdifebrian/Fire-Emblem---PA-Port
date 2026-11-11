@@ -153,8 +153,82 @@ static GLuint g_vao = 0, g_vbo = 0; static int g_triCount = 0;
 static GLuint g_prog = 0, g_prog2 = 0;
 static std::vector<uint8_t> g_stmA, g_stmB;
 static stm_file g_sA, g_sB;
-static float g_yaw = 35.f, g_moveZ = 0.f;
+static float g_camYaw = 45.f, g_unitYaw = 45.f; /* deg; cam yaw FIXED isometric (FE9-style) */
+static int g_gx = 4, g_gy = 4;        /* unit tile coords 0..9 */
+static float g_ux = -5.f, g_uz = -5.f; /* unit world pos (tile centers: -45+10*g) */
+static float g_camFx = 0.f, g_camFz = 0.f; /* smoothed camera focus */
+static int g_path[48]; static int g_pathN = 0; /* queued tiles, flat (gx,gy) FIFO */
+static std::atomic<int> g_tapReq{0};
+static std::atomic<float> g_tapNX{0.f}, g_tapNY{0.f};
+static float g_scrW = 1.f, g_scrH = 1.f;
 static int g_frame = 0; static long long g_frameMs = 0;
+
+/* ---------- grid movement ----------
+ * Tile = 10 world units, grid lines at -50..50 step 10; tile (gx,gy) center =
+ * (-45+10gx, -45+10gy). Path = FIFO of tile coords. Unit yaw = atan2(dx,dz)
+ * (model front assumed +Z at identity; flip +180 if vision shows otherwise). */
+#define TILE_W 10.f
+static float tile_cx(int g) { return -45.f + 10.f * g; }
+static void path_push(int tx, int ty) {
+  if (g_pathN >= 22) return; /* spam cap */
+  g_path[2 * g_pathN] = tx; g_path[2 * g_pathN + 1] = ty; g_pathN++;
+}
+static void step_tile(int dgx, int dgy) { /* enqueue 1 tile step from queue tail */
+  int sx = g_gx, sy = g_gy;
+  if (g_pathN > 0) { sx = g_path[2 * (g_pathN - 1)]; sy = g_path[2 * (g_pathN - 1) + 1]; }
+  int nx = sx + dgx, ny = sy + dgy;
+  if (nx < 0 || nx > 9 || ny < 0 || ny > 9) return;
+  g_unitYaw = atan2f((float)dgx, (float)dgy) * 57.29578f;
+  path_push(nx, ny);
+}
+/* dpad button (1 L,2 R,3 U,4 D) -> best world axis so that motion matches the
+   screen direction under the current camera yaw (any yaw works, iso 45 too) */
+static void dpad_step(int code) {
+  float yr = g_camYaw * 0.017453292f;
+  float rx = cosf(yr), rz = -sinf(yr);            /* screen right in world xz */
+  float ux = -sinf(yr), uz = -cosf(yr);           /* screen up (view dir, xz) */
+  float s[4][2] = { {-rx, -rz}, {rx, rz}, {ux, uz}, {-ux, -uz} }; /* L R U D */
+  float* sv = s[code - 1];
+  int axes[4][2] = { {1,0}, {-1,0}, {0,1}, {0,-1} };
+  int best = 0; float bestDot = -1e9f;
+  for (int i = 0; i < 4; i++) {
+    float d = sv[0] * axes[i][0] + sv[1] * axes[i][1];
+    if (d > bestDot) { bestDot = d; best = i; }
+  }
+  step_tile(axes[best][0], axes[best][1]);
+}
+/* screen-normalized tap (y-down) -> ground tile via analytic ray (true pitched f) */
+static void tap_to_tile(float nx, float ny, int* tx, int* ty) {
+  float yr = g_camYaw * 0.017453292f, pit = 24.f * 0.017453292f, dist = 55.f;
+  float eye[3] = { g_camFx + sinf(yr) * cosf(pit) * dist, sinf(pit) * dist,
+                   g_camFz + cosf(yr) * cosf(pit) * dist };
+  float tgt[3] = { g_camFx, 8.f, g_camFz };
+  float f[3] = { tgt[0] - eye[0], tgt[1] - eye[1], tgt[2] - eye[2] };
+  float fl = sqrtf(f[0]*f[0] + f[1]*f[1] + f[2]*f[2]); f[0] /= fl; f[1] /= fl; f[2] /= fl;
+  float r[3] = { -f[2], 0.f, f[0] }; /* f x (0,1,0) = horizontal right */
+  float rl = sqrtf(r[0]*r[0] + r[2]*r[2]); r[0] /= rl; r[2] /= rl;
+  float up[3] = { r[1]*f[2] - r[2]*f[1], r[2]*f[0] - r[0]*f[2], r[0]*f[1] - r[1]*f[0] }; /* r x f */
+  float tanh = 0.41421f, asp = g_scrW / g_scrH;
+  float sx = (nx * 2.f - 1.f) * tanh * asp, sy = (1.f - ny * 2.f) * tanh;
+  float d[3] = { f[0] + r[0] * sx + up[0] * sy, f[1] + r[1] * sx + up[1] * sy, f[2] + r[2] * sx + up[2] * sy };
+  float dl = sqrtf(d[0]*d[0] + d[1]*d[1] + d[2]*d[2]); d[0] /= dl; d[1] /= dl; d[2] /= dl;
+  if (fabsf(d[1]) < 1e-3f) return;
+  float t = -eye[1] / d[1];
+  if (t <= 0.f) return;
+  float hx = eye[0] + d[0] * t, hz = eye[2] + d[2] * t;
+  int gx = (int)floorf((hx + 50.f) / TILE_W), gy = (int)floorf((hz + 50.f) / TILE_W);
+  if (gx < 0) gx = 0; if (gx > 9) gx = 9; if (gy < 0) gy = 0; if (gy > 9) gy = 9;
+  *tx = gx; *ty = gy;
+}
+static void queue_path(int tx, int ty) { /* x-first L-path from current tile */
+  int dx = tx - g_gx, dy = ty - g_gy, n = abs(dx) + abs(dy);
+  if (n > 18) { n = 18; } /* clamp long taps */
+  int cx = g_gx, cy = g_gy, sx = dx > 0 ? 1 : -1, sy = dy > 0 ? 1 : -1;
+  for (int i = 0; i < n; i++) {
+    if (cx != tx) cx += sx; else if (cy != ty) cy += sy; else break;
+    path_push(cx, cy);
+  }
+}
 
 static void load_asset(AAssetManager* am) {
   /* Persistent storage: loaders keep raw-data pointers (posT/name/etc);
@@ -309,6 +383,10 @@ static void audio_start() {
 // ---------- loop ----------
 static void draw_buttons(int w, int h);
 static void render(int w, int h) {
+  /* live size: surface resizes (bar hide / rotation / foldable) = GL adapts */
+  EGLint ww, hh;
+  if (eglQuerySurface(dpy, surf, EGL_WIDTH, &ww) && eglQuerySurface(dpy, surf, EGL_HEIGHT, &hh)
+      && ww > 0 && hh > 0) { w = ww; h = hh; }
   glViewport(0, 0, w, h);
   glClearColor(0.06f, 0.07f, 0.1f, 1.f);
   glEnable(GL_DEPTH_TEST);
@@ -320,9 +398,9 @@ static void render(int w, int h) {
   mat4 proj = {};
   proj.m[0] = f / aspect; proj.m[5] = f; proj.m[10] = (far + near) / (near - far);
   proj.m[11] = -1; proj.m[14] = 2 * far * near / (near - far);
-  float yaw = g_yaw * 3.14159265f / 180.f, pit = 20.f * 3.14159265f / 180.f, dist = 60.f;
-  float ex = sinf(yaw) * cosf(pit) * dist, ey = sinf(pit) * dist, ez = cosf(yaw) * cosf(pit) * dist;
-  float fx = 0, fy = 8, fz = g_moveZ;
+  float yaw = g_camYaw * 3.14159265f / 180.f, pit = 24.f * 3.14159265f / 180.f, dist = 55.f;
+  float ex = g_camFx + sinf(yaw) * cosf(pit) * dist, ey = sinf(pit) * dist, ez = g_camFz + cosf(yaw) * cosf(pit) * dist;
+  float fx = g_camFx, fy = 8, fz = g_camFz;
   // view = lookAt (column-major, GL)
   float zx = ex - fx, zy = ey - fy, zz = ez - fz;
   float zl = sqrtf(zx * zx + zy * zy + zz * zz); zx /= zl; zy /= zl; zz /= zl;
@@ -334,9 +412,14 @@ static void render(int w, int h) {
   view.m[1] = yx; view.m[5] = yy; view.m[9] = yz;  view.m[13] = -(yx * ex + yy * ey + yz * ez);
   view.m[2] = zx; view.m[6] = zy; view.m[10] = zz; view.m[14] = -(zx * ex + zy * ey + zz * ez);
   view.m[15] = 1;
+  g_scrW = (float)w; g_scrH = (float)h;
+  /* unit transform: Ry(unitYaw)*translate. model front assumed +Z (flip 180 if vision says so) */
+  float yc = cosf(g_unitYaw * 0.017453292f), ys = sinf(g_unitYaw * 0.017453292f);
   mat4 model = {};
-  model.m[0] = 1; model.m[5] = 1; model.m[10] = 1; model.m[15] = 1;
-  mat4 mvp = m4mul(proj, m4mul(view, model));
+  model.m[0] = yc; model.m[2] = -ys; model.m[5] = 1; model.m[8] = ys; model.m[10] = yc; model.m[15] = 1;
+  model.m[12] = g_ux; model.m[13] = 0; model.m[14] = g_uz;
+  mat4 vp = m4mul(proj, view);
+  mat4 mvp = m4mul(vp, model);
 
   if (g_triCount) {
     glUseProgram(g_prog);
@@ -347,10 +430,33 @@ static void render(int w, int h) {
     glBindVertexArray(g_vao);
     glDrawArrays(GL_TRIANGLES, 0, g_triCount * 3);
   }
-  if (g_gridN) {
+  if (g_gridN) { /* grid + cursor ignore unit model matrix */
+    glUniformMatrix4fv(glGetUniformLocation(g_prog, "uMVP"), 1, GL_FALSE, vp.m);
     glBindTexture(GL_TEXTURE_2D, g_texWhite);
     glBindVertexArray(g_gridVao);
     glDrawArrays(GL_LINES, 0, g_gridN);
+    /* tile cursor: bright square under unit */
+    static GLuint curVao = 0, curVbo = 0;
+    if (!curVao) {
+      glGenVertexArrays(1, &curVao); glGenBuffers(1, &curVbo);
+      glBindVertexArray(curVao); glBindBuffer(GL_ARRAY_BUFFER, curVbo);
+      glBufferData(GL_ARRAY_BUFFER, 48 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+      glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+      glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
+    }
+    float cx = tile_cx(g_gx), cz = tile_cx(g_gy), s = 4.4f, y0 = 0.2f;
+    float c[6][2] = { {cx-s,cz-s}, {cx+s,cz-s}, {cx+s,cz+s}, {cx-s,cz-s}, {cx+s,cz+s}, {cx-s,cz+s} };
+    float cv[48];
+    for (int i = 0; i < 6; i++) {
+      cv[i*8+0] = c[i][0]; cv[i*8+1] = y0; cv[i*8+2] = c[i][1];
+      cv[i*8+3] = 0; cv[i*8+4] = 1; cv[i*8+5] = 0; cv[i*8+6] = 0; cv[i*8+7] = 0;
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, curVbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof cv, cv);
+    glBindVertexArray(curVao);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
   }
   draw_buttons(w, h);
   eglSwapBuffers(dpy, surf);
@@ -418,7 +524,8 @@ static void build_button_geometry(int w, int h) {
 
 static void draw_buttons(int w, int h) {
   if (!g_prog2) return;
-  if (g_btnN == 0) build_button_geometry(w, h);
+  static int cw = 0, chh = 0;
+  if (g_btnN == 0 || cw != w || chh != h) { build_button_geometry(w, h); cw = w; chh = h; }
   glUseProgram(g_prog2);
   GLuint lu = glGetUniformLocation(g_prog2, "uScr");
   glUniform2f(lu, (float)w, (float)h);
@@ -436,6 +543,7 @@ static void draw_buttons(int w, int h) {
 
 static void on_input(int action) {
   switch (action) {
+    case 1: case 2: case 3: case 4: dpad_step(action); break; /* screen-direction -> world axis */
     case 5: g_mixB.store(1.f - g_mixB.load()); g_mixer.targetB.store(g_mixB.load()); break; // A = mix B on/off
     case 6: { /* B = cycle anim set */
       g_gaSel = (g_gaSel + 1) & 3;
@@ -475,6 +583,7 @@ static void touch_event(float nx, float ny, int action, int slot) {
     } else if (action == 0) {
       int prev = g_slotCode[slot].exchange(0);
       if (prev) g_held[prev].store(0);
+      if (slot == 0) { g_tapNX.store(nx); g_tapNY.store(ny); g_tapReq.store(1); } /* ground tap */
     }
   } else { /* up / cancel */
     int prev = g_slotCode[slot].exchange(0);
@@ -515,11 +624,28 @@ static void engine_main(AAssetManager* am) {
   while (true) {
     int a = g_action.exchange(0);
     if (a) on_input(a);
-    /* continuous held movement (rapid-fire capable: state, not events) */
-    if (g_held[1].load()) g_yaw -= 0.9f;
-    if (g_held[2].load()) g_yaw += 0.9f;
-    if (g_held[3].load()) g_moveZ += 0.09f;
-    if (g_held[4].load()) g_moveZ -= 0.09f;
+    /* ground tap -> path queue (consume request set by UI thread) */
+    if (g_tapReq.exchange(0)) {
+      int tx = -1, ty = -1;
+      tap_to_tile(g_tapNX.load(), g_tapNY.load(), &tx, &ty);
+      if (tx >= 0) { LOGI("tap->tile %d,%d (unit %d,%d)", tx, ty, g_gx, g_gy); queue_path(tx, ty); }
+    }
+    /* step along queued path: 1.4 world-units/frame ~ 0.35 s/tile @20fps */
+    if (g_pathN > 0) {
+      int tgx = g_path[0], tgy = g_path[1];
+      float tx = tile_cx(tgx), tz = tile_cx(tgy);
+      float dx = tx - g_ux, dz = tz - g_uz;
+      float dl = sqrtf(dx * dx + dz * dz);
+      if (dl < 1.45f) {
+        g_ux = tx; g_uz = tz; g_gx = tgx; g_gy = tgy;
+        for (int i = 1; i < g_pathN; i++) { g_path[2*i-2] = g_path[2*i]; g_path[2*i-1] = g_path[2*i+1]; }
+        g_pathN--;
+      } else { g_ux += dx / dl * 1.4f; g_uz += dz / dl * 1.4f; }
+    }
+    /* follow camera: FE9-style FIXED isometric yaw (no auto-rotate: keeps dpad
+       directions world-stable); only focus position trails the unit */
+    g_camFx += (g_ux - g_camFx) * 0.06f;
+    g_camFz += (g_uz - g_camFz) * 0.06f;
     // advance ga: ~12 anim fps
     g_frameMs++;
     if (g_frameMs >= 3) {
@@ -539,7 +665,7 @@ static void engine_main(AAssetManager* am) {
     long long now = ts.tv_sec * 1000000000LL + ts.tv_nsec;
     if (!fpsT0) fpsT0 = now;
     if (now - fpsT0 >= 2000000000LL) {
-      LOGI("fps=%d taps2s=%d yaw=%.0f z=%.0f", frames * 500000000LL / (now - fpsT0), tapr, g_yaw, g_moveZ);
+      LOGI("fps=%d taps2s=%d tile=%d,%d path=%d camYaw=%.0f", frames * 500000000LL / (now - fpsT0), tapr, g_gx, g_gy, g_pathN, g_camYaw);
       frames = 0; fpsT0 = now;
     }
     (void)last;
