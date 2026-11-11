@@ -38,4 +38,6 @@ time — kandidat benchmark dispos/AI engine port.
 - Temuan damage/UI → seed validasi BRV-BTL-002; cross-check vs emulator CAP1
   (Myrmidon Iron Sword Mt4 Hit91v100 Crit2 HP19, durability 46/35/35).
 
-Status pipeline: segmen Prologue+Ch01 (02:00-23:00) sedang diunduh.
+Status pipeline: **SELESAI batch-1** — prologue/Ch1/Ch2 terunduh+ter harvest
+(`fe9-re/out/yt/`, hasil → BRV-BTL-002 validasi + BRV-BTL-003 harvest).
+Bagian 2/3 (Ch16-23) & 3/3 (Ch24-end+trials) = DEFERRED sampai butuh (late-game AI/boss).
