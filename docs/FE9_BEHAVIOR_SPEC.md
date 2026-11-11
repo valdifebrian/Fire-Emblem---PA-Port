@@ -503,7 +503,8 @@ layar (OCR-vision), konsisten silang antar-frame.
 - **Roda radial peta** (tombol hint): pusat **A**; sekeliling **X, Y, L, R, Z, Start, stick**;
   label: **Map Menu | Status | Next Unit | Move | Cond | End | Back**.
   **Y = END TURN instant** ("End" hijau) — shortcut belum ada di emulator (Y→key `S`).
-- **Menu aksi peta** lengkap: [Attack|Items|Wall|Wait] tempur; **[Rescue|Items|Trade|Wait]**
+- **Menu aksi peta** lengkap: [Attack|Items|Shove|Wait] tempur (**"Wall" harvest Ch2 = MISA
+  BACA dari "Shove" — terkonfirmasi frame jernih Ch1 t236**); **[Rescue|Items|Trade|Wait]**
   unit bebas; **[Staff|Show|Item|Trade|Wait]** pemegang staff; **Voluntary** = retreat.
 - **Transisi fase**: banner **ENEMY PHASE** (merah) / **PLAYER PHASE** (biru) full-screen
   fade ~2 dtk; AI musuh **converging**: 3 brigand bergerak mengelilingi Oscar (target
@@ -519,3 +520,27 @@ layar (OCR-vision), konsisten silang antar-frame.
 - Implikasi P2: forecast 6-field + triangle halving + durability-0 bare-hand = tiga
   perilaku yang selama ini belum punya bukti visual; kini punya frame referensi di
   `fe9-re/out/yt/fx_*.png` (work-dir, tidak di-commit). [AM-056]
+
+### BRV-BTL-004 — Sampel tempur terpasang (pair-panel + outcome) — PARTIAL (data terkumpul, formula OPEN)
+Sumber: frame-accurate seek `fe9_ch1.mp4` (640×480, seek akurat pasca-temuan offset keyframe-seek
+= harvest lama bisa meleset ±6 dtk; selalu `-i` dulu baru `-ss` ATAU verifikasi isi frame).
+Tabel data: `docs/data/FE9_BATTLE_SAMPLES.csv` (NEW; 3 sampel terpasang + kolom lengkap).
+
+- **Pair-forecast panel (bukan 6-field tunggal)**: dua kolom berpasangan per label
+  `HP | Mt | Hit | Crit` — baris header BIRU (penyerang/pemain) di atas, MERAH (target) di
+  bawah; BOYD vs Bandit (Plain, Turn 1): Boyd 30/Mt11/Hit82/Crit2, Bandit 24/Mt7/Hit76/Crit0
+  (senjata sama Iron Axe dua-duanya). **Outcome arena: 24→13 (kena 11), 30→23 (kena 7)** ⇒
+  dmg Boyd→Bandit **11**, Bandit→Boyd **7**.
+- Kandidat interprestasi (belum DECIDED — butuh ≥3 sampel varian): `Mt` kolom = ATK final?
+  (11 dmg = Mt11 − Def0? tapi Bandit mt7 − Boyd def4 = 3 ≠ 7). **DEF terreno "Plain =
+  Avo0/Def0/Mdf0"** ⇒ Boyd Def4 dari mana? ⇒ Mt kolom BUKAN atk-final ATAU dmg punya
+  suku lain (rank/skill/Str terpisah). **JANGAN implement formula sebelum 3+ sampel fit.**
+- **Panel terrain kiri-atas live**: `[nama] Avo n | Def n | Mdf n` + objective `Clear Seize`
+  + `Turn n` = HUD BRV-MAP: terrain stat field trio = Avo/Def/Mdf (magic/defense physical?).
+- **Popup unit-info di peta (Oscar t251)**: `Lv 1 | HP 26/26 | Hit ~34 | Iron Lance | Lv1 Mov5
+  | Avo 11 Def 5 Crit 1` = field set info panel (beda dari pair panel).
+- Verifikasi ulang entri lama (frame jernih): menu = **Attack|Shove|Items|Wait** (Shove ✓),
+  [Rescue|Items|Trade|Wait] ✓, banner ENEMY PHASE ✓, dialog Mila "What's going on out
+  there? / Is that some sort of army?" ✓, EXP popup bar `x/19` pasca-kill ✓.
+- Langkah berikutnya: harvest Ch2 (fe9_ch2.mp4 sudah di workdir) cari ≥3 pair panel dengan
+  varian senjata/triangle + zoom 4x panel 6-field Boyd (re-read fcB t236) ⇒ fit formula.
