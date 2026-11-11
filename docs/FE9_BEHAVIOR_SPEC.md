@@ -347,7 +347,13 @@ Kesamaan pola: argc1 "setter" = `fn(GLOBAL, arg)` satu baris; return 1 = sukses 
 mesin script). Global BMAP `0x80330708` dipakai MapLoad+SallySet+RectBuild (SCT-005) ⇒ SATU
 konteks peta. Confidence: Strong (pseudocode langsung, tanpa runtime trace).
 Test: engine — MapLoad("map06_fort") + InstantSetMapCamera(bf_map.bin f32 × 0x10000) harus
-reproduce kamera intro arena (75c50c6). [AM-051]
+reproduce kamera intro arena (75c50c6).
+**Batch-3 kamera (impl `FUN_800bad9c/800bae4c/800babfc`)**: Focus(x,y)/InstantFocus(x,y) =
+fixed-point kord → `FUN_8014cbd8(fx,fy,BMAP)`; Focus di-resume tiap frame (flag&1 ⇒ commit
+`FUN_8001885c`) = **gerak kamera gradual via re-exec script per-frame**; InstantFocus = lompat
+langsung. FocusHardWait(0) = **koroutine 2-fase**: fase-1 tunggu settle→snapshot frame→
+pasang timer + gate `FUN_80013874`→return 1; fase-2 (resume, flag&1) commit kamera→return 0.
+Pola "HardWait" = blocking sleep lewat pump-flag, identik semantics SCT-005 wait-queue. [AM-051]
 
 ### BRV-SCT-007 — dispos_c.bin tail registry DECODED; loader universal .bin terbukti
 Parser aktual = `FUN_8003fccc→FUN_8003f87c(name,0)` (chain: boot `FUN_80005f04`→
