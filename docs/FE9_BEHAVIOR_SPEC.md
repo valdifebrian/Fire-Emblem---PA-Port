@@ -616,3 +616,57 @@ keyframe); pakai filter-stream (`-ss` + `-t` + `select`/`fps` setelah `-i`) = fr
   (window Ch2 1365-2486: buka status screen semua unit = ground truth stat awal roster).
 - Implikasi P2: engine WAJIB menghasilkan Mt/Hit/Crit forecast identik + cap 100 + panah
   triangle; `Ddg` panel = DEF. CSV `docs/data/FE9_BATTLE_SAMPLES.csv` +bari B005. [AM-057]
+
+### BRV-BTL-006 — HD batch-2 (window 7938-7990): level-up, inventaris, forecast ×2, Escape — DECODED (observasi)
+Satu chapter penuh (bridge/river, "Clear Escape", Turn 5) = panen widget terlengkap.
+
+- **FORECAST HD #2 (Titania vs Volke, bridge)**: `Titania Iron Axe ↓` vs
+  `Mercenary Volke Steel Sword ↑`: merah(Mt21/Hit55/Crit0) ↔ biru(Mt15×2/Hit100/Crit5).
+  Outcome: Volke kena 40 (CRIT kuning besar "40") → 21→0 MATI; Titania 33→21 = kena 12
+  = 21(Mt)−9(Def Titania) ✓ **Mt=kerusakan-final konfirmasi ke-3**. Titania 29→0 bar
+  berikutnya = fight vs Ralph terpisah (list musuh: `Ralph 30/31`, `Volke 21/21`).
+- **Kelas musuh = `Mercenary`** (bukan "Bandit" saja — variasi class musuh tampil di
+  forecast + status window).
+- **CRIT FORMULA OPEN**: panel Mt15 → crit tampil **40** (bukan 3×15−Def sederhana;
+  Volke DEF≈0-5). Butuh sampel multi-crit untuk fit.
+- **×2 DOUBLING**: badge di kolom biru (Titania 33 vs 21 = rasio 1.57 → GANDA;
+  Ike 20 vs 24 = tidak). Kandidat rule **HP ≥ 1.5×HP lawan** (2 sampel; FE9 resmi belum
+  dicocokkan — UNKNOWN, butuh 3+ sampel batas 1.5).
+- **POPUP UNIT + INVENTARIS (Titania)**: `Lv 1 EX96 | HP 33/33` (kuning) + jendela item
+  4-slot dengan **badge `E` slot aktif**: `E Steel Axe 30/35 / Iron Axe 34/45 /
+  Iron Sword 46/46(ABU-ABU) / Iron Axe 44/45`. **ABU = tidak bisa dipilih** (konteks
+  serang); durability ≥~½ = HIJAU (30/35, 34/45, 44/45 semua hijau) — threshold merah
+  belum kesamples (bekas: patah 0 = merah).
+- **STATUS/LVLUP SCREEN (HD native)**: header `Paladin  Lv 2` + grid 8-field
+  **`HP 34(+1↑) Sp 14 / Str 12 Lck 11 / Mag 4 Def 11 / Skill 13 Res 7`** + panah hijau
+  `+1 ↑` pada stat yang naik + potret besar berlapis (BRV-GFX-001 konsisten) + banner
+  nama. = format level-up = widget WAJIB engine. Stat ground-truth: **Titania Paladin Lv2:
+  HP34 Str12 Mag4 Skill13 Sp14 Lck11 Def11 Res7**.
+- **HUD kiri-atas (format universal, terkonfirmasi ulang)**: `[terrain] | Avo 0 Def 1 Mdf 0`
+  (Thicket Def=1!) + **OBJEKTIF `Clear Escape`** (tipe ke-3 setelah Clear Route/Clear Seize)
+  + `Turn n`. Unit popup `nama | Lv n | HP x/y | senjata`.
+- **RADIAL WHEEL penuh (HD)**: pusat **A**, ring: `Map Menu (Z) / Status (Y) /
+  Next Unit (X) / Move (A) / Cond / B`; state menu aksi: hint `Cancel B / End A`.
+- **Kursor ring warna**: biru=unit pemain, merah=musuh, ungu=terpilih, +bracket putih
+  +panah kuning tujuan; tile jangkauan serang = overlay ORANYE.
+- **"Escape!"** = efek popup saat unit keluar peta lewat tile escape (widget + objective
+  Clear Escape berpasangan).
+- Implikasi P2: engine wajib: 3 tipe objective (Route/Seize/Escape), tile escape,
+  level-up +1↑ screen, inventaris 4-slot + E-badge + grey-out, ring kursor 4 warna. [AM-058]
+
+### BRV-SYS-002 — MENU OPSI game (HD) = daftar setting engine — DECODED (observasi)
+Opsi in-game (pause→Options), layar 9-baris scroll (+baris palet saat scroll),
+navigasi **C-stick/D-pad + A**; hint `Select Topic / Select Content / B Back`:
+1. `Animation:  On | Off | Individual`
+2. `Combat Camera:  Normal | Fixed`
+3. `Game Speed:  Normal | Fast`
+4. `Message Speed:  Slow | Normal | Fast | Max`
+5. `Grid Thickness:  [SLIDER nilai kontinu]` (bukan enum!)
+6. `Terrain / Goal:  On | Off`
+7. `Unit Window:  On | Off`
+8. `Combat Window:  Simple | Detailed | Off`
+9. `Message Display:  On | Off`
+10. `Grid Line Color:  [palet swatch 4×4]`
+11. `Cursor Color:  [palet swatch 4×4]`
+Help bar = deskripsi field per-baris (`"Change type of combat window..."`).
+= spesifikasi layar SETTINGS Android PoC = 1:1 dengan daftar ini [AM-058].
