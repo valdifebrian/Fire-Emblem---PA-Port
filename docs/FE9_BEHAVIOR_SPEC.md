@@ -349,4 +349,22 @@ konteks peta. Confidence: Strong (pseudocode langsung, tanpa runtime trace).
 Test: engine — MapLoad("map06_fort") + InstantSetMapCamera(bf_map.bin f32 × 0x10000) harus
 reproduce kamera intro arena (75c50c6). [AM-051]
 
+### BRV-SCT-007 — dispos_c.bin tail registry DECODED; loader universal .bin terbukti
+Parser aktual = `FUN_8003fccc→FUN_8003f87c(name,0)` (chain: boot `FUN_80005f04`→
+`FUN_8002d548`→load zmap/always/dispos.cmp(mode 8)+dispos_c.bin(mode 0)+zmap/common.cmp).
+Struktur file (semua BE): hdr [size=0x3E97][tailOff=0x3118][cA=639][cB=36][0] lalu payload
+[0x20..0x2A54) u32[0x20]=0x2A54 len + rekaman biner dengan string inline (PID_/IID_/SEQ_/
+MTYPE_) dan u32-ref ke pool-A (0x2A54..0x3118). TAIL: [pool-A strings "ID_TEMP_ON_DIE",
+"SID_TURNREGENE"][tabel-639-u32 = INDEKS SORTED 631 offset string → payload (gap dominan
+72×82 + 20×64 = jarak antar string dlm rekaman)][B-table 36 pasang (key→offset rekaman,
+nameOff→pool-B @0x3C54 = B0+cB*8+0x20)][pool-B 36 nama script].
+**pool-B = registry script per-karakter**: always_T_03/05/07/10/15, always_c16, always_date_c,
+always_dbg_12, always_dbg_all_c, always_dbg_mik_02..37 (Micaiah), always_kariru, always_lete
+(Lethe), always_mordy (Mordehaus), always_rarugo, always_saza (Sica) — **nama kode internal
+dev** terkonfirmasi; tiap B-pair mengikat satu rekaman unit payload ↔ script always_* via
+intern `FUN_8000d3ec`. Loader me-relok pointer-slot list (A) saat first-parse per nama file
+(cache-flag 7-byte nama di hdr+0x18). Grammar rekaman payload (120B/stride tak konsisten;
+S=72 refHits 94/147 terbaik) = OPEN → perlu consumer runtime (FUN_80016498 stride-0x280).
+Confidence: Strong (parser pseudocode + verifikasi byte-exact 631/639 + B0 presisi). [AM-051]
+
 
