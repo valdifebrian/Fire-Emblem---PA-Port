@@ -542,5 +542,20 @@ Tabel data: `docs/data/FE9_BATTLE_SAMPLES.csv` (NEW; 3 sampel terpasang + kolom 
 - Verifikasi ulang entri lama (frame jernih): menu = **Attack|Shove|Items|Wait** (Shove ✓),
   [Rescue|Items|Trade|Wait] ✓, banner ENEMY PHASE ✓, dialog Mila "What's going on out
   there? / Is that some sort of army?" ✓, EXP popup bar `x/19` pasca-kill ✓.
-- Langkah berikutnya: harvest Ch2 (fe9_ch2.mp4 sudah di workdir) cari ≥3 pair panel dengan
-  varian senjata/triangle + zoom 4x panel 6-field Boyd (re-read fcB t236) ⇒ fit formula.
+- **PANEL 6-FIELD TERBACA JERNIH (Ch2 t604.0, crop 2.5x)** — label ASLI:
+  `Atk 13 | Hit 111 | Avo 19 / Crit 4 | Ddg 8 | Rng 1` ⇒ field ke-5 = **"Ddg"** dan ke-6 =
+  **"Rng"** (RANGE=1 dua-duanya) — harvest lama Ch1 `"Dmg 5 | Recv 1"` = MISA-BACA
+  `Ddg n | Rng 1` ⇒ klaim "damage received terbaca" DI-CABUT; tabel CSV B003 dikoreksi.
+  Interpretasi Ddg: kandidat DEF-unit (Boyd-Ch1: Ddg4 ≈ DEF4 popup lama; Ike: Ddg8) —
+  tapi Ddg muncul di panel penyerang; BELUM DECIDED.
+- **Widget kedua**: popup compact biru (Ike) t604.5 = `[HP]22 | 12 | 100 | 4` baris tunggal
+  (label terpotong) — beda angka dari panel kuning (13/111/4) = DUA widget beda sumber;
+  jangan campur. Kemungkinan compact = ATK/Hit/Crit TANPA koreksi vs kuning DENGAN.
+- Sampel B004 CSV: Ike(Lv5,Hp22,Inv Iron Sword 30/46+46/46×2+Steel Axe 43/45) vs
+  Bandit(Lv3,HP23,Steel Axe): arena bandit 23→16→11 (dua tebas 7+5), Ike counter MISS
+  (HP22 tetap). Triangle panah ↑Ike ↓Bandit terlihat di popup compact.
+- **KOREKSI ENTTRI LAMA**: BTL-003 `Dmg5/Recv1` = mislabel (lihat di atas); `Wall`→`Shove`
+  sudah dikoreksi di BRV-MAP section.
+- Langkah berikutnya: harvest Ch2 window 380-400+540-560+660-690 (arena+status screen
+  Oscar/Boyd terlihat di grid) cari varian triangle (lance-vs-axe) + zoom pair-panel Ch1
+  fcB t237 untuk menguji Mt kolom = Ddg? ⇒ fit formula dengan ≥4 sampel.
