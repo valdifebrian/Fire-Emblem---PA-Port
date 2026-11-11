@@ -330,4 +330,23 @@ A dua-kali-jarak-3s, atau Z (tombol tidak terpakai FE9) sbg alternate-confirm.
 Status: Open (belum Confirmed). Implikasi: capture tempur manual T-RE-CAP1 tetap jalur
 utama; harness belum bisa auto-play stage.
 
+### BRV-SCT-006 — Semantik native batch-2 (unit/map/camera/env) — CONFIRMED (pseudocode)
+Dari `out/ghidra/decAll/FUN_*.c` (impl ptr katalog), argc = switch `FUN_80011a5c`:
+- **UnitGetByPID** (1): `FUN_80016bdc(pid)` lookup unit global; NOT-found ⇒ 0; ketemu ⇒
+  **byte unit+0x198** (flag eksistensi/status, BUKAN pointer). Script pakai sbg truthy.
+- **MapLoad** (1): `FUN_8014c7c0(BMAP=&DAT_80330708, name)` → intern nama peta
+  (`map06_fort` dkk, cocok `bf_map.bin`), load model g/gs; lalu `FUN_80013864()` flush scene.
+- **InstantDispos** (1): `FUN_80105f0c(pid,0,0)` = spawn instant dispos sesuai rekaman
+  posisi di `dispos_c.bin` (arg = nama PID_/IID_ pool).
+- **SallySetByGroup** (1): `FUN_8014cf48(BMAP, group)` = aktifkan sally per nomor grup.
+- **InstantSetMapCamera** (3): arg x,y,z = **fixed-point** — `(0x43300000_full | (u32^0x80000000))
+  − basis` = konversi int→float klasik; x→cam+4/+0x10, y→+8/+0x14, z→`FUN_800193cc(f)`
+  (zoom/tinggi); lalu `FUN_800187f0()` commit kamera. Port: parse arg kamera sbg 0x10000-scale.
+- **ENVSilentOn** (1): clamp ≥0 → `FUN_801455b8(n)` level senyap ambient (kanal/level n).
+Kesamaan pola: argc1 "setter" = `fn(GLOBAL, arg)` satu baris; return 1 = sukses (result slot
+mesin script). Global BMAP `0x80330708` dipakai MapLoad+SallySet+RectBuild (SCT-005) ⇒ SATU
+konteks peta. Confidence: Strong (pseudocode langsung, tanpa runtime trace).
+Test: engine — MapLoad("map06_fort") + InstantSetMapCamera(bf_map.bin f32 × 0x10000) harus
+reproduce kamera intro arena (75c50c6). [AM-051]
+
 
