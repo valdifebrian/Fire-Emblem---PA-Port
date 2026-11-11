@@ -471,3 +471,38 @@ sweep loose 437 lalu. Semua ter-parse `bin/dbx.mjs` → `out/dbx_core/*.json`.
   CSV spawn/pool; auto-deteksi grid (108/112) + region u32 sebelum string (anchor
   timestamp + scan + kandidat align). Tervalidasi: always 100×108; bmap01 4×112;
   bmap02 3; bmap05 6; bmap12 **107 unit**; bmap20 49 (semua stride 108 varian umum). [AM-054]
+
+### BRV-BTL-003 — Harvest video Ch1+Ch2: forecast tempur, triangle damage, rescue UI — CONFIRMED (observasi)
+Sumber: longplay `1B95v-cnXVo` segmen `fe9_ch1.mp4` (video 09:25-22:35) + `fe9_ch2.mp4`
+(22:35-35:00), 480p, frame-accurate via ffmpeg fps=4 montase. Semua angka = pembacaan
+layar (OCR-vision), konsisten silang antar-frame.
+
+- **Combat forecast panel lengkap: `ATK 13 | Hit 92 | Ava 10 | Crt 3 | Dmg 5 | Recv 1`**
+  + Exp bar per-unit — 6 field itu = output formula yang engine port WAJIB hasilkan identik.
+- **Triangle damage TERUKUR**: Oscar Iron Lance HP26 vs Bandit Iron Sword HP18:
+  lance 1 hit = **10 dmg** (18→8); counter sword = **1 dmg** (26→25) — sword vs lance
+  = disadvantaged (atk halved, Mt kecil) → konfirmasi teks tutorial Ch1 VERBATIM:
+  *"Sword vs axe: advantage. Axe vs lance: advantage. Lance vs sword: advantage."*
+- **Durability → 0**: bar petang "14/0 Iron Axe" tampil + combat tetap jalan
+  (17/26, 16/0, 13/0, 0/26) = senjata patah = **fight bare-handed** (bukan auto-equip).
+- **HUD unit-info panel (map)**: `nama | Atk | HP cur/max | Def? | senjata` live +
+  toggle "Car Stat"/"Cursor Info"; `Plain Avo 0` / `Th... 0/14` terrain readout kiri-bawah.
+- **Roda radial peta** (tombol hint): pusat **A**; sekeliling **X, Y, L, R, Z, Start, stick**;
+  label: **Map Menu | Status | Next Unit | Move | Cond | End | Back**.
+  **Y = END TURN instant** ("End" hijau) — shortcut belum ada di emulator (Y→key `S`).
+- **Menu aksi peta** lengkap: [Attack|Items|Wall|Wait] tempur; **[Rescue|Items|Trade|Wait]**
+  unit bebas; **[Staff|Show|Item|Trade|Wait]** pemegang staff; **Voluntary** = retreat.
+- **Transisi fase**: banner **ENEMY PHASE** (merah) / **PLAYER PHASE** (biru) full-screen
+  fade ~2 dtk; AI musuh **converging**: 3 brigand bergerak mengelilingi Oscar (target
+  lingkaran biru), multi-attack dari 4 arah fasa musuh.
+- **Death**: unit kalah = efek **hijau "MIA!"** + partikel (bukan sprite jatuh) + "MIA" text.
+- **Rescue**: ikon **tangan hijau** di unit rescued; Mila NPC punya panel status sendiri
+  (Atk 15, HP 22/10 tampil saat rescuer info dibuka).
+- **Level-up**: popup `Ranger Lv 3` **HP22 Str6 Sk5? Spd? Lck5 Def5 Res1 Mov5** + animasi
+  panah-ke-naik + angka hijau (data RNG sample: Lv2→HP22 dari Lv2 HP21).
+- **Roster counter**: teks "You have used 5 of your 6 units" (Ch2 = limited-unit).
+- **Cannon**: objek peta bertuliskan "Cannon" + **panah rute putih lebar** preview move
+  (BRV-MAP: path arrow = polyline dengan belokan 90°).
+- Implikasi P2: forecast 6-field + triangle halving + durability-0 bare-hand = tiga
+  perilaku yang selama ini belum punya bukti visual; kini punya frame referensi di
+  `fe9-re/out/yt/fx_*.png` (work-dir, tidak di-commit). [AM-056]
