@@ -371,6 +371,13 @@ dev** terkonfirmasi; tiap B-pair mengikat satu rekaman unit payload ↔ script a
 intern `FUN_8000d3ec`. Loader me-relok pointer-slot list (A) saat first-parse per nama file
 (cache-flag 7-byte nama di hdr+0x18). Grammar rekaman payload (120B/stride tak konsisten;
 S=72 refHits 94/147 terbaik) = OPEN → perlu consumer runtime (FUN_80016498 stride-0x280).
-Confidence: Strong (parser pseudocode + verifikasi byte-exact 631/639 + B0 presisi). [AM-051]
+Confidence: Strong (parser pseudocode + verifikasi byte-exact 631/639 + B0 presisi).
+**UPDATE grammar payload CLOSED (0x6C)**: payload [0x24..0x2A54) = 10.800 B = **tepat
+100 record × sizeof 0x6C** (cocok `FE9_AI_NOTES.md`/StanH `dispos`); 100/100 record
+ber-u32-ref ke pool-A (0x2A54..0x3118) = validasi independent dua sumber. "overlap" lama
+= stride salah. Field x/y +5C/+5D = 0 di `zmap/always` layer (bukan placement peta —
+file ini layer always, wajar); semantik per-byte final = gate M-C6 decomp lane
+(`DisposFileDecode @0x80107B54` byte-match). Status: Partial→**Decoded (structure)**,
+field-semantics menunggu M-C6. [AM-052]
 
 
