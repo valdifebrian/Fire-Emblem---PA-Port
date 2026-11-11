@@ -728,3 +728,17 @@ Dari decompil impl (decAll) + katalog:
   UnitMoveDir(2) UnitTransform(2) UnitQueryJID(2) UnitAddItem(2) UnitGetWeaponCount(1)`
   — semantik per-arg = batch berikutnya (pseudocode tersedia).
 - CSV field-unit runtime: `docs/data/FE9_UNIT_RUNTIME.csv`. [AM-060]
+
+### BRV-SCT-005c — SEMANTIK NATIVE batch-2: handle index + path digit + wrapper BMAP — DECODED
+- **HANDLE = NOMOR SLOT 1-BASED**: `UnitMoveDir(h, path)`: slot = `(h&0xFF − 1)×0x280 +
+  0x802B14E4` (cek PID≠0) → **handle = index+1** (0 = invalid) — genap dgn GetByPID
+  mengembalikan `slot[0x198]` = nomor itu. Kontrak engine: handle = u8 index slot.
+- **PATH = STRING DIGIT NOPAD**: `UnitMoveDir(h,"444442")` — digit ASCII kode arah
+  (4=kiri 6=kanan 2=bawah 8=atas?? — set digit persis masih Partial; string C01 `"4"`,
+  `"6666"`, `"444442"` dipakai sbg arg path). Enqueue rekaman gerak ke queue
+  `DAT_80296f90` (sama spt UnitWalkDir, field 0x30-0x3C).
+- **InstantDispos(pid)** → `FUN_80105f0c(pid,0,0)` = despawn instan per-PID.
+- **SallySetByGroup(g)** → `FUN_8014cf48(&BMAP=0x80330708, g)` = set kelompok sally.
+- **MapLoad(name)** → `FUN_8014c7c0(&BMAP, name)` (wrapper 1-liner, return 1).
+- Keluarga wrapper BMAP-objek = pola `FUN_8014c***(&0x80330708, args)`; engine memodel
+  BMAP sbg objek dgn metode load/sally/camera. [AM-061]
