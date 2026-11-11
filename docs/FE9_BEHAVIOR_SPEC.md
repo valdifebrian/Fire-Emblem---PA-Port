@@ -381,3 +381,31 @@ file ini layer always, wajar); semantik per-byte final = gate M-C6 decomp lane
 field-semantics menunggu M-C6. [AM-052]
 
 
+
+### BRV-BTL-002 — Tabel inti `zdbx/zdbx/` DECODED: timing/animasi tempur + fisika proyektil + tabel nama — CONFIRMED (data)
+Sumber: `//zdbx.cmp` (133.524 B) → 449 entri; 11 tabel inti `zdbx/zdbx/` sudah TIDAK ikut
+sweep loose 437 lalu. Semua ter-parse `bin/dbx.mjs` → `out/dbx_core/*.json`.
+
+- **param.dbx = 1 record 99 key SJIS-commented = spesifikasi lengkap penyajian tempur**
+  (satuan frame [INFERENCE: 60fps GC]): `WaitInit=120` (2 s intro tempur), `WaitDie1=20`,
+  `WaitLvUp1=20`, `WaitExp=30`, `WaitShoot1=20`, `WaitAtk2=20` (jeda pra-counter 2005-01-20);
+  quake kamera: atk 0.5 / crit & skill 1.8 / magic 1.2 / armor-walk 0.2; gauge HP:
+  scale-num 2.5@0.4, shrink 0.16, shake normal 4.0@1.0×60f, shake crit 8.0@1.2×120f,
+  flash 255@−8.4×74f, flicker 0.04; damage-recoil 3.0@0.4 + flash 204@−12.4×90f;
+  avoid retreat 0.8@1.0; **finishDist 24.0** (menembus lawan saat finish);
+  **proyektil**: knife 2.8; panah 6.0; tombak balistik (v0 5.0, g −0.05, spin 0.5);
+  **kapak bumerang** (v0 4.5, accel −0.07, rot 70/f, wave 3.2@−0.12, kembali 1.0);
+  hitDist 2.8; blend animasi: default 15f, stand 20f, run 5f (input BRV-ANM);
+  magic fade 60@20f; fade dialog boss/mati/levelup ±0.06; jump-flag hewan 51/52/53/54;
+  sword-flash flag 58/59 → `EID_LENSFLARES2/1`; kamera samping +40, zoom 60..500;
+  InitPos L/R ±20.0; wallDist 90; AttackDistScale 1.0.
+- **skill.dbx** = nama skill SJIS → id trigger (`奥義・流星→EID_K_SP_SSTAR`, 太陽→SP_SUN,
+  月光→SP_MOONL, カウンター→EID_K_COUNTER, 見切り…; `混沌/デビル/勇者→"no"` = non-EID).
+- **classList.dbx** = kelas SJIS → kode model (`重歩兵→amr1`, `ソードマスター(女)→smf1`;
+  cocok folder `out/amr1x`), **jobList.dbx** = `JID_* → model(+PID override)` 
+  (`JID_ARMOR:"PID_CHAP=amr2"`), **weaponList.dbx** = nama → `IID_*` (ラグネル→RAGNELL),
+  **effectList.dbx** = efek → `EID_*`, **camera.dbx** = 6 preset cam tempur
+  (cam0 eyeCenter, camCharaL0 dist50 offs[0,7,0] rot[6,110,0]), **battle/system.dbx** =
+  daftar layer 2D (lensflare/Window/Caption/desktop), bgList/lensflare.dbx = aset.
+- Gapatis: rumus damage angka TETAP butuh decomp (gForgeData ×5/×3) — tabel ini menutup
+  *timing, reaksi, kamera, fisik, pemetaan nama* tanpa capture. [AM-053]
