@@ -19,11 +19,12 @@
 | Metrik | Nilai |
 |---|---|
 | Test PASS / total | **1 / 53** — T-BASE-001 PASS 2026-11-10 (fresh clone → generator → diff normalisasi-EOL nol; `.gitattributes eol=lf` ditetapkan) |
-| BRV terverifikasi | 29 entri (12 seed + SCT×8 (incl **SCT-004 native catalog 390/390**, SCT-005 protokol wait/arg/antrean, SCT-006 semantik native batch-2, **SCT-007 dispos_c payload 100×0x6C CLOSED**, **SCT-008 dispos per-peta: pack c/h/m/n + grid 108/112 + Ch1 4 unit IKE/MIST/BOLE/GREIL**) + **BTL-002 tabel inti zdbx: timing tempur+kapak-bumerang dkk+nama→ID** + **BTL-003 video harvest Ch1-2: forecast 6-field ATK/Hit/Ava/Crt/Dmg/Recv, triangle-halving TERUKUR 10v1, weapon-0 bare-hand, Y=End, radial wheel, rescue hand, MIA death** + CAP-001 input-channel+peta-800ms + EVT-002 + AUD-002/003 + FNT-001 + GFX-001 + ANM-004) — 3 domain masih `Unknown` penuh |
+| BRV terverifikasi | 30 entri (12 seed + SCT×8 (incl **SCT-004 native catalog 390/390**, SCT-005 protokol wait/arg/antrean, SCT-006 semantik native batch-2, **SCT-007 dispos_c payload 100×0x6C CLOSED**, **SCT-008 dispos per-peta: pack c/h/m/n + grid 108/112 + Ch1 4 unit IKE/MIST/BOLE/GREIL**) + **BTL-002 tabel inti zdbx: timing tempur+kapak-bumerang dkk+nama→ID** + **BTL-003 video harvest Ch1-2: forecast 6-field ATK/Hit/Ava/Crt/Dmg/Recv, triangle-halving TERUKUR 10v1, weapon-0 bare-hand, Y=End, radial wheel, rescue hand, MIA death** + CAP-001 input-channel+peta-800ms + **INP-002 arsitektur input Android+jebakan NativeActivity** + EVT-002 + AUD-002/003 + FNT-001 + GFX-001 + ANM-004) — 3 domain masih `Unknown` penuh |
 | Chapter parity | 0/30 |
 | Milestone P1 | (1) MODEL+ANIMASI visual ✓ archer; (2) SCRIPT VM ✓ (C00 Opening0 terbaca data); (3) **BGM DECODED ✓** — `bin/stm.mjs` → WAV 32kHz stereo (boss1 61.1s); (4) **FONT DECODED ✓** — `bin/gcf.mjs` → PGM atlas+CSV, fe/talk/alpha/biggana/system(.gcf+.cms); (5) **TEXTURE+SKIN ✓** — C4 fixed, binding `tex_<idx>` + layered face + bone-skinning (AM-009/047 CLOSED, BRV-GFX-001/ANM-004) |
-| Gate P1→P2 | **font `.gcf` ✅ Decoded (AM-024)** + BGM ✅; tinggal: PoC-inputs + T-RE-CAP1 (SE gcfesnd = opsional P1, target P2) |
-| Fase aktif | **P1** |
+| Milestone P2 (PoC engine) | **2026-11-11: INTERACTIVE DI PERANGKAT** — `poc/` (C++20+GLES3+Oboe+JNI, Activity biasa): fpk loader, .g/.gs/.ga + grid 10m + BGM 2-stream + touch overlay; **camera orbit+lookAt benar (bug eye-translation = "quad raksasa" CLOSED)**, **input sentuh live** (`taps2s=1, yaw 35→112, z 0→3` — swipe panah: held-state, 4-arah + putar; rapid-fire capable karena state, bukan event). **Pitfall Android-15: NativeActivity+SurfaceView = `touchableRegion=<empty>` = input hilang senyap → cutover Activity biasa + OnTouchListener (BRV-INP-002)** |
+| Gate P1→P2 | **font `.gcf` ✅ Decoded (AM-024)** + BGM ✅; PoC **jalan**; tinggal: T-RE-CAP1 (SE gcfesnd = opsional P1, target P2) |
+| Fase aktif | **P1 sisa + P2 PoC berjalan paralel** |
 
 ## Gap tertinggi
 1. ~~Blend-skinning~~ **CLOSED 2026-11-10**: bit0=bone-index (pipeline g/ga membuktikan posing; BRV-ANM-004); bit1=palette multi-slot = P2-detail.

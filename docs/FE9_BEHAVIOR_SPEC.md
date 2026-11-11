@@ -348,6 +348,19 @@ boss-world (bukan musuh terseleksi); fasa musuh punya dialog idle AI per unit.
 Harness KINI BISA main-peta penuh (gerak+menu+fasa). Capture animasi tempur masih menunggu
 engagement (boss scripted mendekat) — burst 70 s aktif. [AM-055]
 
+### BRV-INP-002 — Arsitektur input Android yang terbukti + jebakan NativeActivity — CONFIRMED
+Engine Android PoC (`poc/`): **Activity biasa + SurfaceView + View.OnTouchListener → JNI
+`nativeTouch(nx,ny,action,pointerId)`** (koordinator ternormalisasi view == viewport GL; letterbox
+identik dua sisi). **JEBATAN MATI: `NativeActivity` (manifest `android.app.lib_name`) + SurfaceView
+di Android 15 = window `touchableRegion=<empty>` (frame 0×0 di dumpsys input) → SEMUA tap senyap
+dibuang dispatcher** (fokus window OK, queue ter-attach looper, callback tak pernah api; swipe/tap
+adb maupun fisik). Root-cause dispatcher tak dikejar — cutover ke jalur view-tree yang terjamin.
+**Kontrak input game (REQ dari produk): state ditekan, bukan edge-event** — loop engine membaca
+`g_held[code]` tiap frame: panah L/R = orbit yaw ±0.9°/frame, F/B = geser ±0.09 unit/frame;
+tombol aksi = edge `g_action` (consumed) + `g_tapsIn100ms` untuk rapid-fire. Multi-touch slot 16×
+(`g_slotCode`), hit-test radius 0.09×1.26. Bukti perangkat: `input swipe` panah → `yaw 35→64→112`,
+`z 0→3`, `taps2s=1`; panah B & tombol A/B memakai jalur kode identik. [AM-056][P2]
+
 ### BRV-SCT-006 — Semantik native batch-2 (unit/map/camera/env) — CONFIRMED (pseudocode)
 Dari `out/ghidra/decAll/FUN_*.c` (impl ptr katalog), argc = switch `FUN_80011a5c`:
 - **UnitGetByPID** (1): `FUN_80016bdc(pid)` lookup unit global; NOT-found ⇒ 0; ketemu ⇒
