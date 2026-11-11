@@ -556,6 +556,15 @@ Tabel data: `docs/data/FE9_BATTLE_SAMPLES.csv` (NEW; 3 sampel terpasang + kolom 
   (HP22 tetap). Triangle panah ↑Ike ↓Bandit terlihat di popup compact.
 - **KOREKSI ENTTRI LAMA**: BTL-003 `Dmg5/Recv1` = mislabel (lihat di atas); `Wall`→`Shove`
   sudah dikoreksi di BRV-MAP section.
+- **Panen unit/terrain Ch2 t546-566 (compact popups, mont_e550)**:
+  - **Objektif peta Ch2 = `Clear Route`** (bukan Seize) — field objective HUD kiri-atas
+    `Plain|Thicket Avo? Def? Mdf? / Clear Route / Turn n` = format universal.
+  - **Terrain baru: `Thicket`** (semua terrain punya trio Avo/Def/Mdf; Plain = 0/0/0).
+  - Popup compact per unit: `Rhea Lv4 HP22/22`, `Titania Lv3 HP33/33 Steel Axe`,
+    `Oscar Lv3 HP26/26 Iron Lance` — format [Nama Lv HP/max + senjata] = widget BRV-BTL
+    "compact" yang sama dg popup tempur (bukan panel kuning).
+  - **EXP popup `Exp ▓▓ 11 → 22`** (bar + angka, kumulatif dua kill); menu unit non-tempur
+    `[Items|Wait]` (tanpa Attack/Shove).
 - Langkah berikutnya: harvest Ch2 window 380-400+540-560+660-690 (arena+status screen
   Oscar/Boyd terlihat di grid) cari varian triangle (lance-vs-axe) + zoom pair-panel Ch1
   fcB t237 untuk menguji Mt kolom = Ddg? ⇒ fit formula dengan ≥4 sampel.
