@@ -6,9 +6,11 @@
 //  (4) audio: boss1.stm looped + boss2.stm mixed (gain toggle) via Oboe
 //  (5) input: touch overlay events from Kotlin via JNI + keyboard path (desktop TODO)
 // Plus fps log + thermal read = REQ-TIME/PERF hooks.
-#include <android/native_activity.h>
+#include <android/native_window_jni.h>
 #include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
 #include <android/log.h>
+#include <jni.h>
 #include <EGL/egl.h>
 #include <GLES3/gl3.h>
 #include <oboe/Oboe.h>
@@ -39,7 +41,6 @@
 
 static std::atomic<int> g_action{0};      // 0 none, 1..8 dpad/a/b edge
 static std::atomic<float> g_touchYaw{0.f};
-static std::atomic<long long> g_lastTapNs{0};
 static std::atomic<int> g_tapsIn100ms{0};
 static std::atomic<float> g_mixB{0.f};    // gain of stream B 0..1
 
@@ -79,8 +80,12 @@ static const char* FS = R"(#version 300 es
 precision mediump float; in vec3 vN; in vec2 vUV; uniform sampler2D uTex; out vec4 o;
 void main(){ vec3 c=texture(uTex,vUV).rgb; float l=0.35+0.65*max(dot(normalize(vN),normalize(vec3(0.4,0.8,0.6))),0.0); o=vec4(c*l,1.0); })";
 static const char* VS2 = R"(#version 300 es
-layout(location=0) in vec2 aPos; layout(location=1) in vec2 aUV; uniform mat4 uMVP; out vec2 vUV;
-void main(){ vUV=aUV; gl_Position=uMVP*vec4(aPos,1.0); })";
+layout(location=0) in vec2 aPos; layout(location=1) in float aIdx;
+uniform vec2 uScr; uniform float uHeld[8]; out float vH;
+void main(){ vH=uHeld[int(aIdx)]; gl_Position=vec4(aPos.x/uScr.x*2.0-1.0, 1.0-aPos.y/uScr.y*2.0, 0.0, 1.0); })";
+static const char* FS2 = R"(#version 300 es
+precision mediump float; in float vH; out vec4 o;
+void main(){ o=mix(vec4(0.45,0.55,0.65,0.30),vec4(0.95,0.75,0.30,0.60),vH); })";
 
 static GLuint makeProgram(const char* vs, const char* fs) {
   GLuint p = glCreateProgram();
@@ -93,6 +98,13 @@ static GLuint makeProgram(const char* vs, const char* fs) {
     glAttachShader(p, s);
   }
   glLinkProgram(p);
+  GLint link = 0;
+  glGetProgramiv(p, GL_LINK_STATUS, &link);
+  if (!link) {
+    char log[1024];
+    glGetProgramInfoLog(p, sizeof log, nullptr, log);
+    LOGI("LINK FAIL prog=%u: %s", p, log);
+  }
   return p;
 }
 
@@ -134,16 +146,23 @@ static mat4 m4mul(const mat4& a, const mat4& b) {
 static std::vector<uint8_t> g_fpkg;
 static fpk_file g_fpak;
 static g_model g_g; static gs_body g_gs; static ga_anim g_ga;
-static tpl_file g_tex; static uint32_t g_texId = 0;
+static ga_anim g_gas[4]; static int g_gaSel = 0;
+static const char* const GA_LABEL[4] = {"move_n", "move_bw", "wait_n", "wait_bw"};
+static tpl_file g_tex; static tpl_file g_texA; static uint32_t g_texId = 0;
 static GLuint g_vao = 0, g_vbo = 0; static int g_triCount = 0;
-static GLuint g_prog = 0, g_prog2 = 0, g_vaoQuad = 0, g_vboQuad = 0;
+static GLuint g_prog = 0, g_prog2 = 0;
 static std::vector<uint8_t> g_stmA, g_stmB;
 static stm_file g_sA, g_sB;
 static float g_yaw = 35.f, g_moveZ = 0.f;
 static int g_frame = 0; static long long g_frameMs = 0;
 
-static void load_asset(ANativeActivity* act) {
-  AAssetManager* am = act->assetManager;
+static void load_asset(AAssetManager* am) {
+  /* Persistent storage: loaders keep raw-data pointers (posT/name/etc);
+   * a local vector here would dangle at upload time. */
+  static std::vector<uint8_t> buf_g, buf_gs, buf_cms, buf_tex;
+  static std::vector<uint8_t> buf_ga[4];
+  static const char* const GA_ENTRY[4] = {"archer/move_n.ga", "archer/move_bw.ga",
+                                          "archer/wait_n.ga", "archer/wait_bw.ga"};
   AAsset* a = AAssetManager_open(am, "poc1.fpk", AASSET_MODE_BUFFER);
   if (!a) { LOGI("FATAL: poc1.fpk missing"); return; }
   const uint8_t* buf = (const uint8_t*)AAsset_getBuffer(a);
@@ -155,12 +174,12 @@ static void load_asset(ANativeActivity* act) {
   if (r) return;
   auto rd = [&](const char* name, std::vector<uint8_t>& v) -> const fpk_entry* {
     const fpk_entry* e = fpk_find(&g_fpak, name);
-    if (e) v.assign(g_fpak.data() + e->off, g_fpak.data() + e->off + e->len);
+    if (e) v.assign(g_fpak.data + e->off, g_fpak.data + e->off + e->len);
     LOGI("entry %s -> %s len=%u", name, e ? "ok" : "MISSING", e ? e->len : 0);
     return e;
   };
-  std::vector<uint8_t> buf_g, buf_gs, buf_ga;
-  rd("archer/skeleton.g", buf_g); rd("archer/body.gs", buf_gs); rd("archer/move_n.ga", buf_ga);
+  rd("archer/skeleton.g", buf_g); rd("archer/body.gs", buf_gs);
+  for (int i = 0; i < 4; i++) rd(GA_ENTRY[i], buf_ga[i]);
   if (!buf_g.empty() && !buf_gs.empty()) {
     if (g_load(&g_g, buf_g.data(), (int)buf_g.size()) == 0) LOGI("g: bones=%d root=%s", g_g.n, g_g.bones[0].name);
     if (gs_load(&g_gs, buf_gs.data(), (int)buf_gs.size()) == 0) {
@@ -168,15 +187,18 @@ static void load_asset(ANativeActivity* act) {
       LOGI("gs: subs=%d tris=%d", g_gs.nsub, tris);
     }
   }
-  if (!buf_ga.empty() && ga_load(&g_ga, buf_ga.data(), (int)buf_ga.size()) == 0) {
+  if (!buf_ga[0].empty() && ga_load(&g_ga, buf_ga[0].data(), (int)buf_ga[0].size()) == 0) {
     LOGI("ga: bones=%d curves=%d frames=%d..%d events=%d", g_ga.nBones, g_ga.nCurves,
          g_ga.startF, g_ga.endF, g_ga.nEvents);
     for (int i = 0; i < g_ga.nEvents; i++)
       LOGI("  event f=%d codes=%04x,%04x,%04x", g_ga.events[i].frame, g_ga.events[i].codes[0],
            g_ga.events[i].codes[1], g_ga.events[i].codes[2]);
   }
-  std::vector<uint8_t> buf_cms;
-  if (rd("face/anna.cms", buf_cms) && texfile_decode(buf_cms.data(), (int)buf_cms.size(), &g_tex) == 0) {
+  for (int i = 1; i < 4; i++)
+    if (!buf_ga[i].empty()) ga_load(&g_gas[i], buf_ga[i].data(), (int)buf_ga[i].size());
+  if (rd("archer/tex_4.tpl", buf_tex) && texfile_decode(buf_tex.data(), (int)buf_tex.size(), &g_texA) == 0)
+    LOGI("tex_4.tpl: %d images", g_texA.count);
+  if (rd("face/system.cms", buf_cms) && texfile_decode(buf_cms.data(), (int)buf_cms.size(), &g_tex) == 0) {
     for (int i = 0; i < g_tex.count; i++)
       LOGI("tex[%d] %dx%d fmt=%d ok=%d", i, g_tex.imgs[i].w, g_tex.imgs[i].h, g_tex.imgs[i].fmt, g_tex.imgs[i].ok);
   }
@@ -186,22 +208,53 @@ static void load_asset(ANativeActivity* act) {
 }
 
 static void upload_texture() {
-  for (int i = 0; i < g_tex.count; i++)
-    if (g_tex.imgs[i].ok) {
-      glGenTextures(1, &g_texId);
-      glBindTexture(GL_TEXTURE_2D, g_texId);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, g_tex.imgs[i].w, g_tex.imgs[i].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, g_tex.imgs[i].rgba);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      LOGI("texture uploaded #%d %dx%d", i, g_tex.imgs[i].w, g_tex.imgs[i].h);
-      return;
+  tpl_file* srcs[2] = {&g_texA, &g_tex};
+  for (int si = 0; si < 2; si++)
+    for (int i = 0; i < srcs[si]->count; i++)
+      if (srcs[si]->imgs[i].ok) {
+        glGenTextures(1, &g_texId);
+        glBindTexture(GL_TEXTURE_2D, g_texId);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, srcs[si]->imgs[i].w, srcs[si]->imgs[i].h, 0, GL_RGBA, GL_UNSIGNED_BYTE, srcs[si]->imgs[i].rgba);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        LOGI("texture uploaded src=%d #%d %dx%d", si, i, srcs[si]->imgs[i].w, srcs[si]->imgs[i].h);
+        return;
+      }
+}
+
+/* ground grid: white 2x2 tex + line VBO reusing the mesh attribute layout */
+static GLuint g_gridVao = 0, g_gridVbo = 0, g_texWhite = 0; static int g_gridN = 0;
+static void build_grid() {
+  glGenTextures(1, &g_texWhite);
+  glBindTexture(GL_TEXTURE_2D, g_texWhite);
+  const unsigned char w4[16] = {220, 220, 230, 255, 220, 220, 230, 255,
+                                220, 220, 230, 255, 220, 220, 230, 255};
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, w4);
+  std::vector<float> V;
+  for (int i = -5; i <= 5; i++) {
+    float c = i * 10.f;
+    for (int s = 0; s < 2; s++) { /* [p3 n3 uv2] line along x and along z */
+      float x0 = s ? c : -50.f, z0 = s ? -50.f : c;
+      float x1 = s ? c : 50.f, z1 = s ? 50.f : c;
+      V.insert(V.end(), {x0, 0, z0, 0, 1, 0, 0, 0, x1, 0, z1, 0, 1, 0, 0, 0});
     }
+  }
+  g_gridN = (int)(V.size() / 8);
+  glGenVertexArrays(1, &g_gridVao); glBindVertexArray(g_gridVao);
+  glGenBuffers(1, &g_gridVbo); glBindBuffer(GL_ARRAY_BUFFER, g_gridVbo);
+  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(V.size() * sizeof(float)), V.data(), GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+  glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
+  LOGI("grid built verts=%d", g_gridN);
 }
 
 static void upload_mesh() {
   std::vector<float> verts;
-  mat34 worlds[G_MAX_BONES];
-  for (int i = 0; i < g_g.n; i++) memcpy(worlds[i].m, g_g.bones[i].seed, sizeof(float) * 12);
+  mat34 local[G_MAX_BONES], worlds[G_MAX_BONES];
+  for (int i = 0; i < g_g.n; i++) memcpy(local[i].m, g_g.bones[i].seed, sizeof(float) * 12);
+  g_worlds(&g_g, local, worlds); /* seed LOCAL -> world (g.mjs seedWorlds) */
   for (int si = 0; si < g_gs.nsub; si++) {
     const gs_submesh* s = &g_gs.subs[si];
     for (int t = 0; t < s->triCount; t++)
@@ -209,10 +262,23 @@ static void upload_mesh() {
         float p[3], n[3], uv[2];
         gs_vertex(&g_gs, s, s->tris[t].v[k], worlds, &g_g, p, n);
         gs_uv(&g_gs, s->tris[t].v[k], uv);
+        if (si == 0 && t == 0 && k == 0) {
+          int bn = s->bone;
+          if ((s->flags & 0x0002) && s->palette) bn = s->palette[2 + s->tris[t].v[k].sk / 3];
+          LOGI("v0 sub0 p=%d sk=%d bone=%d flags=%x pal0=%d raw=%d,%d,%d out=%.3f,%.3f,%.3f seedW=%.3f,%.3f,%.3f",
+               s->tris[t].v[k].p, s->tris[t].v[k].sk, bn, s->flags, s->palette ? s->palette[1] : -1,
+               gs_bei16(g_gs.posT, s->tris[t].v[k].p * 6), gs_bei16(g_gs.posT, s->tris[t].v[k].p * 6 + 2),
+               gs_bei16(g_gs.posT, s->tris[t].v[k].p * 6 + 4), p[0], p[1], p[2],
+               worlds[bn].m[3], worlds[bn].m[7], worlds[bn].m[11]);
+        }
         verts.insert(verts.end(), {p[0], p[1], p[2], n[0], n[1], n[2], uv[0], uv[1]});
       }
   }
   g_triCount = (int)(verts.size() / 8 / 3);
+  float mn[3] = {1e30f, 1e30f, 1e30f}, mx[3] = {-1e30f, -1e30f, -1e30f};
+  for (size_t i = 0; i + 7 < verts.size(); i += 8)
+    for (int k = 0; k < 3; k++) { float v = verts[i + k]; if (v < mn[k]) mn[k] = v; if (v > mx[k]) mx[k] = v; }
+  LOGI("bbox x %.0f..%.0f y %.0f..%.0f z %.0f..%.0f", mn[0], mx[0], mn[1], mx[1], mn[2], mx[2]);
   glGenVertexArrays(1, &g_vao); glBindVertexArray(g_vao);
   glGenBuffers(1, &g_vbo); glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
   glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(verts.size() * sizeof(float)), verts.data(), GL_STATIC_DRAW);
@@ -228,7 +294,7 @@ static void audio_start() {
   ob.setDirection(oboe::Direction::Output)
     ->setFormat(oboe::AudioFormat::I16)
     ->setChannelCount(oboe::ChannelCount::Stereo)
-    ->setSamplesPerDataCallback(960)
+    ->setFramesPerDataCallback(960)
     ->setDataCallback(&g_mixer)
     ->setErrorCallback(&g_mixer);
   oboe::Result r = ob.openStream(&g_mixer.stream);
@@ -241,6 +307,7 @@ static void audio_start() {
 }
 
 // ---------- loop ----------
+static void draw_buttons(int w, int h);
 static void render(int w, int h) {
   glViewport(0, 0, w, h);
   glClearColor(0.06f, 0.07f, 0.1f, 1.f);
@@ -248,24 +315,24 @@ static void render(int w, int h) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   float aspect = (float)w / h;
-  float fovy = 45.f * 3.14159265f / 180.f, near = 1.f, far = 4000.f;
+  float fovy = 45.f * 3.14159265f / 180.f, near = 0.1f, far = 1000.f;
   float f = 1.f / tanf(fovy / 2);
   mat4 proj = {};
   proj.m[0] = f / aspect; proj.m[5] = f; proj.m[10] = (far + near) / (near - far);
   proj.m[11] = -1; proj.m[14] = 2 * far * near / (near - far);
-  float yaw = g_yaw * 3.14159265f / 180.f, pit = 20.f * 3.14159265f / 180.f, dist = 320.f;
+  float yaw = g_yaw * 3.14159265f / 180.f, pit = 20.f * 3.14159265f / 180.f, dist = 60.f;
   float ex = sinf(yaw) * cosf(pit) * dist, ey = sinf(pit) * dist, ez = cosf(yaw) * cosf(pit) * dist;
-  float fx = 0, fy = 90, fz = g_moveZ;
+  float fx = 0, fy = 8, fz = g_moveZ;
   // view = lookAt (column-major, GL)
   float zx = ex - fx, zy = ey - fy, zz = ez - fz;
   float zl = sqrtf(zx * zx + zy * zy + zz * zz); zx /= zl; zy /= zl; zz /= zl;
-  float xx = -zz, xy = 0, xz = zx; // up=(0,1,0): x = up×z normalized
+  float xx = zz, xy = 0, xz = -zx; // x = up×z, proper handedness (up=(0,1,0))
   float xl = sqrtf(xx * xx + xz * xz); xx /= xl; xz /= xl;
   float yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
   mat4 view = {};
-  view.m[0] = xx; view.m[4] = xy; view.m[8] = xz;  view.m[12] = -(xx * fx + xy * fy + xz * fz);
-  view.m[1] = yx; view.m[5] = yy; view.m[9] = yz;  view.m[13] = -(yx * fx + yy * fy + yz * fz);
-  view.m[2] = zx; view.m[6] = zy; view.m[10] = zz; view.m[14] = -(zx * fx + zy * fy + zz * fz);
+  view.m[0] = xx; view.m[4] = xy; view.m[8] = xz;  view.m[12] = -(xx * ex + xy * ey + xz * ez);
+  view.m[1] = yx; view.m[5] = yy; view.m[9] = yz;  view.m[13] = -(yx * ex + yy * ey + yz * ez);
+  view.m[2] = zx; view.m[6] = zy; view.m[10] = zz; view.m[14] = -(zx * ex + zy * ey + zz * ez);
   view.m[15] = 1;
   mat4 model = {};
   model.m[0] = 1; model.m[5] = 1; model.m[10] = 1; model.m[15] = 1;
@@ -280,30 +347,143 @@ static void render(int w, int h) {
     glBindVertexArray(g_vao);
     glDrawArrays(GL_TRIANGLES, 0, g_triCount * 3);
   }
+  if (g_gridN) {
+    glBindTexture(GL_TEXTURE_2D, g_texWhite);
+    glBindVertexArray(g_gridVao);
+    glDrawArrays(GL_LINES, 0, g_gridN);
+  }
+  draw_buttons(w, h);
   eglSwapBuffers(dpy, surf);
+}
+
+/* ---------- GL-drawn touch overlay ----------
+ * Canonical button layout in normalized coords (y down). Hit-test + visuals
+ * share one source of truth; held[] drives continuous actions (rapid fire). */
+static const struct { float cx, cy; int code; } BTN[6] = {
+  {0.09f, 0.72f, 1}, {0.25f, 0.72f, 2}, {0.17f, 0.585f, 3}, {0.17f, 0.855f, 4},
+  {0.88f, 0.76f, 5}, {0.755f, 0.885f, 6},
+};
+#define BR 0.070f /* hit radius, fraction of screen height */
+static std::atomic<int> g_held[8];
+static std::atomic<int> g_slotCode[16];  /* pointerId -> held code (0 = none) */
+
+/* Geometry: per button a square backdrop + shape marker (tri = direction,
+ * fan = A/B). Single static VBO [x,y,buttonIdx], pixel coords, y-down. */
+static GLuint g_btnVao = 0, g_btnVbo = 0; static int g_btnN = 0;
+
+static void build_button_geometry(int w, int h) {
+  std::vector<float> V;
+  auto put = [&](float x, float y, float idx) { V.insert(V.end(), {x, y, idx}); };
+  auto quad = [&](float cx, float cy, float r, float idx) {
+    float x0 = (cx - r) * w, x1 = (cx + r) * w, y0 = (cy - r) * h, y1 = (cy + r) * h;
+    put(x0, y0, idx); put(x1, y0, idx); put(x1, y1, idx);
+    put(x0, y0, idx); put(x1, y1, idx); put(x0, y1, idx);
+  };
+  auto tri = [&](float cx, float cy, float r, float ang, float idx) { /* outward marker */
+    float px = cx * w, py = cy * h;
+    float ax = cosf(ang), ay = sinf(ang);          /* outward dir (y-down space) */
+    float bx = -ay, by = ax;                       /* perp */
+    float tx = px + ax * r * w * 0.55f, ty = py + ay * r * w * 0.55f;
+    float b1x = px - ax * r * w * 0.35f + bx * r * w * 0.4f, b1y = py - ay * r * w * 0.35f + by * r * w * 0.4f;
+    float b2x = px - ax * r * w * 0.35f - bx * r * w * 0.4f, b2y = py - ay * r * w * 0.35f - by * r * w * 0.4f;
+    put(tx, ty, idx); put(b1x, b1y, idx); put(b2x, b2y, idx);
+  };
+  auto disc = [&](float cx, float cy, float r, float idx, int seg) {
+    float px = cx * w, py = cy * h, rr = r * h * 0.55f;
+    for (int i = 0; i < seg; i++) {
+      float a0 = 6.2831853f * i / seg, a1 = 6.2831853f * (i + 1) / seg;
+      put(px, py, idx);
+      put(px + cosf(a0) * rr, py + sinf(a0) * rr, idx);
+      put(px + cosf(a1) * rr, py + sinf(a1) * rr, idx);
+    }
+  };
+  /* BTN order: 1 left, 2 right, 3 up, 4 down */
+  for (int i = 0; i < 4; i++) {
+    quad(BTN[i].cx, BTN[i].cy, BR, (float)BTN[i].code);
+    float a = (BTN[i].code == 1) ? 3.1415927f : (BTN[i].code == 2) ? 0.f
+            : (BTN[i].code == 3) ? -1.5707963f : 1.5707963f;
+    tri(BTN[i].cx, BTN[i].cy, BR, a, (float)BTN[i].code);
+  }
+  disc(BTN[4].cx, BTN[4].cy, BR, 5, 14);  /* A big disc */
+  disc(BTN[5].cx, BTN[5].cy, BR * 0.85f, 6, 14); /* B smaller */
+  g_btnN = (int)(V.size() / 3);
+  glGenVertexArrays(1, &g_btnVao); glBindVertexArray(g_btnVao);
+  glGenBuffers(1, &g_btnVbo); glBindBuffer(GL_ARRAY_BUFFER, g_btnVbo);
+  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(V.size() * sizeof(float)), V.data(), GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+  glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(2 * sizeof(float)));
+  glEnableVertexAttribArray(0); glEnableVertexAttribArray(1);
+  LOGI("button geometry tris=%d", g_btnN / 3);
+}
+
+static void draw_buttons(int w, int h) {
+  if (!g_prog2) return;
+  if (g_btnN == 0) build_button_geometry(w, h);
+  glUseProgram(g_prog2);
+  GLuint lu = glGetUniformLocation(g_prog2, "uScr");
+  glUniform2f(lu, (float)w, (float)h);
+  float held[8] = {};
+  for (int i = 1; i <= 6; i++) held[i] = (float)g_held[i].load();
+  glUniform1fv(glGetUniformLocation(g_prog2, "uHeld"), 8, held);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glDisable(GL_DEPTH_TEST);
+  glBindVertexArray(g_btnVao);
+  glDrawArrays(GL_TRIANGLES, 0, g_btnN);
+  glDisable(GL_BLEND);
+  glEnable(GL_DEPTH_TEST);
 }
 
 static void on_input(int action) {
   switch (action) {
-    case 1: g_yaw -= 8.f; break;         // left
-    case 2: g_yaw += 8.f; break;         // right
-    case 3: g_moveZ += 24.f; break;      // up = forward
-    case 4: g_moveZ -= 24.f; break;      // down
     case 5: g_mixB.store(1.f - g_mixB.load()); g_mixer.targetB.store(g_mixB.load()); break; // A = mix B on/off
-    case 6: g_frame = g_ga.startF; break; // B = anim restart
+    case 6: { /* B = cycle anim set */
+      g_gaSel = (g_gaSel + 1) & 3;
+      if (g_gas[g_gaSel].endF > 0) { memcpy(&g_ga, &g_gas[g_gaSel], sizeof(g_ga)); g_frame = g_ga.startF; }
+      LOGI("anim -> %s frames %d..%d", GA_LABEL[g_gaSel], g_ga.startF, g_ga.endF);
+      break;
+    }
   }
 }
 
-// ---------- JNI bridge from Kotlin overlay ----------
+// ---------- JNI bridge ----------
 static ANativeWindow* g_window = nullptr;
 static std::mutex g_windowMx;
 static std::condition_variable g_windowCv;
+
+/* core touch logic: normalized x,y + action 0 down / 1 move / 2 up|cancel */
+static void touch_event(float nx, float ny, int action, int slot) {
+  if (action <= 1) { /* down / move: hit-test & track */
+    int code = 0;
+    for (int i = 0; i < 6; i++) {
+      float dx = nx - BTN[i].cx, dy = ny - BTN[i].cy;
+      if (dx * dx + dy * dy <= BR * BR * 1.6f) { code = BTN[i].code; break; }
+    }
+    if (code) {
+      if (g_slotCode[slot] != code) {
+        int prev = g_slotCode[slot].exchange(0);
+        if (prev) g_held[prev].store(0);
+        g_slotCode[slot].store(code);
+        g_held[code].store(1);
+        if (action == 0) { /* fresh press edge */
+          g_tapsIn100ms.fetch_add(1);
+          g_action.store(code);
+        }
+      }
+    } else if (action == 0) {
+      int prev = g_slotCode[slot].exchange(0);
+      if (prev) g_held[prev].store(0);
+    }
+  } else { /* up / cancel */
+    int prev = g_slotCode[slot].exchange(0);
+    if (prev) g_held[prev].store(0);
+  }
+}
+
 extern "C" {
-JNIEXPORT void JNICALL Java_com_fe9_poc_MainActivity_nativeTap(JNIEnv*, jobject, jint code, jlong tsNs) {
-  g_lastTapNs.store(tsNs);
-  int n = g_tapsIn100ms.load();
-  g_tapsIn100ms.store(n + 1); // consumed in main loop for latency/rate stats
-  g_action.store(code);
+JNIEXPORT void JNICALL Java_com_fe9_poc_MainActivity_nativeTouch(JNIEnv*, jobject,
+    jfloat nx, jfloat ny, jint action, jint pointerId) {
+  touch_event(nx, ny, (int)action, (int)pointerId & 15);
 }
 JNIEXPORT void JNICALL Java_com_fe9_poc_MainActivity_nativeSetSurface(JNIEnv* env, jobject, jobject surface) {
   std::lock_guard<std::mutex> lk(g_windowMx);
@@ -313,10 +493,9 @@ JNIEXPORT void JNICALL Java_com_fe9_poc_MainActivity_nativeSetSurface(JNIEnv* en
 }
 }
 
-// ---------- native activity ----------
-static void engine_main(ANativeActivity* act, void* saved) {
-  (void)saved;
-  load_asset(act);
+// ---------- engine ----------
+static void engine_main(AAssetManager* am) {
+  load_asset(am);
   ANativeWindow* win;
   {
     std::unique_lock<std::mutex> lk(g_windowMx);
@@ -325,14 +504,20 @@ static void engine_main(ANativeActivity* act, void* saved) {
   }
   int w = 0, h = 0;
   if (!egl_create(win, &w, &h)) { LOGI("FATAL egl"); return; }
-  g_prog = makeProgram(VS, FS); g_prog2 = makeProgram(VS2, FS);
+  g_prog = makeProgram(VS, FS); g_prog2 = makeProgram(VS2, FS2);
   upload_texture();
   upload_mesh();
+  build_grid();
   audio_start();
   long long last = 0; int frames = 0; long long fpsT0 = 0;
   while (true) {
     int a = g_action.exchange(0);
     if (a) on_input(a);
+    /* continuous held movement (rapid-fire capable: state, not events) */
+    if (g_held[1].load()) g_yaw -= 0.9f;
+    if (g_held[2].load()) g_yaw += 0.9f;
+    if (g_held[3].load()) g_moveZ += 0.09f;
+    if (g_held[4].load()) g_moveZ -= 0.09f;
     // advance ga: ~12 anim fps
     g_frameMs++;
     if (g_frameMs >= 3) {
@@ -359,42 +544,9 @@ static void engine_main(ANativeActivity* act, void* saved) {
   }
 }
 
-struct EngineData { ANativeActivity* act; };
-static EngineData g_eng;
-
-static void onStart(ANativeActivity*) {}
-static void onResume(ANativeActivity*) {}
-static void onPause(ANativeActivity*) {}
-static void onStop(ANativeActivity*) {}
-static void onDestroy(ANativeActivity* a) { (void)a; exit(0); }
-static void onNativeWindowCreated(ANativeActivity* a, ANativeWindow* w) { a->window = w; }
-static void onNativeWindowRedrawNeeded(ANativeActivity*, ANativeWindow*) {}
-static void onNativeWindowDestroyed(ANativeActivity* a, ANativeWindow*) { a->window = nullptr; }
-static void onInputQueueCreated(ANativeActivity* a, AInputQueue* q) { (void)a; (void)q; }
-static void onInputQueueDestroyed(ANativeActivity*, AInputQueue*) {}
-static void onContentRectChanged(ANativeActivity*, const ARect*) {}
-static void onConfigurationChanged(ANativeActivity*) {}
-static void onLowMemory(ANativeActivity*) {}
-static void onSavedInstanceState(ANativeActivity*, void**, size_t*) {}
-
-__attribute__((visibility("default")))
-void ANativeActivity_onCreate(ANativeActivity* act, void* saved, size_t savedSize) {
+extern "C" JNIEXPORT void JNICALL
+Java_com_fe9_poc_MainActivity_nativeStart(JNIEnv* env, jobject, jobject assetManager) {
   LOGI("=== FE9 P2 PoC boot ===");
-  act->callbacks->onStart = onStart;
-  act->callbacks->onResume = onResume;
-  act->callbacks->onPause = onPause;
-  act->callbacks->onStop = onStop;
-  act->callbacks->onDestroy = onDestroy;
-  act->callbacks->onNativeWindowCreated = onNativeWindowCreated;
-  act->callbacks->onNativeWindowRedrawNeeded = onNativeWindowRedrawNeeded;
-  act->callbacks->onNativeWindowDestroyed = onNativeWindowDestroyed;
-  act->callbacks->onInputQueueCreated = onInputQueueCreated;
-  act->callbacks->onInputQueueDestroyed = onInputQueueDestroyed;
-  act->callbacks->onContentRectChanged = onContentRectChanged;
-  act->callbacks->onConfigurationChanged = onConfigurationChanged;
-  act->callbacks->onLowMemory = onLowMemory;
-  act->callbacks->onSaveInstanceState = onSavedInstanceState;
-  act->instance = &g_eng;
-  g_eng.act = act;
-  std::thread([act] { engine_main(act, nullptr); }).detach();
+  AAssetManager* am = AAssetManager_fromJava(env, assetManager);
+  std::thread([am] { engine_main(am); }).detach();
 }

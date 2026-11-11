@@ -12,11 +12,11 @@ android {
     targetSdk 34
     versionCode 1
     versionName "0.1"
-    externalNativeBuild { cmake { abiFilters "arm64-v8a" } }
+    externalNativeBuild { cmake { abiFilters "arm64-v8a"; arguments "-DANDROID_STL=c++_shared" } }
   }
   externalNativeBuild { cmake { path "src/main/cpp/CMakeLists.txt"; version "3.22.1" } }
   buildFeatures { prefab true }
-  sourceSets { main { assets.srcDirs = ["../../assets"] } }
+  sourceSets { main { assets.srcDirs = ["../assets"] } }
   buildTypes { release { minifyEnabled false } }
   compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
   kotlinOptions { jvmTarget = "17" }

@@ -1,0 +1,1 @@
+C:\Kodingan\fe9-port\poc\app\build\intermediates\cxx\Debug\5h5m2u4b\obj\arm64-v8a

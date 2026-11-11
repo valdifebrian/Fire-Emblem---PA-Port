@@ -16,8 +16,8 @@ static mat34 m34mul(mat34 a, mat34 b) {
   mat34 o;
   for (int r = 0; r < 3; r++) {
     for (int c = 0; c < 3; c++)
-      o.m[r * 4 + c] = a.m[r * 4] * b.m[c] + a.m[r * 4 + 1] * b[4 + c] + a.m[r * 4 + 2] * b[8 + c];
-    o.m[r * 4 + 3] = a.m[r * 4] * b[3] + a.m[r * 4 + 1] * b[7] + a.m[r * 4 + 2] * b[11] + a.m[r * 4 + 3];
+      o.m[r * 4 + c] = a.m[r * 4] * b.m[c] + a.m[r * 4 + 1] * b.m[4 + c] + a.m[r * 4 + 2] * b.m[8 + c];
+    o.m[r * 4 + 3] = a.m[r * 4] * b.m[3] + a.m[r * 4 + 1] * b.m[7] + a.m[r * 4 + 2] * b.m[11] + a.m[r * 4 + 3];
   }
   return o;
 }

@@ -1,0 +1,7 @@
+[
+{
+  "directory": "C:/Kodingan/fe9-port/poc/app/.cxx/Debug/5h5m2u4b/arm64-v8a",
+  "command": "C:\\Android\\ndk\\27.2.12479018\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android26 --sysroot=C:/Android/ndk/27.2.12479018/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dfe9poc_EXPORTS -isystem C:/Users/valdi/.gradle/caches/8.9/transforms/4e048f399ed3b39dba6874b492b60712/transformed/oboe-1.9.0/prefab/modules/oboe/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -fno-limit-debug-info  -fPIC -O2 -Wall -Wextra -Wno-unused-parameter -std=gnu++20 -o CMakeFiles\\fe9poc.dir\\main.cpp.o -c C:\\Kodingan\\fe9-port\\poc\\app\\src\\main\\cpp\\main.cpp",
+  "file": "C:\\Kodingan\\fe9-port\\poc\\app\\src\\main\\cpp\\main.cpp"
+}
+]

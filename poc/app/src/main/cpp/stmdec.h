@@ -25,7 +25,7 @@ static int stm_decode(stm_file* f, const uint8_t* b, int size) {
   if (frames <= 0 || 0x8100 + (int)bytes * 2 > size) return -1;
   int16_t coefs[16];
   for (int i = 0; i < 16; i++) coefs[i] = (int16_t)be_u16(b + 0x5c + i * 2);
-  int16_t* pcm = (int16_t*)malloc((size_t)frames * 14 * 2);
+  int16_t* pcm = (int16_t*)malloc((size_t)frames * 14 * 2 * sizeof(int16_t));
   if (!pcm) return -1;
   for (int ch = 0; ch < 2; ch++) {
     const uint8_t* base = b + 0x8100 + (ch ? bytes : 0);

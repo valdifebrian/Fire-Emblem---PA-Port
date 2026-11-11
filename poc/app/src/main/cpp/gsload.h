@@ -48,7 +48,7 @@ static int gs_decode_dl(gs_submesh* s, const uint8_t* p, uint32_t dl, uint32_t d
   gs_vert strip[1024]; int vn = 0, parity = 0;
   while (o + 3 <= end) {
     uint8_t op = p[o];
-    if (op == 0 && !vn) { o++; continue; }
+    if (op == 0) { o++; continue; } /* 32B pad zeros: always skipped (gs.mjs v[] never pushed) */
     if (op != 0x98) { free(tris); return -1; }
     int n = (p[o + 1] << 8) | p[o + 2]; o += 3;
     vn = 0; parity = 0;

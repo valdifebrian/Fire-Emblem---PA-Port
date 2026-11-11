@@ -1,0 +1,42 @@
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:buildCMakeDebug[arm64-v8a]'.
+> com.android.ide.common.process.ProcessException: ninja: Entering directory `C:\Kodingan\fe9-port\poc\app\.cxx\Debug\5h5m2u4b\arm64-v8a'
+  [1/2] Building CXX object CMakeFiles/fe9poc.dir/main.cpp.o
+  FAILED: CMakeFiles/fe9poc.dir/main.cpp.o 
+  C:\Android\ndk\27.2.12479018\toolchains\llvm\prebuilt\windows-x86_64\bin\clang++.exe --target=aarch64-none-linux-android26 --sysroot=C:/Android/ndk/27.2.12479018/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dfe9poc_EXPORTS -isystem C:/Users/valdi/.gradle/caches/8.9/transforms/4e048f399ed3b39dba6874b492b60712/transformed/oboe-1.9.0/prefab/modules/oboe/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -fno-limit-debug-info  -fPIC -O2 -Wall -Wextra -Wno-unused-parameter -std=gnu++20 -MD -MT CMakeFiles/fe9poc.dir/main.cpp.o -MF CMakeFiles\fe9poc.dir\main.cpp.o.d -o CMakeFiles/fe9poc.dir/main.cpp.o -c C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp
+  C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:574:48: warning: format specifies type 'int' but the argument has type 'long long' [-Wformat]
+    574 |       LOGI("fps=%d taps2s=%d yaw=%.0f z=%.0f", frames * 500000000LL / (now - fpsT0), tapr, g_yaw, g_moveZ);
+        |                 ~~                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        |                 %lld
+  C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:40:67: note: expanded from macro 'LOGI'
+     40 | #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "FE9PoC", __VA_ARGS__)
+        |                                                                   ^~~~~~~~~~~
+  C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:597:3: error: no matching function for call to 'AInputQueue_attachLooper'
+    597 |   AInputQueue_attachLooper(q, looper, input_ident, input_callback, q);
+        |   ^~~~~~~~~~~~~~~~~~~~~~~~
+  C:/Android/ndk/27.2.12479018/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/include/android/input.h:1506:6: note: candidate function not viable: no known conversion from 'void (int, int, void *)' to 'ALooper_callbackFunc' (aka 'int (*)(int, int, void *)') for 4th argument
+   1506 | void AInputQueue_attachLooper(AInputQueue* queue, ALooper* looper,
+        |      ^
+   1507 |         int ident, ALooper_callbackFunc callback, void* data);
+        |                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  1 warning and 1 error generated.
+  ninja: build stopped: subcommand failed.
+  
+  C++ build system [build] failed while executing:
+      @echo off
+      "C:\\Android\\cmake\\3.22.1\\bin\\ninja.exe" ^
+        -C ^
+        "C:\\Kodingan\\fe9-port\\poc\\app\\.cxx\\Debug\\5h5m2u4b\\arm64-v8a" ^
+        fe9poc
+    from C:\Kodingan\fe9-port\poc\app
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 49s

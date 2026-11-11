@@ -1,0 +1,95 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:dexBuilderDebug UP-TO-DATE
+> Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeProjectDexDebug UP-TO-DATE
+> Task :app:configureCMakeDebug[arm64-v8a]
+
+> Task :app:buildCMakeDebug[arm64-v8a]
+C/C++: ninja: Entering directory `C:\Kodingan\fe9-port\poc\app\.cxx\Debug\5h5m2u4b\arm64-v8a'
+C/C++: In file included from C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:37:
+C/C++: C:/Kodingan/fe9-port/poc/app/src/main/cpp/texfile.h:56:14: warning: unused variable 'pp' [-Wunused-variable]
+C/C++:    56 |     uint32_t pp = be_u32(d + tableOff + (uint32_t)i * 8 + 4);
+C/C++:       |              ^~
+C/C++: C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:357:48: warning: format specifies type 'int' but the argument has type 'long long' [-Wformat]
+C/C++:   357 |       LOGI("fps=%d taps2s=%d yaw=%.0f z=%.0f", frames * 500000000LL / (now - fpsT0), tapr, g_yaw, g_moveZ);
+C/C++:       |                 ~~                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C/C++:       |                 %lld
+C/C++: C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:40:67: note: expanded from macro 'LOGI'
+C/C++:    40 | #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "FE9PoC", __VA_ARGS__)
+C/C++:       |                                                                   ^~~~~~~~~~~
+C/C++: In file included from C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:34:
+C/C++: In file included from C:/Kodingan/fe9-port/poc/app/src/main/cpp/gload.h:9:
+C/C++: C:/Kodingan/fe9-port/poc/app/src/main/cpp/linalg.h:41:13: warning: unused function 'm34_to_gl' [-Wunused-function]
+C/C++:    41 | static void m34_to_gl(mat34 m, float out[16]) {
+C/C++:       |             ^~~~~~~~~
+C/C++: In file included from C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:34:
+C/C++: C:/Kodingan/fe9-port/poc/app/src/main/cpp/gload.h:85:13: warning: unused function 'g_worlds' [-Wunused-function]
+C/C++:    85 | static void g_worlds(const g_model* g, const mat34* local, mat34* world) {
+C/C++:       |             ^~~~~~~~
+C/C++: In file included from C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:36:
+C/C++: C:/Kodingan/fe9-port/poc/app/src/main/cpp/gaanim.h:90:13: warning: unused function 'ga_eval' [-Wunused-function]
+C/C++:    90 | static void ga_eval(const ga_anim* a, const g_model* g, int frame, mat34* local) {
+C/C++:       |             ^~~~~~~
+C/C++: In file included from C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:37:
+C/C++: C:/Kodingan/fe9-port/poc/app/src/main/cpp/texfile.h:44:13: warning: unused function 'tpl_free' [-Wunused-function]
+C/C++:    44 | static void tpl_free(tpl_file* t) { for (int i = 0; i < t->count; i++) free(t->imgs[i].rgba); t->count = 0; }
+C/C++:       |             ^~~~~~~~
+C/C++: In file included from C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:38:
+C/C++: C:/Kodingan/fe9-port/poc/app/src/main/cpp/stmdec.h:17:13: warning: unused function 'stm_free' [-Wunused-function]
+C/C++:    17 | static void stm_free(stm_file* f) { free(f->pcm); memset(f, 0, sizeof *f); }
+C/C++:       |             ^~~~~~~~
+C/C++: C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:43:27: warning: unused variable 'g_touchYaw' [-Wunused-variable]
+C/C++:    43 | static std::atomic<float> g_touchYaw{0.f};
+C/C++:       |                           ^~~~~~~~~~
+C/C++: C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:141:40: warning: unused variable 'g_vaoQuad' [-Wunused-variable]
+C/C++:   141 | static GLuint g_prog = 0, g_prog2 = 0, g_vaoQuad = 0, g_vboQuad = 0;
+C/C++:       |                                        ^~~~~~~~~
+C/C++: C:/Kodingan/fe9-port/poc/app/src/main/cpp/main.cpp:141:55: warning: unused variable 'g_vboQuad' [-Wunused-variable]
+C/C++:   141 | static GLuint g_prog = 0, g_prog2 = 0, g_vaoQuad = 0, g_vboQuad = 0;
+C/C++:       |                                                       ^~~~~~~~~
+C/C++: 10 warnings generated.
+
+> Task :app:mergeDebugJniLibFolders
+> Task :app:mergeDebugNativeLibs
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:stripDebugDebugSymbols
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 21s
+38 actionable tasks: 11 executed, 27 up-to-date

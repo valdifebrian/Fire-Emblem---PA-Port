@@ -58,16 +58,16 @@ static int tpl_decode(tpl_file* t, const uint8_t* d) {
     uint32_t fmt = be_u32(d + ip + 4), dp = be_u32(d + ip + 8);
     tex_img* im = &t->imgs[i];
     im->w = w; im->h = h; im->fmt = (int)fmt;
-    if (fmt == 8 || fmt == 0 || fmt == 2 || fmt == 14) continue; /* palette fmts/I4/I8/CMPR: PoC decodes direct 3/4/6 only */
-    if (fmt != 3 && fmt != 4 && fmt != 6) continue;
-    size_t bpx = fmt == 6 ? 4 : 2;
-    int aw = (w + 3) / 4 * 4, ah = (h + 3) / 4 * 4;
-    size_t need = (size_t)aw * ah * bpx;
+    uint8_t pal[256 * 4]; memset(pal, 0, sizeof pal);
+    if (pp != 0) {
+      int pn = be_u16(d + pp); int pf = (int)be_u32(d + pp + 4); uint32_t pdp = be_u32(d + pp + 8);
+      if (pn > 256) pn = 256;
+      for (int j = 0; j < pn; j++) palFmt(pf, be_u16(d + pdp + (uint32_t)j * 2), pal + j * 4);
+    }
     uint8_t* rgba = (uint8_t*)malloc((size_t)w * h * 4);
     if (!rgba) return -1;
-    if (fe9tex_decode((int)fmt, w, h, d + dp, rgba) == 0) { im->rgba = rgba; im->ok = 1; }
+    if (fe9tex_decode((int)fmt, w, h, d + dp, (pp != 0) ? pal : NULL, rgba) == 0) { im->rgba = rgba; im->ok = 1; }
     else free(rgba);
-    (void)need;
   }
   return 0;
 }

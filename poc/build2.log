@@ -1,0 +1,38 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* Where:
+Build file 'C:\Kodingan\fe9-port\poc\app\build.gradle' line: 17
+
+* What went wrong:
+A problem occurred evaluating project ':app'.
+> Could not find method arguments() for arguments [-DANDROID_STL=c++_shared] on object of type com.android.build.gradle.internal.dsl.CmakeOptions$AgpDecorated.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* Where:
+Build file 'C:\Kodingan\fe9-port\poc\app\build.gradle' line: 17
+
+* What went wrong:
+A problem occurred evaluating project ':app'.
+> Could not find method arguments() for arguments [-DANDROID_STL=c++_shared] on object of type com.android.build.gradle.internal.dsl.CmakeOptions$AgpDecorated.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 11s
