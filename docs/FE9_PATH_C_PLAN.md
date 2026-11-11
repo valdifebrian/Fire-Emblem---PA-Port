@@ -1,1 +1,202 @@
-IyBGRTkgUGF0aCBDIOKAlCAxMDAlIG1hdGNoaW5nLWRlY29tcCBwbGFuICh2MS4xLCAyMDI2LTExLTExIOKAlCBwb3N0LWF1ZGl0OyBhdWRpdCBsb2cgwqcxNCkKCkdvYWw6IHJlY29uc3RydWN0IHRoZSBlbnRpcmUgRkU5VSAoR0ZFRTAxKSBET0wgYXMgY29tcGlsYWJsZSBDL2FzbSB0aGF0IGxpbmtzCioqYnl0ZS1pZGVudGljYWwqKiB0byBgbWFpbi5kb2xgIChzaGExIGA5ZDAwZDdkNDA3NzUwYjgyY2IxY2ZjY2M1NmY4YWE4YTg5Y2M4ODUxYCksCnRoZW4sIG11Y2ggbGF0ZXIsIHJlLXRhcmdldCB0aGF0IEMgZm9yIG90aGVyIHBsYXRmb3JtcyAobmF0aXZlIHBvcnQgPSBzZXBhcmF0ZSBwbGFuLCBvdXQgb2Ygc2NvcGUgaGVyZSkuCgpHcm91bmQgdHJ1dGggdG9kYXkgKG1lYXN1cmVkIGZyb20gYGRlY29tcC9jb25maWcvR0ZFRTAxL3N5bWJvbHMudHh0YCk6Cgp8IE1ldHJpYyB8IFZhbHVlIHwKfC0tLXwtLS18CnwgRnVuY3Rpb25zIGRldGVjdGVkIChhbmFseXplcikgfCA5LDI1MSAocHJvdmlzaW9uYWwg4oCUIGJsb2JzIGhpZGUgZnVuY3Rpb25zOyB0aGUgVk0gdHJpbyBhbHJlYWR5IHByb3ZlcyDiiaUzIGhpZGRlbikgfAp8IFRvdGFsIGNvZGUgYnl0ZXMgfCAqKjIsNDk5LDU1MiBmaXhlZCBkZW5vbWluYXRvcioqIChET0wgYC50ZXh0YCBtZWFzdXJlZCBmcm9tIGhlYWRlcjsgYW5hbHl6ZXIgc3VtIDIsNTAwLDgyOCBhZ3JlZXMgd2l0aGluIHBhZGRpbmcpIHwKfCBGdW5jdGlvbnMgbmFtZWQgKGNvbW11bml0eSBzZWVkcykgfCA3MTQgKDQuNCUgb2YgY29kZSBieXRlcykgfAp8IEZ1bmN0aW9ucyBtYXRjaGluZyBmcm9tIEMgfCAqKjAqKiB8CnwgQnVpbGQgc3RhdHVzIHwgcmVsaW5rIGZyb20gb3JpZ2luYWwgYXNtID0gc2hhMSBNQVRDSCB8CnwgQ29tcGlsZXIgYXJjaGl2ZXMgb24gZGlzayB8ICoqWUVTKiog4oCUIGBidWlsZC9jb21waWxlcnMvR0MvYCA9IENXIEdDIDEuMCDigKYgMy4wYTUuMiAoMjArIHJldnMsIGF1dG8tZG93bmxvYWRlZCBieSBzY2FmZm9sZCkgfAoKQ29tcGFyYWJsZXM6IFRXVyBuZWVkZWQgfjUgeWVhcnMgYW5kIH4zMCBjb250cmlidXRvcnMgZm9yIGEgc2FtZS1nZW5lcmF0aW9uIEdDIERPTC4KVGhpcyBwbGFuIG9wdGltaXplcyBmb3IgKmNvcnJlY3QgcGlwZWxpbmUgKyBtZWFzdXJhYmxlIHdlZWtseSBwcm9ncmVzcyosIG5vdCBoZXJvaWNzLgoKLS0tCgojIyDCpzAgTG9ja2VkIGRlY2lzaW9ucwoKLSAqKkQtQzEqKiBDb21waWxlcjogQ29kZVdhcnJpb3IgUFBDIDMueCBmYW1pbHk7IGV4YWN0IHJldmlzaW9uIHBpY2tlZCAqKmVtcGlyaWNhbGx5KiogKE0tQzApLCBwaW5uZWQgaW4gYHRvb2xzL2AgKyByZWNvcmRlZCBoZXJlLiBOZXZlciBtaXggdmVyc2lvbnMuCi0gKipELUMyKiogU3RydWN0dXJlOiBwZXItc3Vic3lzdGVtIHNvdXJjZSBkaXJlY3RvcmllcyAoYHNyYy9jbS9gLCBgc3JjL2Rpc3Bvcy9gLCAuLi4pOyBhc20gc3BsaXRzIGxpdmUgdW5kZXIgYGFzbS9gOyBvbmUgZmlsZSBwZXIgbG9naWNhbCBtb2R1bGUsIG11bHRpcGxlIGZ1bmN0aW9ucyBwZXIgZmlsZSBhbGxvd2VkIG9uY2UgYm91bmRhcmllcyBhcmUgdHJ1c3RlZC4KLSAqKkQtQzMqKiBOYW1pbmc6IGtlZXAgY29tbXVuaXR5IG5hbWVzOyBuZXcgbmFtZXMgPSBQYXNjYWxDYXNlIGxpa2UgZXhpc3Rpbmcgc2VlZHM7IGBFVlRfYCBwcmVmaXggYWxyZWFkeSByZXNlcnZlZCBmb3IgZXZlbnQgc2NyaXB0czsgc3RhdGljcyBgcypgLCBnbG9iYWxzIGBnKmAuCi0gKipELUM0KiogQSBmdW5jdGlvbiBpcyAiZG9uZSIgb25seSBhdCAqKjEwMCUgb2JqZGlmZiBvbiB0aGUgbWF0Y2hlZCBjb21waWxlcioqLCBjb21taXR0ZWQgd2l0aCBpdHMgc291cmNlLCBxdWV1ZSBDU1YgdXBkYXRlZC4gTm8gImZ1bmN0aW9uYWxseSBlcXVpdmFsZW50IiBjbGFpbXMgaW4gdGhlIHNjb3JlYm9hcmQuCi0gKipELUM1KiogRXZlcnkgbWVyZ2VkIGNvbW1pdCBtdXN0IGtlZXAgRE9MIHNoYTEgTUFUQ0ggKENJLWVuZm9yY2VkIG9uY2UgTS1DMSBsYW5kcykuCi0gKipELUM2KiogVHdvLVBDIGRpc2NpcGxpbmU6IGBzeW1ib2xzLnR4dGAgc2luZ2xlIHdyaXRlciDigJQgcHVsbCBiZWZvcmUgdG91Y2hpbmc7IGRlY29tcCBidWlsZCBydW5zIG9uIG9uZSBtYWNoaW5lOyBKUy9kYXRhIGxhbmUgb24gdGhlIG90aGVyICh1bmNoYW5nZWQgcnVsZSkuCi0gKipELUM3KiogRnVuY3Rpb24gcHJpb3JpdHkgb3JkZXIgaXMgKnRoaXMqIGRvYydzIHF1ZXVlIChNLUMzLi5NLUM3KSwgbm90ICJ3aGF0ZXZlciBsb29rcyBmdW4iLgotICoqRC1DOCoqIEFzbSBpc2xhbmRzIGFyZSBsZWdhbCBlc2NhcGUgaGF0Y2hlcyAoYCNwcmFnbWEgcHVzaC8uLi5gIG9yIGAuc2Aga2VwdCksIGJ1dCBlYWNoIGNvc3RzIGEgdHJhY2tlZCBgLTFgIGluIHRoZSBsZWRnZXI7IGdvYWwgMCBhdCAiZG9uZSIuCgotLS0KCiMjIMKnMSBNLUMwIOKAlCBUb29sY2hhaW4gbG9jayAoYmxvY2tpbmc7IH4xIGRheSDigJQgKipkb3dubG9hZGluZyBhbHJlYWR5IGRvbmUqKikKCioqQXVkaXQgY29ycmVjdGlvbiAoMjAyNi0xMS0xMSk6KiogYGJ1aWxkL2NvbXBpbGVycy9HQy9gIGFscmVhZHkgY29udGFpbnMgQ29kZVdhcnJpb3IgR0MKMS4wLCAxLjEsIDEuMXAxLCAxLjIuNShuKSwgMS4zKC4yLy4yciksIDIuMChwMSksIDIuNS0yLjcsIDMuMGEzKC4yLS40L3AxKSwgMy4wYTUoLjIpCigrIGxpbmtlciBgbXdsZGVwcGNgKS4gQWN0aXZlIGRlZmF1bHQgaW4gYGJ1aWxkLm5pbmphYCBpcyBgR0NcMS4zLjJgIOKAlCBhbiAqKmFyYml0cmFyeQpzY2FmZm9sZCBjaG9pY2UqKjsgdGhlIHNoYS1NQVRDSCByZWxpbmsgb25seSBwcm92ZXMgbGlua2VyIHRvbGVyYW5jZSBmb3IgYmxvYiByZWxpbmssCk5PVCBhIG1hdGNoaW5nIHRvb2xjaGFpbi4gRkU5VSAoMjAwNi8wNykgbW9zdCBsaWtlbHkgc2l0cyBvbiAzLjBhMy544oCTMy4wYTUueC4KClN0ZXBzIChwcm9iZSBvbmx5LCBubyBkb3dubG9hZHMpOgoxLiBIYXJuZXNzIGB0b29scy9wcm9iZV9td2NjLnB5YDogY29tcGlsZSBwcm9iZSBjb3JwdXMgd2l0aCBldmVyeSAzLnggcmV2aXNpb24gKHRoZW4KICAgMi54IGlmIG5lZWRlZCksIG5vcm1hbGl6ZSAoc3RyaXAgYWRkcmVzc2VzKSwgc2NvcmUgPSBmaXJzdCBtaXNtYXRjaGluZyBpbnN0cnVjdGlvbi4KMi4gUHJvYmUgY29ycHVzIChhbGwgb24tZGlzaywgemVybyBuZXcgUkUgd29yayk6CiAgIC0gUDEgaW5pdCBwcm9sb2d1ZSBwYXR0ZXJuIChgYXV0b18qX2luaXQuc2ApCiAgIC0gUDIgYGhhc2gzN2AgQCBgMHg4MDAwRDU5OGAgKDB4MzAgQiBwdXJlIGxvb3AsIGRvY3VtZW50ZWQgYWxnb3JpdGhtKSDigJQgKip0aGUgcHJvYmUqKgogICAtIFAzIG9uZSBmbG9hdC11c2luZyBmdW5jdGlvbiBmcm9tIHRoZSBuYW1lZCBldmVudCBzZXQKMy4gV2lubmVyIHJlY29yZGVkOiBiaW5hcnkgcGF0aCwgc2hhMjU2LCBmbGFncyAoYC1wcm9jIEcyIC1mcCBoYXJkIC1PMixwIC1zdHIgcmV1c2UgLXBvb2wgb2ZmYCBzdGFydGluZyBwb2ludCksIHNldCBhcyBgbXdfdmVyc2lvbmAgaW4gYGNvbmZpZ3VyZS5weWAuCgpHYXRlOiBQMiBjb21waWxlcyBieXRlLWlkZW50aWNhbC4gSWYgTk8gb24tZGlzayByZXZpc2lvbiByZXByb2R1Y2VzIFAyLCBzdXNwZWN0IHRoZQpwcm9iZSBjb3JwdXMgLyBmbGFncyBiZWZvcmUgYmxhbWluZyB0aGUgY29tcGlsZXJzIOKAlCAqKmRvIG5vdCBwcm9jZWVkIHBhc3QgTS1DMCB3aXRob3V0IHRoaXMgZ2F0ZS4qKgoKIyMgwqcyIE0tQzEg4oCUIFNwbGl0IHBpcGVsaW5lIChtb3N0bHkgcHJlLXdpcmVkOyB+MSBkYXkpCgoqKkF1ZGl0IGNvcnJlY3Rpb246KiogYGNvbmZpZ3VyZS5weWAgKHplbGRhcmV0L2RvbGRlY29tcC1saW5lYWdlIHNjYWZmb2xkKSBhbHJlYWR5IGNvbnRhaW5zCnJ1bGVzIGBzcGxpdGAgKD0gYGR0ayBkb2wgc3BsaXRgKSwgYG13Y2NbX3NqaXNdW19leHRhYl1gLCBgYXNgLCBgbGlua2AsIGBlbGYyZG9sYCwgYGNoZWNrYCwKYHJlcG9ydGAsIGFuZCAqKndyaXRlcyBgb2JqZGlmZi5qc29uYCoqIChsaW5lIH4zMzQpLiBgZHRrIDEuOC40YCBoYXMgTk8gYGFuYWx5emVgIGNvbW1hbmQg4oCUCnRoZSBoaXN0b3JpY2FsIG5vdGUgImR0ayBhbmFseXplIHVwZGF0ZXMgc3ltYm9scy50eHQiIGlzIHdyb25nIGZvciB0aGlzIHZlcnNpb247IHN5bWJvbApwcm92ZW5hbmNlIG11c3QgYmUgcmVjb3JkZWQgcGVyIGJhdGNoIGluc3RlYWQgKHNlZSDCpzE0KS4KCjEuIFZlcmlmeSBgbmluamEgc3BsaXRgIOKGkiBgYnVpbGQvR0ZFRTAxYCByZWxvY2F0YWJsZSBvYmplY3RzOyBgZHRrIGRvbCBzcGxpdGAgcmVnZW5lcmF0ZXMKICAgYXNtIGF0IGJ1aWxkIHRpbWUsIHNvICoqYXNtIHN0YXlzIHVuY29tbWl0dGVkKiogKGNvcnJlY3QgZm9yIGR0ayB3b3JrZmxvdywgdW5jaGFuZ2VkIHBvbGljeSkuCjIuIFdpcmUgdGhlIG1pc3NpbmcgcGllY2U6IGBvYmpkaWZmYCBDTEkgYmluYXJ5IChlbmNvdW50ZXIvb2JqZGlmZiByZWxlYXNlcykgaW50byBgdG9vbHMvYCwKICAgb25lLWNvbW1hbmQgYG5pbmphIHJlcG9ydGAg4oaSIG1hdGNoZWQtYnl0ZXMgaW50byBgZG9jcy9TQ09SRUJPQVJELm1kYC4KMy4gbGRzY3JpcHQgY292ZXJzIGFsbCAxMCBzZWN0aW9ucyBpbmNsLiBNRU0yIChjZWlsaW5nIGAweDgwMzZDNDAwYCkuCgpHYXRlOiBgY29uZmlndXJlLnB5ICsgbmluamFgIGZyb20gY2xlYW4gdHJlZSA9IHNoYTEgTUFUQ0g7IGBvYmpkaWZmLmpzb25gIGxvYWRzIGluIG9iamRpZmYKQ0xJIGFuZCByZXBvcnRzIGAwIC8gMiw0OTksNTUyIEJgIGNvZGUuCgojIyDCpzMgTS1DMiDigJQgRmlyc3QgbWF0Y2g6IGBoYXNoMzdgIChkYXkgfjUpCgpMb29wICh0aGlzIGV4YWN0IGxvb3AgZm9yZXZlciBhZnRlcik6CmBgYAptMmMgZHJhZnQgKHBpcCBpbnN0YWxsIG0yYykgICAtPiBzcmMvY20vaGFzaDM3LmMKbXdjYyBjb21waWxlIChmbGFncyBmcm9tIMKnMSkgIC0+IGJ1aWxkLy4uLi9oYXNoMzcubwpvYmpkaWZmIGhhc2gzNyAgICAgICAgICAgICAgICAtPiBpdGVyYXRlOiAtTyBsZXZlbHMsIC1zdHIsIC1wb29sLCByZWdpc3RlciBwcmVzc3VyZSBoaW50cywgZXhwbGljaXQgdTgvY2hhcgpkb25lIHdoZW46IDEwMCUgKyBET0wgc2hhMSBNQVRDSCArIHF1ZXVlIENTViBmbGlwcyB0byBgbWF0Y2hlZGAKYGBgCkRlbGl2ZXJhYmxlczogYGhhc2gzN2AgbWF0Y2hlZDsgYGRvY3MvRkU5X01BVENIX1FVRVVFUy5tZGAgZG9jdW1lbnRzIHRoZSBsb29wOyBgdG9vbHMvbWF0Y2gucHMxYC9gLm1qc2Agb25lLWNvbW1hbmQgd3JhcHBlciAoY29tcGlsZStkaWZmK3JlcG9ydCkuCgojIyDCpzMuNSBNLUMyLjUg4oCUIFNESy9ydW50aW1lIGZyZWUgd2lucyAoYXVkaXQgYWRkaXRpb247IHNhbWUgd2VlaykKCmBjb25maWd1cmUucHlgIGFscmVhZHkgZGVjbGFyZXMgYFJ1bnRpbWUuUFBDRUFCSS5IL2dsb2JhbF9kZXN0cnVjdG9yX2NoYWluLmNgIGFuZApgX19pbml0X2NwcF9leGNlcHRpb25zLmNwcGAgYXMgKipOb25NYXRjaGluZyBzdHVicyoqIOKAlCB0aGVzZSBhcmUgQ29kZVdhcnJpb3IgcnVudGltZQpmaWxlcyB3aG9zZSBtYXRjaGluZyBzb3VyY2VzIGV4aXN0IHZlcmJhdGltIGFjcm9zcyB0aGUgR0MvV2lpIGRlY29tcCBlY29zeXN0ZW0KKHplbGRhcmV0L2RvbGRlY29tcCBwcm9qZWN0cykuIEZpcnN0IHJlYWwgbWF0Y2hlcyB3aWxsIGNvbWUgZnJvbSBoZXJlLCBub3QgZnJvbSBnYW1lIGNvZGU6CmZsaXAgYE5vbk1hdGNoaW5nYOKGkmBNYXRjaGluZ2Agd2l0aCBjb21tdW5pdHkgc291cmNlcywgdmFsaWRhdGUsIHRoZW4gbW92ZSB0byBgaGFzaDM3YC4KQWxzbzogU0RLIG5hbWVzIGFscmVhZHkgaW4gYHN5bWJvbHMudHh0YCAoYF9fY2hlY2tfcGFkM2AsIGBfX2luaXRfcmVnaXN0ZXJzYCwg4oCmKSB0ZWxsIHVzCnRoZSBhbmFseXplciBkZXRlY3RlZCBSRVZPIGluaXQgc2VxdWVuY2VzIOKAlCBtYXRjaGluZyB0aG9zZSBpcyBuZWFyLWZyZWUuCgpHYXRlOiDiiaUxIFNESyBmaWxlIE1hdGNoaW5nICsgRE9MIHNoYTEgTUFUQ0guCgojIyDCpzQgTS1DMyDigJQgVXRpbGl0eSBsYWRkZXIgKHdlZWtzIH4yLTY7IH4xNTAgS0IgdGFyZ2V0KQoKQXV0by1nZW5lcmF0ZWQgcXVldWUgZmlyc3Q6IGB0b29scy9ta3F1ZXVlLnB5YCB3YWxrcyBgc3ltYm9scy50eHRgOgpjYW5kaWRhdGVzID0gc2l6ZSA8IDB4ODAgQiwgbm8gZXh0ZXJuYWwgYGxibF8vZGF0YV9gIHJlZnMgaW4gYXNtLCBub3QgYSBqdW1wdGFibGUgc3R1YgrihpIgYGRvY3MvRkU5X01BVENIX1FVRVVFLmNzdmAgd2l0aCBgYnl0ZXMsIHJlZnMsIHByaW9yaXR5LCBzdGF0ZWAgY29sdW1ucywgcmUtc29ydGFibGUuCgpFeHBlY3RlZCBlYXJseSB3aW5zIChhbHJlYWR5IG5hbWVkLCBzbyBzZW1hbnRpY3Mga25vd24pOgoxLiBoYXNoMzcgKMKnMykKMi4gc3RkOjpzdHJpbmcgaGVscGVycyAoYHtzaXplLGNhcGFjaXR5LHB0cn1gIGxheW91dCBkb2N1bWVudGVkKQozLiBVbml0IGFjY2Vzc29yczogYFVuaXRHZXRCeVBJRGAgKyB0aGUgNzAwLW9kZCBuYW1lZCBldmVudC1hZGphY2VudCBsZWF2ZXMKNC4gYGhhc2gzMWAgY2xvbmVzIChzYW1lIGFsZ29yaXRobSwgY29uc3RhbnQgMzEg4oCUIHZlcmlmeSBhdCBlYWNoIHNpdGUsIHNvbWUgYXJlIGlubGluZWQpCgpHYXRlOiDiiaUzJSBjb2RlIGJ5dGVzIG1hdGNoZWQgKyBDSSBncmVlbiAoTS1DOSkgKyBhdCBsZWFzdCAxIG5vbi1zZWxmIGNvbnRyaWJ1dG9yIGRvaW5nIMKnMyBsb29wcy4KCiMjIMKnNSBNLUM0IOKAlCBFdmVudCBWTSB0cmlvICh3ZWVrcyB+Ni0xMikKClNwbGl0IHRhcmdldHMgYWxyZWFkeSBtYXBwZWQgKGBGRTlfU1RBTkhBU0hfTUlOSU5HLmNzdmApOgotIGAweDgwMDExRDJDYCBpbnNpZGUgYGZuXzgwMDExRDIwYCAoKzB4Qykg4oaSIHNwbGl0LCBuYW1lIGBDbVZNX0ludGVycHJldGAKLSBgMHg4MDA2RDQzN2AgaW5zaWRlIGBmbl84MDA2RDM3OGAgKCsweEJGKSDihpIgZGlzcGF0Y2hlciAqKmRhdGEqKiB0YWJsZSwgbm90IGNvZGUKLSBgMHg4MDExRjM1MWAgaW5zaWRlIGBmbl84MDExRjE4NGAgKCsweDFDRCkg4oaSIGZ1bmN0aW9uLW5hbWUgcmVnaXN0cnkgZGF0YQoKUHJvY2VkdXJlOiBhZGQgc3ViLXN5bWJvbHMgd2l0aCBzaXplcyB0byBgc3ltYm9scy50eHRgIOKGkiBkdGsgcmUtYW5hbHl6ZS9zcGxpdCDihpIgYXNtIGJvdW5kYXJpZXMKbXVzdCBub3cgcmVwcm9kdWNlOiAoYSkgVk0gb3Bjb2RlIHRhYmxlIG9yZGVyIG1hdGNoaW5nIHRoZSBjb21tdW5pdHkgb3Bjb2RlIGxpc3QsCihiKSByZWdpc3RyeSBzdHJpbmcgY3Jvc3MtY2hlY2sgdnMgYEN4eC5jbWJgIG5hbWUgcG9vbC4gVGhlbiBtYXRjaCBmdW5jdGlvbnMKKFZNIGludGVycHJldGVyIGZpcnN0OyBkaXNwYXRjaGVyIGRhdGEgbmVlZHMgbm8gbWF0Y2ggYmV5b25kIGNvcnJlY3Qgc2VjdGlvbi9ieXRlcykuCgpHYXRlOiBgYmluL2NtYi5tanNgIChKUyBsYW5lKSBvcGNvZGUgbmFtZXMgY3Jvc3MtdmFsaWRhdGUgYWdhaW5zdCBkZWNvbXBpbGVkIFZNIHN3aXRjaCDigJQgdHdvIGluZGVwZW5kZW50IGltcGxlbWVudGF0aW9ucyBhZ3JlZWluZy4KCiMjIMKnNiBNLUM1IOKAlCBEaXNwb3MvVW5pdCBsYXllciAod2Vla3MgfjEyLTE2KQoKYERpc3Bvc0ZpbGVEZWNvZGVgIChgMHg4MDEwN0I1NGAsIDB4MjEwIEIpICsgYFVuaXRMb2FkVW5pdEluZm9gIChgMHg4MDAzRUFFOGAsIDB4NkM0IEIpLgpIaWdoIHZhbHVlOiB0aGV5ICpkZWZpbmUqIHRoZSBgVW5pdEluZm9gL2BkaXNwb3NgIGxheW91dCB1c2VkIGJ5IHRoZSBBSS1kYXRhIGxhbmU7CmEgYnl0ZS1tYXRjaCB0dXJucyBTdGFuSCdzICJhaT8iIHdvcmRzIGludG8gYXV0aG9yaXRhdGl2ZSBmaWVsZCBzZW1hbnRpY3MuCgpHYXRlOiBkZWNvbXBpbGVkIGRlY29kZXIgY29uZmlybXMgNCBBSSB3b3JkcyBAICs0Qy4uKzU4IGFuZCBVbml0SW5mbyszOC4uNDQgbWFwcGluZy4KCiMjIMKnNyBNLUM2IOKAlCBQcm9jIGVuZ2luZSAod2Vla3MgfjE2LTI0KQoKQW5jaG9yczogYGdQcm9jSW5zdHJEaWN0MC8xLzJgLCBwcm9jIHN0cnVjdCAweDcwLCBpbnN0cnVjdGlvbiBoZWFkZXIgd29yZCBsYXlvdXQuCldvcms6IHByb2MgbGlmZWN5Y2xlIGZ1bmN0aW9ucyAoc3RhcnQvbG9vcC9lbmQvdHJlZSBvcHMpICsgZGljdDAgZW50cmllcyBvbmUgYnkgb25lLgpDcm9zcy1jaGVjazogcHJvYyBzY3JpcHRzIGZvdW5kIGluIGdhbWUgZGF0YSBkaXNhc3NlbWJsZSBjb2hlcmVudGx5IHdpdGggdGhlIGluc3RydWN0aW9uIHNlbWFudGljcy4KCkdhdGU6IGFueSAzIGRpY3QwIGluc3RydWN0aW9ucyBtYXRjaGVkIGVuZC10by1lbmQuCgojIyDCpzggTS1DNyDigJQgQmF0dGxlL0FJIGNvcmUgKG1vbnRocyA2KzsgdGhlIGxvbmcgZ3JpbmQpCgpgYmF0dGxlLmRieGAgKyBgcGFyYW0uZGJ4YCAoMzk0LzExNiByb3dzIFNKSVMpIGdpdmUgZGFtYWdlL0FJIGNvbnN0YW50cyBmb3IgZnJlZS4KT3JkZXI6IEJhdHRsZUFjdGlvbiAoNCBCKSDihpIgZGFtYWdlIGNhbGMgY2hhaW4g4oaSIEFJIGV2YWwgZW50cnkgcG9pbnRzIHJlYWNoZWQgZnJvbQpgRVZUX0VuZW15KkNoZWNrKmAgeHJlZnMg4oaSIG1vdmVtZW50L3RocmVhdCBzY29yaW5nLiBFYWNoIG1hdGNoIGZlZWRzIHRoZSBwb3J0IHNwZWMgZG9jcy4KCkdhdGUgKHN0YXRlZCBob25lc3RseSk6IG5vIHRpbWUtYm94OyBwZXJjZW50YWdlIG1pbGVzdG9uZXMgb25seSAoMTAvMjAvNTAlIG9mIGNvZGUgYnl0ZXMpLgoKIyMgwqc5IE0tQzkg4oCUIENJICYgY29tbXVuaXR5IGluZnJhIChkbyBhbG9uZ3NpZGUgTS1DMykKCi0gR2l0SHViIEFjdGlvbnM6IHVidW50dS1sYXRlc3QsIGNhY2hlIGB0b29scy9kdGtgICsgYGJ1aWxkL2NvbXBpbGVyc2AgKHNhbWUgcHVibGljIG1pcnJvciB0aGUgc2NhZmZvbGQgYWxyZWFkeSBkb3dubG9hZHMgZnJvbSDigJQgYGRvd25sb2FkX3Rvb2wucHlgIOKAlCBubyBwcml2YXRlIGJ1Y2tldCBuZWVkZWQ7IExJQ0VOU0Ugbm90ZXMgdG9vbCDiiaAgcHJvamVjdCBjb2RlKSwgYHBpcCBpbnN0YWxsIG0yYyBuaW5qYWAsIHJ1biBjb25maWd1cmUrbmluamEsIG9iamRpZmYgcmVwb3J0IGpvYiBwb3N0cyBtYXRjaGVkLWJ5dGVzLgotIGBkb2NzL0ZFOV9NQVRDSF9RVUVVRS5jc3ZgIGlzIHRoZSBjb250cmlidXRpb24gYm9hcmQ7IGdvb2QtZmlyc3Qgcm93cyA9IHF1ZXVlIGhlYWQuCi0gUkVBRE1FIHNlY3Rpb24gIkNvbnRyaWJ1dGluZyB0byB0aGUgZGVjb21wIiA9IHRoZSDCpzMgbG9vcCwgMTAgbGluZXMuCgojIyDCpzEwIEFjY291bnRpbmcgJiBjYWRlbmNlCgpgZG9jcy9TQ09SRUJPQVJELm1kYCBwZXIgbWVyZ2U6IGBDb2RlOiA8bWF0Y2hlZD4vPDI0OTk1NTI+IEIgKDx4PiUpIHwgK04gZnVuY3MgfCBhc20taXNsYW5kczogTWAuCldlZWtseSByb2xsLXVwIGNvbW1lbnQgb24gcmVwbyAoYWdlbnQgb3IgaHVtYW4pIOKAlCBvbmUgcGFyYWdyYXBoLCBubyBjZXJlbW9ueS4KCiMjIMKnMTEgUmlza3MKCnwgUmlzayB8IE1pdGlnYXRpb24gfAp8LS0tfC0tLXwKfCBObyBNV0NDIHJldiByZXByb2R1Y2VzIGBoYXNoMzdgIHwgcHJvYmUgUDIgKmlzKiB0aGUgZ2F0ZTsgd2lkZW4gcmV2IHNldCAoTmludGVuZG8gaW50ZXJuYWwgYnVpbGRzIGNpcmN1bGF0ZSBmb3IgR0MpOyBuZXZlciBoYW5kLWZvcmdlIHRoZSAiY2xvc2UgZW5vdWdoIiB8CnwgcjEzL3NkYXRhIGNvdXBsaW5nIGJyZWFrcyBzcGxpdCB8IGtlZXAgc2RhdGEgc2VjdGlvbiBsYXlvdXQgZXhhY3RseSBhcyBkdGsgcHJvZHVjZXM7IGZpcnN0IG1hdGNoZXMgbXVzdCBpbmNsdWRlIG9uZSByMTMtcmVmZXJlbmNpbmcgbGVhZiB8CnwgRlAtaGVhdnkgZnVuY3MgZGl2ZXJnZSB8IGAtZnAgaGFyZC9jb25zYCwgZXhwbGljaXQgYGZtYWZgIGF2b2lkYW5jZSwgTVdDQyBidWlsdGlucyAoYF9fZnJzcGAgZXRjLikg4oCUIGNhdGFsb2cgaW4gTUFUQ0hfUVVFVUVTIGRvYyB8CnwgVHdvLVBDIGNsb2JiZXIgb2YgYHN5bWJvbHMudHh0YCB8IEQtQzYgKyBDSSBqb2IgdGhhdCByZS1zcGxpdHMgZnJvbSBjb21taXR0ZWQgY29uZmlnIGFuZCBjaGVja3Mgc2hhOyBjb25mbGljdHMgYXJlIG1lcmdlIGNvbmZsaWN0cywgbm90IHNpbGVudCB8CnwgVGVhbSBtb3JhbGUgKDDihpIxIGNsaWZmKSB8IMKnNCBhdXRvLXF1ZXVlIGtlZXBzIGEgZnJlc2ggdG9wLTEwIGxpc3Qgb2YgPDB4ODBCIHdpbnMgYXQgYWxsIHRpbWVzIHwKfCBDb21waWxlciByZWRpc3RyaWJ1dGlvbiBsZWdhbGl0eSB8IENJIHB1bGxzIGZyb20gYSBidWNrZXQgd2UgY29udHJvbDsgTElDRU5TRSBub3RlcyB0b29sIOKJoCBwcm9qZWN0IGNvZGUgfAoKIyMgwqcxMiBFeHBsaWNpdCBub24tZ29hbHMgKHYxKQoKLSBCZWhhdmlvciBjaGFuZ2VzLCBidWdmaXhlcywgb3B0aW1pemF0aW9uLCBhc3NldCBlZGl0cyDigJQgdGhpcyBsYW5lIG9ubHkgKnJlcHJvZHVjZXMqLgotIE5hdGl2ZS9BbmRyb2lkIHJlLXRhcmdldGluZyDigJQgc2VwYXJhdGUgcGxhbiAoYEZFOV9QQVRIX0RfUExBTi5tZGAsIG9ubHkgb3BlbiBpdCBhZnRlciDiiaU4MCUgbWF0Y2hlZCBBTkQgTS1DNiBkb25lKS4KLSBgYXNtL2AgY29tbWl0dGVkIHRvIGdpdCDigJQgZGVmZXJyZWQgKEQtQzkpIHVudGlsIG91dHNpZGUgY29udHJpYnV0b3JzIG5lZWQgc3RhYmxlIGFzbSBiYXNlbGluZXMuCgojIyDCpzEzIEltbWVkaWF0ZSBuZXh0IGFjdGlvbnMgKHRoaXMgd2VlaywgcG9zdC1hdWRpdCkKCjEuIGB0b29scy9wcm9iZV9td2NjLnB5YDogc3dlZXAgb24tZGlzayByZXZzICgzLjBhM3AxLCAzLjBhMy40LCAzLjBhNSwgMy4wYTUuMiBmaXJzdDsgdGhlbiAyLjcvMy4wYTMueDsgMi54IGxhc3QpIGFnYWluc3QgUDIgYGhhc2gzN2A7IGZsaXAgYG13X3ZlcnNpb25gLiDigJQgbWUKMi4gRG93bmxvYWQgb2JqZGlmZiBDTEk7IHZhbGlkYXRlIGBvYmpkaWZmLmpzb25gIHJvdW5kLXRyaXAuIOKAlCBtZQozLiBgbmluamEgc3BsaXRgIHZlcmlmeSBmcm9tIGNsZWFuIHRyZWU7IGNvbmZpcm0gc2hhIE1BVENIICsgYDAvMiw0OTksNTUyYCByZXBvcnQuIOKAlCBtZQo0LiBNLUMyLjU6IHB1bGwgU0RLIHJ1bnRpbWUgc291cmNlcyAoZ2xvYmFsX2Rlc3RydWN0b3JfY2hhaW4sIF9faW5pdF9jcHBfZXhjZXB0aW9ucykgZnJvbSBhIHNpYmxpbmcgR0MgcHJvamVjdCBhbmQgZmxpcCBNYXRjaGluZy4g4oCUIG1lCjUuIGB0b29scy9ta3F1ZXVlLnB5YCArIGZpcnN0IGBGRTlfTUFUQ0hfUVVFVUUuY3N2YC4g4oCUIG1lCjYuIE1lc3NhZ2UgdG8gaG9tZSBhZ2VudDogcHVsbDsgSlMgbGFuZSBrZWVwcyBQMSBnYXRlczsgZG8gTk9UIGVuYWJsZSBzcGxpdCBtb2RlIHRoZXJlOyBDSSBpbmZyYSAoTS1DOSkgYXNzaWduZWQgdG8gd2hpY2hldmVyIG1hY2hpbmUgZ2V0cyBHSCBBY3Rpb25zIHNlY3JldHMgZmlyc3QuCgojIyDCpzE0IFBsYW4gYXVkaXQgbG9nICh2MS4xLCAyMDI2LTExLTExIOKAlCBza2VwdGljYWwgcmV2aWV3KQoKVmVyaWZpZWQgYWdhaW5zdCByZWFsaXR5IGJlZm9yZSB0cnVzdGluZyB2MToKCnwgdjEgY2xhaW0gfCBWZXJkaWN0IHwgRXZpZGVuY2UgfAp8LS0tfC0tLXwtLS18CnwgIkRvd25sb2FkIGNvbXBpbGVyIGFyY2hpdmVzICh6ZWxkYXJldC9jb21waWxlcnMgR0MvKSIgfCAqKldST05HIHR3aWNlKiogfCByZXBvIHBhdGggNDA0OyBhbmQgYGJ1aWxkL2NvbXBpbGVycy9HQy9gIGFscmVhZHkgaG9sZHMgMjArIENXIHJldnMgKHNjYWZmb2xkJ3MgYGRvd25sb2FkX3Rvb2wucHlgIGZldGNoZWQgdGhlbSkg4oaSIE0tQzAgaXMgcHJvYmUtb25seSBub3cgfAp8IG0yYyBQUEMgc3VwcG9ydCB8IFRSVUUgfCBSRUFETUU6ICIzMi1iaXQgTUlQUywgQVJNLCBQb3dlclBDLCBTdXBlckgiLCBgLXQgcHBjYCwgYE1XQ0NfQ0NgIGVudjsgYnVpbHQgZm9yIGJ5dGUtbWF0Y2ggcHJvamVjdHMgfAp8ICJkdGsgZW1pdHMgcGVyLWZ1bmN0aW9uIG9iamRpZmYgSlNPTiIgfCBoYWxmLXRydWUgfCBvYmpkaWZmLmpzb24gaXMgZW1pdHRlZCBieSAqKmNvbmZpZ3VyZS5weSoqIChhbHJlYWR5IHdpcmVkKTsgYG9iamRpZmZgIENMSSBiaW5hcnkgc3RpbGwgbWlzc2luZyB8CnwgIkN1cnJlbnQgYnVpbGQgPSByZWxpbmssIG5lZWQgc3BsaXQgcGlwZWxpbmUiIHwgVFJVRSBidXQgdW5kZXJzdGF0ZWQgfCBgYnVpbGQubmluamFgIGhhcyBgc3BsaXQvbXdjYy9hcy9saW5rL2VsZjJkb2wvY2hlY2svcmVwb3J0YCBydWxlcyBwcmUtd2lyZWQ7IGJ1dCAqKnplcm8qKiBjb21waWxlIHJ1bGVzIGZpcmVkIGZvciBhc20gYW5kIDAgYC5jYCBpbiBgc3JjL2AgdG9kYXk7IGBkdGsgMS44LjRgIGhhcyBubyBgYW5hbHl6ZWAgKGhlbHAgYXVkaXRlZCkg4oCUIGhpc3RvcmljYWwgImR0ayBhbmFseXplIiBub3RlcyBhcmUgd3JvbmcgZm9yIHRoaXMgdmVyc2lvbiB8CnwgQWN0aXZlIGBtd192ZXJzaW9uID0gR0NcMS4zLjJgIHwgQVJCSVRSQVJZIHwgc2NhZmZvbGQgZGVmYXVsdDsgc2hhLU1BVENIIHByb3ZlcyBvbmx5IGxpbmtlciB0b2xlcmFuY2UgZm9yIGJsb2IgcmVsaW5rLiBGRTlVIGxpa2VseSAzLjBhM+KAkzMuMGE1LnggfAp8IERlbm9taW5hdG9yIDIsNTAwLDgyOCBCIHwg4omIT0ssIGZpeGVkIHRvIDIsNDk5LDU1MiB8IERPTCBoZWFkZXIgYC50ZXh0YCBzaXplIGF0IG9mZnNldCAweDg4IGFyZWEgKFlBR0NEIGxheW91dDsgR0JBLWJvb3QgZmllbGQgYXQgMHgyQyB0cmlja3MgbmFpdmUgcGFyc2VycykgfAp8IGFzbS8gbm90IGNvbW1pdHRlZCB8IFRSVUUgZm9yIGR0ayB8IGBkdGsgZG9sIHNwbGl0YCByZWdlbmVyYXRlcyBhdCBidWlsZCB0aW1lIHwKfCBTREsgc3R1YnMgYWxyZWFkeSBzY2FmZm9sZGVkIGFzIE5vbk1hdGNoaW5nIHwgTUlTU0VEIGluIHYxIHwgYGNvbmZpZ3VyZS5weToyOTQtMjk1YCDihpIgYWRkZWQgTS1DMi41IChmaXJzdCB3aW5zIGxpa2VseSBmcm9tIFNESywgbm90IGdhbWUgY29kZSkgfAp8IHN5bWJvbHMudHh0IHByb3ZlbmFuY2UgfCBHQVAgfCBTREstc3R5bGUgbmFtZXMgKGBfX2NoZWNrX3BhZDNg4oCmKSArIGFuYWx5emVyIG5hbWVzIGNvZXhpc3Q7IG5vIGJhdGNoIHByb3ZlbmFuY2UgcmVjb3JkZWQg4oaSIG5ldyBydWxlOiBuYW1lIGJhdGNoZXMgbXVzdCBzaGlwIGEgc291cmNlIHJvdyBpbiB0aGUgbGVkZ2VyIENTViB8CgpOZXQgZWZmZWN0OiBNLUMwIHNocmlua3MgZnJvbSBkYXlzIHRvIGhvdXJzOyBmaXJzdCBtYXRjaCByZWFsaXN0aWMgaW5zaWRlIHdlZWsgMTsKbGFyZ2VzdCByZW1haW5pbmcgdW5rbm93biA9IGV4YWN0IE1XQ0MgcmV2aXNpb24gKHByb2JlZCBuZXh0KSBhbmQgcHJvYmUgY29ycHVzIHF1YWxpdHkuCg==
+# FE9 Path C — 100% matching-decomp plan (v1.1, 2026-11-11 — post-audit; audit log §14)
+
+Goal: reconstruct the entire FE9U (GFEE01) DOL as compilable C/asm that links
+**byte-identical** to `main.dol` (sha1 `9d00d7d407750b82cb1cfccc56f8aa8a89cc8851`),
+then, much later, re-target that C for other platforms (native port = separate plan, out of scope here).
+
+Ground truth today (measured from `decomp/config/GFEE01/symbols.txt`):
+
+| Metric | Value |
+|---|---|
+| Functions detected (analyzer) | 9,251 (provisional — blobs hide functions; the VM trio already proves ≥3 hidden) |
+| Total code bytes | **2,499,552 fixed denominator** (DOL `.text` measured from header; analyzer sum 2,500,828 agrees within padding) |
+| Functions named (community seeds) | 714 (4.4% of code bytes) |
+| Functions matching from C | **0** |
+| Build status | relink from original asm = sha1 MATCH |
+| Compiler archives on disk | **YES** — `build/compilers/GC/` = CW GC 1.0 … 3.0a5.2 (20+ revs, auto-downloaded by scaffold) |
+
+Comparables: TWW needed ~5 years and ~30 contributors for a same-generation GC DOL.
+This plan optimizes for *correct pipeline + measurable weekly progress*, not heroics.
+
+---
+
+## §0 Locked decisions
+
+- **D-C1** Compiler: CodeWarrior PPC 3.x family; exact revision picked **empirically** (M-C0), pinned in `tools/` + recorded here. Never mix versions.
+- **D-C2** Structure: per-subsystem source directories (`src/cm/`, `src/dispos/`, ...); asm splits live under `asm/`; one file per logical module, multiple functions per file allowed once boundaries are trusted.
+- **D-C3** Naming: keep community names; new names = PascalCase like existing seeds; `EVT_` prefix already reserved for event scripts; statics `s*`, globals `g*`.
+- **D-C4** A function is "done" only at **100% objdiff on the matched compiler**, committed with its source, queue CSV updated. No "functionally equivalent" claims in the scoreboard.
+- **D-C5** Every merged commit must keep DOL sha1 MATCH (CI-enforced once M-C1 lands).
+- **D-C6** Two-PC discipline: `symbols.txt` single writer — pull before touching; decomp build runs on one machine; JS/data lane on the other (unchanged rule).
+- **D-C7** Function priority order is *this* doc's queue (M-C3..M-C7), not "whatever looks fun".
+- **D-C8** Asm islands are legal escape hatches (`#pragma push/...` or `.s` kept), but each costs a tracked `-1` in the ledger; goal 0 at "done".
+
+---
+
+## §1 M-C0 — Toolchain lock (blocking; ~1 day — **downloading already done**)
+
+**Audit correction (2026-11-11):** `build/compilers/GC/` already contains CodeWarrior GC
+1.0, 1.1, 1.1p1, 1.2.5(n), 1.3(.2/.2r), 2.0(p1), 2.5-2.7, 3.0a3(.2-.4/p1), 3.0a5(.2)
+(+ linker `mwldeppc`). Active default in `build.ninja` is `GC\1.3.2` — an **arbitrary
+scaffold choice**; the sha-MATCH relink only proves linker tolerance for blob relink,
+NOT a matching toolchain. FE9U (2006/07) most likely sits on 3.0a3.x–3.0a5.x.
+
+Steps (probe only, no downloads):
+1. Harness `tools/probe_mwcc.py`: compile probe corpus with every 3.x revision (then
+   2.x if needed), normalize (strip addresses), score = first mismatching instruction.
+2. Probe corpus (all on-disk, zero new RE work):
+   - P1 init prologue pattern (`auto_*_init.s`)
+   - P2 `hash37` @ `0x8000D598` (0x30 B pure loop, documented algorithm) — **the probe**
+   - P3 one float-using function from the named event set
+3. Winner recorded: binary path, sha256, flags (`-proc G2 -fp hard -O2,p -str reuse -pool off` starting point), set as `mw_version` in `configure.py`.
+
+Gate: P2 compiles byte-identical. If NO on-disk revision reproduces P2, suspect the
+probe corpus / flags before blaming the compilers — **do not proceed past M-C0 without this gate.**
+
+## §2 M-C1 — Split pipeline (mostly pre-wired; ~1 day)
+
+**Audit correction:** `configure.py` (zeldaret/doldecomp-lineage scaffold) already contains
+rules `split` (= `dtk dol split`), `mwcc[_sjis][_extab]`, `as`, `link`, `elf2dol`, `check`,
+`report`, and **writes `objdiff.json`** (line ~334). `dtk 1.8.4` has NO `analyze` command —
+the historical note "dtk analyze updates symbols.txt" is wrong for this version; symbol
+provenance must be recorded per batch instead (see §14).
+
+1. Verify `ninja split` → `build/GFEE01` relocatable objects; `dtk dol split` regenerates
+   asm at build time, so **asm stays uncommitted** (correct for dtk workflow, unchanged policy).
+2. Wire the missing piece: `objdiff` CLI binary (encounter/objdiff releases) into `tools/`,
+   one-command `ninja report` → matched-bytes into `docs/SCOREBOARD.md`.
+3. ldscript covers all 10 sections incl. MEM2 (ceiling `0x8036C400`).
+
+Gate: `configure.py + ninja` from clean tree = sha1 MATCH; `objdiff.json` loads in objdiff
+CLI and reports `0 / 2,499,552 B` code.
+
+## §3 M-C2 — First match: `hash37` (day ~5)
+
+Loop (this exact loop forever after):
+```
+m2c draft (pip install m2c)   -> src/cm/hash37.c
+mwcc compile (flags from §1)  -> build/.../hash37.o
+objdiff hash37                -> iterate: -O levels, -str, -pool, register pressure hints, explicit u8/char
+done when: 100% + DOL sha1 MATCH + queue CSV flips to `matched`
+```
+Deliverables: `hash37` matched; `docs/FE9_MATCH_QUEUES.md` documents the loop; `tools/match.ps1`/`.mjs` one-command wrapper (compile+diff+report).
+
+## §3.5 M-C2.5 — SDK/runtime free wins (audit addition; same week)
+
+`configure.py` already declares `Runtime.PPCEABI.H/global_destructor_chain.c` and
+`__init_cpp_exceptions.cpp` as **NonMatching stubs** — these are CodeWarrior runtime
+files whose matching sources exist verbatim across the GC/Wii decomp ecosystem
+(zeldaret/doldecomp projects). First real matches will come from here, not from game code:
+flip `NonMatching`→`Matching` with community sources, validate, then move to `hash37`.
+Also: SDK names already in `symbols.txt` (`__check_pad3`, `__init_registers`, …) tell us
+the analyzer detected REVO init sequences — matching those is near-free.
+
+Gate: ≥1 SDK file Matching + DOL sha1 MATCH.
+
+## §4 M-C3 — Utility ladder (weeks ~2-6; ~150 KB target)
+
+Auto-generated queue first: `tools/mkqueue.py` walks `symbols.txt`:
+candidates = size < 0x80 B, no external `lbl_/data_` refs in asm, not a jumptable stub
+→ `docs/FE9_MATCH_QUEUE.csv` with `bytes, refs, priority, state` columns, re-sortable.
+
+Expected early wins (already named, so semantics known):
+1. hash37 (§3)
+2. std::string helpers (`{size,capacity,ptr}` layout documented)
+3. Unit accessors: `UnitGetByPID` + the 700-odd named event-adjacent leaves
+4. `hash31` clones (same algorithm, constant 31 — verify at each site, some are inlined)
+
+Gate: ≥3% code bytes matched + CI green (M-C9) + at least 1 non-self contributor doing §3 loops.
+
+## §5 M-C4 — Event VM trio (weeks ~6-12)
+
+Split targets already mapped (`FE9_STANHASH_MINING.csv`):
+- `0x80011D2C` inside `fn_80011D20` (+0xC) → split, name `CmVM_Interpret`
+- `0x8006D437` inside `fn_8006D378` (+0xBF) → dispatcher **data** table, not code
+- `0x8011F351` inside `fn_8011F184` (+0x1CD) → function-name registry data
+
+Procedure: add sub-symbols with sizes to `symbols.txt` → dtk re-analyze/split → asm boundaries
+must now reproduce: (a) VM opcode table order matching the community opcode list,
+(b) registry string cross-check vs `Cxx.cmb` name pool. Then match functions
+(VM interpreter first; dispatcher data needs no match beyond correct section/bytes).
+
+Gate: `bin/cmb.mjs` (JS lane) opcode names cross-validate against decompiled VM switch — two independent implementations agreeing.
+
+## §6 M-C5 — Dispos/Unit layer (weeks ~12-16)
+
+`DisposFileDecode` (`0x80107B54`, 0x210 B) + `UnitLoadUnitInfo` (`0x8003EAE8`, 0x6C4 B).
+High value: they *define* the `UnitInfo`/`dispos` layout used by the AI-data lane;
+a byte-match turns StanH's "ai?" words into authoritative field semantics.
+
+Gate: decompiled decoder confirms 4 AI words @ +4C..+58 and UnitInfo+38..44 mapping.
+
+## §7 M-C6 — Proc engine (weeks ~16-24)
+
+Anchors: `gProcInstrDict0/1/2`, proc struct 0x70, instruction header word layout.
+Work: proc lifecycle functions (start/loop/end/tree ops) + dict0 entries one by one.
+Cross-check: proc scripts found in game data disassemble coherently with the instruction semantics.
+
+Gate: any 3 dict0 instructions matched end-to-end.
+
+## §8 M-C7 — Battle/AI core (months 6+; the long grind)
+
+`battle.dbx` + `param.dbx` (394/116 rows SJIS) give damage/AI constants for free.
+Order: BattleAction (4 B) → damage calc chain → AI eval entry points reached from
+`EVT_Enemy*Check*` xrefs → movement/threat scoring. Each match feeds the port spec docs.
+
+Gate (stated honestly): no time-box; percentage milestones only (10/20/50% of code bytes).
+
+## §9 M-C9 — CI & community infra (do alongside M-C3)
+
+- GitHub Actions: ubuntu-latest, cache `tools/dtk` + `build/compilers` (same public mirror the scaffold already downloads from — `download_tool.py` — no private bucket needed; LICENSE notes tool ≠ project code), `pip install m2c ninja`, run configure+ninja, objdiff report job posts matched-bytes.
+- `docs/FE9_MATCH_QUEUE.csv` is the contribution board; good-first rows = queue head.
+- README section "Contributing to the decomp" = the §3 loop, 10 lines.
+
+## §10 Accounting & cadence
+
+`docs/SCOREBOARD.md` per merge: `Code: <matched>/<2499552> B (<x>%) | +N funcs | asm-islands: M`.
+Weekly roll-up comment on repo (agent or human) — one paragraph, no ceremony.
+
+## §11 Risks
+
+| Risk | Mitigation |
+|---|---|
+| No MWCC rev reproduces `hash37` | probe P2 *is* the gate; widen rev set (Nintendo internal builds circulate for GC); never hand-forge the "close enough" |
+| r13/sdata coupling breaks split | keep sdata section layout exactly as dtk produces; first matches must include one r13-referencing leaf |
+| FP-heavy funcs diverge | `-fp hard/cons`, explicit `fmaf` avoidance, MWCC builtins (`__frsp` etc.) — catalog in MATCH_QUEUES doc |
+| Two-PC clobber of `symbols.txt` | D-C6 + CI job that re-splits from committed config and checks sha; conflicts are merge conflicts, not silent |
+| Team morale (0→1 cliff) | §4 auto-queue keeps a fresh top-10 list of <0x80B wins at all times |
+| Compiler redistribution legality | CI pulls from a bucket we control; LICENSE notes tool ≠ project code |
+
+## §12 Explicit non-goals (v1)
+
+- Behavior changes, bugfixes, optimization, asset edits — this lane only *reproduces*.
+- Native/Android re-targeting — separate plan (`FE9_PATH_D_PLAN.md`, only open it after ≥80% matched AND M-C6 done).
+- `asm/` committed to git — deferred (D-C9) until outside contributors need stable asm baselines.
+
+## §13 Immediate next actions (this week, post-audit)
+
+1. `tools/probe_mwcc.py`: sweep on-disk revs (3.0a3p1, 3.0a3.4, 3.0a5, 3.0a5.2 first; then 2.7/3.0a3.x; 2.x last) against P2 `hash37`; flip `mw_version`. — me
+2. Download objdiff CLI; validate `objdiff.json` round-trip. — me
+3. `ninja split` verify from clean tree; confirm sha MATCH + `0/2,499,552` report. — me
+4. M-C2.5: pull SDK runtime sources (global_destructor_chain, __init_cpp_exceptions) from a sibling GC project and flip Matching. — me
+5. `tools/mkqueue.py` + first `FE9_MATCH_QUEUE.csv`. — me
+6. Message to home agent: pull; JS lane keeps P1 gates; do NOT enable split mode there; CI infra (M-C9) assigned to whichever machine gets GH Actions secrets first.
+
+## §14 Plan audit log (v1.1, 2026-11-11 — skeptical review)
+
+Verified against reality before trusting v1:
+
+| v1 claim | Verdict | Evidence |
+|---|---|---|
+| "Download compiler archives (zeldaret/compilers GC/)" | **WRONG twice** | repo path 404; and `build/compilers/GC/` already holds 20+ CW revs (scaffold's `download_tool.py` fetched them) → M-C0 is probe-only now |
+| m2c PPC support | TRUE | README: "32-bit MIPS, ARM, PowerPC, SuperH", `-t ppc`, `MWCC_CC` env; built for byte-match projects |
+| "dtk emits per-function objdiff JSON" | half-true | objdiff.json is emitted by **configure.py** (already wired); `objdiff` CLI binary still missing |
+| "Current build = relink, need split pipeline" | TRUE but understated | `build.ninja` has `split/mwcc/as/link/elf2dol/check/report` rules pre-wired; but **zero** compile rules fired for asm and 0 `.c` in `src/` today; `dtk 1.8.4` has no `analyze` (help audited) — historical "dtk analyze" notes are wrong for this version |
+| Active `mw_version = GC\1.3.2` | ARBITRARY | scaffold default; sha-MATCH proves only linker tolerance for blob relink. FE9U likely 3.0a3–3.0a5.x |
+| Denominator 2,500,828 B | ≈OK, fixed to 2,499,552 | DOL header `.text` size at offset 0x88 area (YAGCD layout; GBA-boot field at 0x2C tricks naive parsers) |
+| asm/ not committed | TRUE for dtk | `dtk dol split` regenerates at build time |
+| SDK stubs already scaffolded as NonMatching | MISSED in v1 | `configure.py:294-295` → added M-C2.5 (first wins likely from SDK, not game code) |
+| symbols.txt provenance | GAP | SDK-style names (`__check_pad3`…) + analyzer names coexist; no batch provenance recorded → new rule: name batches must ship a source row in the ledger CSV |
+
+Net effect: M-C0 shrinks from days to hours; first match realistic inside week 1;
+largest remaining unknown = exact MWCC revision (probed next) and probe corpus quality.

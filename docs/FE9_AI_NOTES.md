@@ -1,1 +1,76 @@
-IyBGRTkgLSBOUEMvQUkgJiBwcm9jLWVuZ2luZSBub3RlcyAocmVzZWFyY2ggcGFzcyAyMDI2LTExLTExKQoKU291cmNlIG1pbmluZzogYFN0YW5IYXNoL0ZFOS1ET0NgIChub3RlczsgYWxsLXJpZ2h0cy1yZXNlcnZlZCAtPiBmYWN0cyBkaXN0aWxsZWQsIG5vdCBjb3BpZWQpLApmZXVuaXZlcnNlIHRocmVhZCA4MjQzLCBwbHVzIGEgKipmcmVzaCBpbmRlcGVuZGVudCBkZWNvZGUgb2YgYHpkYnguY21wYCBvbiB0aGlzIG1hY2hpbmUqKgooc2VlIMKnVmFsaWRhdGlvbikuIEFkZHJlc3NlcyBhcmUgRkU5VSAoR0ZFRTAxKSB1bmxlc3Mgc3RhdGVkLgoKIyMgVHdvIGxheWVycyBvZiAiTlBDIEFJIgoKIyMjIDEuIERhdGEgbGF5ZXIgKGV4dHJhY3RhYmxlIHRvZGF5KQpQZXItdW5pdCBlbmVteSBBSSBjb25maWcgbGl2ZXMgaW4gdGhlICoqZGlzcG9zIHJlY29yZCoqLCBub3QgaW4gdGhlIERCWCB0YWJsZXMKKHZlcmlmaWVkOiB6ZXJvIGBhaWAgY29sdW1ucyBhY3Jvc3MgYWxsIDQ0OSBgKi5kYnhgIG9uLWRpc2MpOgoKLSBgZGlzcG9zYCByZWNvcmQsIGBzaXplb2YgPSAweDZDYCDigJQgdGhlIGxvYWQtdW5pdCBzdHJ1Y3QgdXNlZCBieSBjaGFwdGVyL2FybXkgcGxhY2VtZW50CiAgKGB6bWFwL2JtYXBYWFhYL2AgcGVyIGhvbWUtbWFjaGluZSBmaW5kaW5ncyk6CiAgLSBgKzRDLys1MC8rNTQvKzU4YCA9ICoqNCBBSSB3b3JkcyoqIChTdGFuSDogImFpPyIpIC0+IGNvcGllZCBpbnRvIGBVbml0SW5mbysweDM4LzB4M0MvMHg0MC8weDQ0YC4KICAtIGArNUMvKzVEYCA9IG1hcCB4L3k7IGArNjBgIGxldmVsOyBgKzYyYCBhdXRvbGV2ZWwgZmxhZzsgYCs2NC4uNkJgIGl0ZW0gZmxhZ3MgKGJpdDAgZHJvcHBhYmxlLCBiaXQxIE5HKykuCi0gRGVjb2RlcjogYERpc3Bvc0ZpbGVEZWNvZGVgIEAgYDB4ODAxMDdCNTRgIChmaWxlIGRhdGEgLT4gcmVjb3JkcykuCi0gQ29uc3VtZXI6IGBVbml0TG9hZFVuaXRJbmZvYCBAIGAweDgwMDNFQUU4YCAoVW5pdEluZm8gLT4gbGl2ZSBgVW5pdGApLgotIFNlbWFudGljcyBvZiB0aGUgNCB3b3JkcyAobW9kZS90cmlnZ2VyL3RhcmdldC9wYXJhbSkgPSBuZXh0IHRhc2sgZm9yIHRoZSBKUyBsYW5lOgogIGNvcnJlbGF0ZSBrbm93biBjaGFwdGVycycgZGlzcG9zIHZhbHVlcyB3aXRoIG9ic2VydmVkIGJlaGF2aW91cjsgRkUxMCBhcm15IGVkaXRvcgogIChmZXVuaXZlcnNlIHRocmVhZCA4MTE3KSBlZGl0cyB0aGUgc2FtZSBmaWVsZCBncm91cCBpbiBGRTEwIC0+IHN0cnVjdCBmYW1pbHkgaXMgc2hhcmVkLgoKIyMjIDIuIENvZGUgbGF5ZXIgKG1hdGNoaW5nLWRlY29tcCBsYW5lKQpUaGUgcm91dGluZXMgdGhhdCAqaW50ZXJwcmV0KiB0aG9zZSB3b3JkcyAobW92ZW1lbnQgc2NvcmluZywgdGhyZWF0IG1hcHMsIGRpZmZpY3VsdHkKc2NhbGluZyBgTm9ybWFsL0hhcmQvTWFuaWFjYCAtIGFscmVhZHkgbmFtZWQgdmlhIHRoZSBldmVudC10YWJsZSBzZWVkKS4gRW50cnkgcG9pbnRzOgotIH4yMCBgRVZUX0VuZW15KkNoZWNrKmAgcHJvY3MgbmFtZWQgaW4gYHN5bWJvbHMudHh0YCAoZnJvbSB0aGUgNDA1LW5hbWUgY29tbWl0KSBjcm9zcy1jYWxsIGludG8gQUkuCi0gRkU5IHVzZXMgKipDKysgd2l0aCB2dGFibGVzKiogKHZ0YWJsZSBoZWFkZXI6IGArMDBgIGluaGVyaXRhbmNlIG9mZnNldCwgYCswNGAgUlRUSS1pc2g7CiAgbWV0aG9kcyBmcm9tIGArMDhgKS4gQUkgY2xhc3NlcyBsaWtlbHkgdnRhYmxlLWRyaXZlbiAtPiBlbnVtZXJhdGUgdnRhYmxlcyBpbiBgLmRhdGFgLAogIHhyZWYgZnJvbSBkaXNwb3MgY29uc3VtZXIgYDB4ODAwM0VBRThgLgotIFN0YW5IYXNoJ3MgYEMrKy50eHRgIGRvY3VtZW50cyB0aGUgQUJJIHNoYXBlIChzYW1lIGF1dGhvcidzIEZPTVQtRE9DIGZvciB0aGUgQVJNIGFuYWxvZ3VlKS4KCiMjIFByb2MgZW5naW5lIChiYXR0bGUvYW5pbS9BSSBjaG9yZW9ncmFwaHkpIOKAlCBkaXN0aWxsZWQKLSBQcm9jIHN0cnVjdCBgc2l6ZW9mID0gMHg3MGA6IHNjciBzdGFydC9jdXJzb3IsIGBvbkVuZC9vblVuay9vbkxvb3BgIGNhbGxiYWNrcywgbmFtZSwKICBwYXJlbnQvY2hpbGQvcHJldi9uZXh0IHRyZWUgbGlua3MsIGxvb3AgY291bnRlciwgZmxhZ3MgKGBiaXQxYCBsb2NrcyBwYXJlbnQ7CiAgYGJpdDU/YCA9IGRpc2NhcmRhYmxlKS4KLSAqKlByb2MtaW5zdHJ1Y3Rpb24gZGljdHMqKjogZnVuY3Rpb24tcG9pbnRlciB0YWJsZXMgaW5kZXhlZCBieSBpbnN0cnVjdGlvbiBpZDsgZW5naW5lCiAgcmVnaXN0ZXJzIHVwIHRvIDksIGdhbWUgdXNlcyAzLiBOb3cgbmFtZWQgaW4gb3VyIHN5bWJvbHM6CiAgYGdQcm9jSW5zdHJEaWN0MC8xLzJgID0gYDB4ODAyODM4MjggLyAweDgwMjg0MDk4IC8gMHg4MDI4OEFBOGAgKGAuZGF0YWApLgotIEluc3RydWN0aW9uIGhlYWRlciB3b3JkOiBgWzI0YiBpZGVudGlmaWVyIHwgNGIgZGljdCBpZCB8IDRiIHNpemUtaW4td29yZHMgfCAxNmIgb3BlcmFuZF1gLgotIH40MCBpbnN0cnVjdGlvbiBraW5kcyBkb2N1bWVudGVkIGJ5IFN0YW5IIChTdGFydENoaWxkL0NhbGxGdW5jL1doaWxlRnVuYy9Hb3RvLi4uKToKICBwcm9jIGdyYXBocyA9IHRoZSBnYW1lJ3MgYW5pbWF0aW9uL2JhdHRsZSBjaG9yZW9ncmFwaHk7IGJhdHRsZSBhY3Rpb25zIHRoZW1zZWx2ZXM6CiAgYEJhdHRsZUFjdGlvbmAgPSA0IGJ5dGVzIGBbaWQgYnl0ZSB8IHBhZCB8IHZhbHVlIHNob3J0XWAuCi0gV2VhcG9uLWVmZmVjdCBwcm9jcyAoR0JBRkUtc3R5bGUgIlByb2MiIGVxdWl2YWxlbnQpIGFyZSBkcml2ZW4gdGhyb3VnaCB0aGVzZSBkaWN0cyDigJQKICBjcm9zcy1yZWZlcmVuY2Ugd2hlbiBkZWNvZGluZyBgemRieGAgYmF0dGxlIGRhdGEgKEJSVi1CQVQtKikuCgojIyBPdGhlciBkdXJhYmxlIGZhY3RzIG1pbmVkIHRoaXMgcGFzcwotIGBoYXNoMzdgIEAgYDB4ODAwMEQ1OThgOiBjc3RyIGhhc2ggKHJlc3VsdCA9IHJlc3VsdCozNyArIGMpOyBgaGFzaDMxYCBpcyB0aGUgc2FtZSB3aXRoIDMxLgogIEJ1Y2tldCBpZDogYGggLSAoKGggKiAweDgwQzEyMUIzdSkgPj4gNDApICogNTA5YC4KLSBGaWxlLXBhdGggcmVnaXN0cnk6IGBnRmlsZUVudHJ5QXJyYXlgIEAgYDB4ODAyRjA0RTBgIChgLmJzc2AsIDB4MUYwMDApOiBgRmlsZUVudHJ5YAogIGBzaXplb2YgMHg3Q2AgPSBub3JtYWxpemVkIHBhdGggKGxlYWRpbmcgYC9gIHN0cmlwcGVkLCBsb3dlcmNhc2VkKSwgaGFzaDM3LCBmbGFncwogIChgQzAwYD1jbXAsIGA4MDBgPXBhaywgYDQwMGA9Y21zKSwgbGFzdC11c2VkIHRpY2ssIGRhdGEgcG9pbnRlci4KLSBgZ0ZvcmdlRGF0YWAgQCBgMHg4MDMyMDZFQ2A6ICsxMCBtaWdodCwgKzExIGhpdCAoeDUpLCArMTIgY3JpdCAoeDMpLCArMTMgd2VpZ2h0IG1hbHVzLgotIGBzdGQ6OnN0cmluZ2AgaW4gRkU5ID0gYHtzaXplLCBjYXBhY2l0eSwgcHRyfWAgKG5vIFNTTykuCi0gcjEzIChHQ0Mgc2RhdGEgYmFzZSk6IEZFMTAgbm90ZSBzYXlzIGByMTMtMHg2OUI4YCBob2xkcyBtb2RlIGJpdHMsIGBiaXQxM2AgPSBoYXJkIG1vZGUKICAoa2lsbHMgbWFwLWFmZmluaXR5IGJvbnVzZXMpLiBTYW1lIGdsb2JhbCBsaWtlbHkgZXhpc3RzIGluIEZFOSAtIGNoZWNrIHdoZW4gbWF0Y2hpbmcgc2RhdGEuCi0gYHpkYngvcGFyYW0uZGJ4YCA9ICLjgq3jg6rjg5Djg4jjg7vjg5Hjg6njg6Hjg7zjgr8iIChraXJpYmF0byBiYXR0bGUtc29sdmVyIHBhcmFtcykgKyBgYmF0dGxlLmRieGAKICAoMzk0IGxpbmVzKSA9IHRoZSBGRTkgZGFtYWdlLWNhbGMgdGFibGUgc2V0IC0+IGRpcmVjdCBpbnB1dCBmb3IgQlJWLUJBVC1BREouCgojIyBWYWxpZGF0aW9uICh0aGlzIG1hY2hpbmUsIDIwMjYtMTEtMTEpCi0gSW1wbGVtZW50ZWQgTFo3NygweDEwLCBzaXplIGZpZWxkIGlnbm9yZWQsIGRlY29kZS10by1FT0YpICsgcGFjayB3YWxrZXIgZnJvbSB0aGUKICBieXRlLXZlcmlmaWVkIHNwZWM6IGB6ZGJ4LmNtcGAgLT4gYmxvYiBgcGFja2AgKio1NjIsMzM3IEIsIGVudHJ5IGNvdW50IDQ0OSoqIOKAlAogIG1hdGNoZXMgdGhlIGNvbW11bml0eS1kb2N1bWVudGVkICI0NDkgLmRieCBpbnNpZGUgemRieC5jbXAiIGV4YWN0bHksIGFuZCBuYW1lcyBpbmNsdWRlCiAgYHpkYngvYmF0dGxlLmRieGAsIGB6ZGJ4L2NsYXNzTGlzdC5kYnhgLCBgemRieC9qb2JMaXN0LmRieGAsIGB6ZGJ4L3BhcmFtLmRieGAuCi0gU3ltYm9sIGFwcGxpY2F0aW9uOiA4IHJlbmFtZXMgKGBoYXNoMzdgLCBgRGlzcG9zRmlsZURlY29kZWAsIGBVbml0TG9hZFVuaXRJbmZvYCwKICBgZ0ZpbGVFbnRyeUFycmF5YCwgYGdGb3JnZURhdGFgLCBgZ1Byb2NJbnN0ckRpY3QwLzEvMmApIC0+IHJlbGlua2VkIERPTCBzaGExIHVuY2hhbmdlZC4KCiMjIEFkZHJlc3MgbGVkZ2VyClNlZSBgRkU5X1NUQU5IQVNIX01JTklORy5jc3ZgIChzYW1lIGZvbGRlcikg4oCUIGV2ZXJ5IG1pbmVkIGFkZHJlc3Mgd2l0aCBjb25maWRlbmNlLApkdGsgY3Jvc3MtY2hlY2sgc3RhdHVzLCBhbmQgbm90ZS4gVW5uYW1lZCBlbnRyaWVzOiBgMHg4MDJBREIyOGAgaGFzaC1idWNrZXQgYXJyYXkKKG5vIGR0ayBzeW1ib2wgeWV0KSwgdnRhYmxlcyBgMHg4MDI4REZFOGAvYDB4ODAyOEUyMDBgIChPYmplY3RBL0IsIHN0aWxsIGFub255bW91cykuCgojIyBTb3VyY2VzCi0gZmV1bml2ZXJzZSB0aHJlYWQgODI0MyAoRkU5IGJhdHRsZSBzeXN0ZW0vU3RhbkgpOyBgZ2l0aHViLmNvbS9TdGFuSGFzaC9GRTktRE9DYAogIChQcm9jcy50eHQsIERpc3Bvcy50eHQsIEV2ZW50cy50eHQsIEJpZ0RhdGEudHh0LCBJdGVtcy50eHQsIFVuaXRzLnR4dCwgVW5rLnR4dCwKICBCYXR0bGUudHh0LCBDKysudHh0LCBDaGFwdGVyU3RhdGUudHh0LCBSMTMudHh0KS4KLSBmZXVuaXZlcnNlIHRocmVhZCA4MTE3IChGRTEwIGFybXkgZGF0YSAvIGVuZW15IEFJIGVkaXRvciwgc2FtZSBzdHJ1Y3QgZmFtaWx5KS4K
+# FE9 - NPC/AI & proc-engine notes (research pass 2026-11-11)
+
+Source mining: `StanHash/FE9-DOC` (notes; all-rights-reserved -> facts distilled, not copied),
+feuniverse thread 8243, plus a **fresh independent decode of `zdbx.cmp` on this machine**
+(see §Validation). Addresses are FE9U (GFEE01) unless stated.
+
+## Two layers of "NPC AI"
+
+### 1. Data layer (extractable today)
+Per-unit enemy AI config lives in the **dispos record**, not in the DBX tables
+(verified: zero `ai` columns across all 449 `*.dbx` on-disc):
+
+- `dispos` record, `sizeof = 0x6C` — the load-unit struct used by chapter/army placement
+  (`zmap/bmapXXXX/` per home-machine findings):
+  - `+4C/+50/+54/+58` = **4 AI words** (StanH: "ai?") -> copied into `UnitInfo+0x38/0x3C/0x40/0x44`.
+  - `+5C/+5D` = map x/y; `+60` level; `+62` autolevel flag; `+64..6B` item flags (bit0 droppable, bit1 NG+).
+- Decoder: `DisposFileDecode` @ `0x80107B54` (file data -> records).
+- Consumer: `UnitLoadUnitInfo` @ `0x8003EAE8` (UnitInfo -> live `Unit`).
+- Semantics of the 4 words (mode/trigger/target/param) = next task for the JS lane:
+  correlate known chapters' dispos values with observed behaviour; FE10 army editor
+  (feuniverse thread 8117) edits the same field group in FE10 -> struct family is shared.
+
+### 2. Code layer (matching-decomp lane)
+The routines that *interpret* those words (movement scoring, threat maps, difficulty
+scaling `Normal/Hard/Maniac` - already named via the event-table seed). Entry points:
+- ~20 `EVT_Enemy*Check*` procs named in `symbols.txt` (from the 405-name commit) cross-call into AI.
+- FE9 uses **C++ with vtables** (vtable header: `+00` inheritance offset, `+04` RTTI-ish;
+  methods from `+08`). AI classes likely vtable-driven -> enumerate vtables in `.data`,
+  xref from dispos consumer `0x8003EAE8`.
+- StanHash's `C++.txt` documents the ABI shape (same author's FOMT-DOC for the ARM analogue).
+
+## Proc engine (battle/anim/AI choreography) — distilled
+- Proc struct `sizeof = 0x70`: scr start/cursor, `onEnd/onUnk/onLoop` callbacks, name,
+  parent/child/prev/next tree links, loop counter, flags (`bit1` locks parent;
+  `bit5?` = discardable).
+- **Proc-instruction dicts**: function-pointer tables indexed by instruction id; engine
+  registers up to 9, game uses 3. Now named in our symbols:
+  `gProcInstrDict0/1/2` = `0x80283828 / 0x80284098 / 0x80288AA8` (`.data`).
+- Instruction header word: `[24b identifier | 4b dict id | 4b size-in-words | 16b operand]`.
+- ~40 instruction kinds documented by StanH (StartChild/CallFunc/WhileFunc/Goto...):
+  proc graphs = the game's animation/battle choreography; battle actions themselves:
+  `BattleAction` = 4 bytes `[id byte | pad | value short]`.
+- Weapon-effect procs (GBAFE-style "Proc" equivalent) are driven through these dicts —
+  cross-reference when decoding `zdbx` battle data (BRV-BAT-*).
+
+## Other durable facts mined this pass
+- `hash37` @ `0x8000D598`: cstr hash (result = result*37 + c); `hash31` is the same with 31.
+  Bucket id: `h - ((h * 0x80C121B3u) >> 40) * 509`.
+- File-path registry: `gFileEntryArray` @ `0x802F04E0` (`.bss`, 0x1F000): `FileEntry`
+  `sizeof 0x7C` = normalized path (leading `/` stripped, lowercased), hash37, flags
+  (`C00`=cmp, `800`=pak, `400`=cms), last-used tick, data pointer.
+- `gForgeData` @ `0x803206EC`: +10 might, +11 hit (x5), +12 crit (x3), +13 weight malus.
+- `std::string` in FE9 = `{size, capacity, ptr}` (no SSO).
+- r13 (GCC sdata base): FE10 note says `r13-0x69B8` holds mode bits, `bit13` = hard mode
+  (kills map-affinity bonuses). Same global likely exists in FE9 - check when matching sdata.
+- `zdbx/param.dbx` = "キリバト・パラメータ" (kiribato battle-solver params) + `battle.dbx`
+  (394 lines) = the FE9 damage-calc table set -> direct input for BRV-BAT-ADJ.
+
+## Validation (this machine, 2026-11-11)
+- Implemented LZ77(0x10, size field ignored, decode-to-EOF) + pack walker from the
+  byte-verified spec: `zdbx.cmp` -> blob `pack` **562,337 B, entry count 449** —
+  matches the community-documented "449 .dbx inside zdbx.cmp" exactly, and names include
+  `zdbx/battle.dbx`, `zdbx/classList.dbx`, `zdbx/jobList.dbx`, `zdbx/param.dbx`.
+- Symbol application: 8 renames (`hash37`, `DisposFileDecode`, `UnitLoadUnitInfo`,
+  `gFileEntryArray`, `gForgeData`, `gProcInstrDict0/1/2`) -> relinked DOL sha1 unchanged.
+
+## Address ledger
+See `FE9_STANHASH_MINING.csv` (same folder) — every mined address with confidence,
+dtk cross-check status, and note. Unnamed entries: `0x802ADB28` hash-bucket array
+(no dtk symbol yet), vtables `0x8028DFE8`/`0x8028E200` (ObjectA/B, still anonymous).
+
+## Sources
+- feuniverse thread 8243 (FE9 battle system/StanH); `github.com/StanHash/FE9-DOC`
+  (Procs.txt, Dispos.txt, Events.txt, BigData.txt, Items.txt, Units.txt, Unk.txt,
+  Battle.txt, C++.txt, ChapterState.txt, R13.txt).
+- feuniverse thread 8117 (FE10 army data / enemy AI editor, same struct family).

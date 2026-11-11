@@ -1,1 +1,14 @@
-U2VjdGlvbnM6CgkuaW5pdCAgICAgICB0eXBlOmNvZGUgYWxpZ246NAoJZXh0YWIgICAgICAgdHlwZTpyb2RhdGEgYWxpZ246MzIKCWV4dGFiaW5kZXggIHR5cGU6cm9kYXRhIGFsaWduOjQKCS50ZXh0ICAgICAgIHR5cGU6Y29kZSBhbGlnbjozMgoJLmN0b3JzICAgICAgdHlwZTpyb2RhdGEgYWxpZ246OAoJLmR0b3JzICAgICAgdHlwZTpyb2RhdGEgYWxpZ246MzIKCS5yb2RhdGEgICAgIHR5cGU6cm9kYXRhIGFsaWduOjMyCgkuZGF0YSAgICAgICB0eXBlOmRhdGEgYWxpZ246NAoJLmJzcyAgICAgICAgdHlwZTpic3MgYWxpZ246NAoJLnNkYXRhICAgICAgdHlwZTpkYXRhIGFsaWduOjQKCS5zYnNzICAgICAgIHR5cGU6YnNzIGFsaWduOjMyCgkuc2RhdGEyICAgICB0eXBlOnJvZGF0YSBhbGlnbjozMgoJLnNic3MyICAgICAgdHlwZTpic3MgYWxpZ246MTYK
+Sections:
+	.init       type:code align:4
+	extab       type:rodata align:32
+	extabindex  type:rodata align:4
+	.text       type:code align:32
+	.ctors      type:rodata align:8
+	.dtors      type:rodata align:32
+	.rodata     type:rodata align:32
+	.data       type:data align:4
+	.bss        type:bss align:4
+	.sdata      type:data align:4
+	.sbss       type:bss align:32
+	.sdata2     type:rodata align:32
+	.sbss2      type:bss align:16

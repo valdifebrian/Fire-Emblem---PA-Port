@@ -1,1 +1,79 @@
-IyBGaXJlIEVtYmxlbTogUGF0aCBvZiBSYWRpYW5jZSDigJQgUkUgJiBQb3J0IHdvcmtzcGFjZQoKUmV2ZXJzZS1lbmdpbmVlcmluZyBmcm9udGVuZCBmb3IgKkZpcmUgRW1ibGVtIC0gUGF0aCBvZiBSYWRpYW5jZSogKEdGRUUwMSwgTlRTQy1VLCBEaXNjIDEpCnRvd2FyZCBhbiBpbmRlcGVuZGVudCBwb3J0LiBEaXNjIGNvbnRhaW5lciBzdXBwb3J0OiAqKlJWWiB2MSoqICh6c3RkLCBQUk5HLXBhY2tlZCkuCgojIyBTdGF0dXMgKDIwMjYtMTEtMTEpCgp8IE1pbGVzdG9uZSB8IFN0YXRlIHwKfC0tLXwtLS18CnwgTTAgUlZaIHYxIHJlYWRlciAoSlMsIHJ1bnRpbWUtbmV1dHJhbCBub2RlL0J1bikgfCBkb25lLCBhbGwgMTExMzkgZ3JvdXBzIGF1ZGl0ZWQgfAp8IE0xIEZTVCBpbnZlbnRvcnkgKyBleHRyYWN0aW9uIChgbWFpbi5kb2xgLCBgb3BlbmluZy5ibnJgLCBzYW1wbGVzKSB8IGRvbmUg4oCUIDQwNzcgZmlsZXMgLyA1NDUgZGlycyAvIDEyOTcgTUIgfAp8IE0yIGBtYWluLmRvbGAgUFBDIGFuYWx5c2lzIChET0zihpJFTEbihpJHaGlkcmEgaGVhZGxlc3MpIHwgZG9uZSDigJQgODEyNSBmdW5jdGlvbnMsIDU2OTAgc3RyaW5ncywgZW50cnk9YF9fc3RhcnRgIHZlcmlmaWVkIHwKfCBNMmIgbWF0Y2hpbmctZGVjb21wIGluZnJhIChgZGVjb21wL2AsIGR0ayAxLjguNCkgfCBkb25lIOKAlCBzcGxpdOKGknJlbGluayAqKmJ5dGUtaWRlbnRpY2FsKiogKGJ1aWxkLnNoYTEgT0spLCA5MjUxIGZ1bmN0aW9ucyBhdXRvLWRldGVjdGVkIHwKfCBNMyBgLmNtcGAvYHN5c3RlbS5jbXBgIGRhdGEgdGFibGVzIHwgcGVuZGluZyB8CnwgTTQgYXNzZXRzICh0cGwvdGhwL2dhL+KApikgfCBwZW5kaW5nIHwKfCBNNSBmb3JtYXQgZG9jcyB8IHBlbmRpbmcgfAp8IE02IHJ1bnRpbWUgdmVyaWZpY2F0aW9uIHwgaHVtYW4tcnVuIHwKCkRldGFpbHMgJiBkZWNpc2lvbiBsb2c6IFtgZG9jcy9mZTktcmUtcGxhbi5tZGBdKGRvY3MvZmU5LXJlLXBsYW4ubWQpICjCpzggbG9ja2VkIGRlY2lzaW9ucywgwqcxMCBmaWVsZCBmaW5kaW5ncykuClBhdGggQyAoMTAwJSBtYXRjaGluZyBkZWNvbXApIHJvYWRtYXA6IFtgZG9jcy9GRTlfUEFUSF9DX1BMQU4ubWRgXShkb2NzL0ZFOV9QQVRIX0NfUExBTi5tZCkuCgojIyBOb3RhYmxlIGZpZWxkIGZpbmRpbmdzIChHRkVFMDEpCgo+ICoqQ29udGV4dCBjb3JyZWN0aW9uICgyMDI2LTExLTExKToqKiB0aGlzIGRpc2MgaW1hZ2UgaXMgYW4gKipOS2l0LXJlbGF4ZWQgcmVwYWNrKiogKFJWWiB3cmFwcwo+IGFuIG5raXQtcmVsYXhlZCBJU08pLiBUaGUgaGVhZGVyL0ZTVCBkZXZpYXRpb25zIGJlbG93IGFyZSBOS2l0IFJlbGF4ZWQgbGF5b3V0IGNvbnZlbnRpb25zLCBub3QKPiBvcmlnaW5hbC1kaXNjIGJlaGF2aW9yIOKAlCBmaWxlICpjb250ZW50cyogYXJlIGludGFjdCAoY3Jvc3MtdmVyaWZpZWQ6IGBtYWluLmRvbGAgbWQ1IGlkZW50aWNhbAo+IGFjcm9zcyB0aGUgSlMgUlZaIHJlYWRlciBhbmQgTktpdCAzLjIgZXh0cmFjdGlvbikuIEV2aWRlbmNlIGNoYWluOgo+IFtgZG9jcy9GRTlfRFRLX1NFU1NJT05fTk9URVMubWRgXShkb2NzL0ZFOV9EVEtfU0VTU0lPTl9OT1RFUy5tZCkuCgotIERpc2MgaGVhZGVyOiBgMHg0MjBgPURPTCBvZmYsICoqYDB4NDI0YD1GU1Qgb2ZmKiosICoqYDB4NDI4YD1GU1Qgc2l6ZSoqIChZQUdDRCdzICIweDQyND1kb2wgc2l6ZSIgaXMgd3JvbmcgZm9yIHRoaXMgZGlzYzsgRE9MIHNpemUgZGVyaXZlZCBmcm9tIHNlY3Rpb25zKS4KLSAqKkZTVCB1c2VzIGEgbm9uLXN0YW5kYXJkIHNjaGVtZSBvbiB0aGlzIGRpc2MqKjogZGlyIGZsYWcgPSBiaXQgYDB4MDEwMDAwMDBgIG9mIHdvcmQtMCAobm90IGAweDgwMDAwMDAwYCk7IHRoZSBkaXIgInNpemUiIGZpZWxkIGlzIHRoZSAqKmFic29sdXRlIGV4Y2x1c2l2ZSBlbmQtZW50cnkgaW5kZXgqKiBvZiBpdHMgc3VidHJlZS4gVmFsaWRhdGVkIHdpdGggMCBhbm9tYWxpZXMgb3ZlciBhbGwgNDYyMyBlbnRyaWVzLgotIERPTDogMTAgc2VjdGlvbnMsIGVudHJ5IGAweDgwMDAzMTU0YCwgbWF4IGFkZHIgaW5zaWRlIE1FTTIgKDB4ODAzNmM0MDApIOKAlCBNRU0yIHNlY3Rpb25zIGV4aXN0LgotIE5vIGAucmVsYCBmaWxlcyBpbiB0aGUgRlNUOiBzaW5nbGUgZXhlY3V0YWJsZSAobm8gc3RyZWFtaW5nIG1vZHVsZSByZWxvY2F0aW9uKS4KCiMjIFRvb2xpbmcKCmBgYApub2RlIGJpbi9ydnoubWpzIGxzIC8gICAgICAgICAgICAgICAgICAgICAgICMgbGlzdCBkaXNjCm5vZGUgYmluL3J2ei5tanMgZXh0cmFjdCA8aXNvUGF0aD4gPG91dD4gICAgIyBleHRyYWN0IG9uZSBmaWxlIChtZDUgcHJpbnRlZCkKbm9kZSBiaW4vcnZ6Lm1qcyBmc3RpbmZvIHwgZG9saW5mbyAgICAgICAgICAjIHN0cnVjdHVyZXMKbm9kZSBiaW4vZG9sMmVsZi5tanMgPGluLmRvbD4gPG91dC5lbGY+ICAgICAjIERPTCAtPiBQUEMzMiBCRSBFTEYgKGZvciBhbmFseXplcnMpCmBgYApSZXF1aXJlcyBOb2RlIOKJpSAyMy44IChgemxpYi56c3RkRGVjb21wcmVzc1N5bmNgKSBvciBCdW4uCgpgRkU5X1JWWmAgZW52IG92ZXJyaWRlcyB0aGUgZGlzYyBwYXRoIChkZWZhdWx0OiB0aGUgdXNlcidzIFJWWiBwYXRoOyBlZGl0IGBiaW4vcnZ6Lm1qc2AgQ0xJIGJsb2NrKS4KCkdoaWRyYSBwYXRoOiBgYmluL2doaWRyYS9EdW1wRm5zLmphdmFgIHBvc3RTY3JpcHQgZHVtcHMgYGZ1bmN0aW9ucy50c3ZgICsgYHN0cmluZ3MudHN2YApmcm9tIGEgaGVhZGxlc3MgcnVuIG9mIHRoZSBjb252ZXJ0ZWQgRUxGIChgLXByb2Nlc3NvciBQb3dlclBDOkJFOjMyOmRlZmF1bHRgKS4KTm90ZTogdGhlIGByZWFgL1JFQSB0b29saW5nJ3MgV2luZG93cyBHaGlkcmEgbGFuZSBhY2NlcHRzIG9ubHkgeDg2L0FSTSB0YXJnZXRzLCBzbyBQUEMgYW5hbHlzaXMgcnVucyBgYW5hbHl6ZUhlYWRsZXNzLmJhdGAgZGlyZWN0bHkgKEdoaWRyYSAxMi4yICsgSkRLIDI1KS4KCk1hdGNoaW5nLWRlY29tcCBsYW5lIChgZGVjb21wL2ApOiBgcHl0aG9uIGNvbmZpZ3VyZS5weSAtLWR0ayB0b29scy9kdGsuZXhlICYmIG5pbmphYArigJQgZHRrIHNwbGl0L2FuYWx5emUvbGluazsgb2JqZGlmZiBwZXIgZnVuY3Rpb24uIFNldHVwICYgc3RhdHVzOiBgZGVjb21wL1JFQURNRS5tZGAsCltgZG9jcy9GRTlfRFRLX1NFU1NJT05fTk9URVMubWRgXShkb2NzL0ZFOV9EVEtfU0VTU0lPTl9OT1RFUy5tZCkuCgojIyBSZXNlYXJjaCBub3RlcyAoMjAyNi0xMS0xMSkKCi0gW2Bkb2NzL0ZFOV9BSV9OT1RFUy5tZGBdKGRvY3MvRkU5X0FJX05PVEVTLm1kKSDigJQgTlBDL0FJIHR3by1sYXllciBtb2RlbCAocGVyLXVuaXQgQUkgPQogIDQgd29yZHMgaW4gdGhlIGBkaXNwb3NgIHJlY29yZCBhdCBgKzRDLi4rNThgOyBiZWhhdmlvdXIgZW5naW5lID0gbWF0Y2hpbmctZGVjb21wIGxhbmUpLAogIHByb2MtaW5zdHJ1Y3Rpb24gZGljdHMsIGZvcmdlL2hhc2gvcGF0aC1yZWdpc3RyeSBzdHJ1Y3RzOyBhbGwgZmFjdHMgbWluZWQgZnJvbQogIGBTdGFuSGFzaC9GRTktRE9DYCArIGZldW5pdmVyc2UgODI0MyBhbmQgY3Jvc3MtY2hlY2tlZCBhZ2FpbnN0IG91ciBET0wgc3ltYm9sIHRhYmxlLgotIFtgZG9jcy9GRTlfU1RBTkhBU0hfTUlOSU5HLmNzdmBdKGRvY3MvRkU5X1NUQU5IQVNIX01JTklORy5jc3YpIOKAlCBhZGRyZXNzIGxlZGdlciB3aXRoCiAgZHRrIGNyb3NzLWNoZWNrIHN0YXR1czsgbmFtZXMgMyBmdW5jdGlvbnMgKyA1IGRhdGEgc3ltYm9scyBpbiBgc3ltYm9scy50eHRgCiAgKGBoYXNoMzdgLCBgRGlzcG9zRmlsZURlY29kZWAsIGBVbml0TG9hZFVuaXRJbmZvYCwgYGdGaWxlRW50cnlBcnJheWAsIGBnRm9yZ2VEYXRhYCwKICBgZ1Byb2NJbnN0ckRpY3QwLzEvMmApOyByZWxpbmsgc3RheXMgYnl0ZS1pZGVudGljYWwuCi0gU3BsaXQgdGFyZ2V0cyAjMS0zOiBgMHg4MDAxMUQyQ2AgKFZNIGludGVycHJldGVyLCBoaWRkZW4gaW5zaWRlIGBmbl84MDAxMUQyMGApLAogIGAweDgwMDZENDM3YCAoZGlzcGF0Y2hlciB0YWJsZSwgZGF0YSBtaXNyZWFkIGFzIGNvZGUgaW4gYGZuXzgwMDZEMzc4YCksCiAgYDB4ODAxMUYzNTFgIChmdW5jdGlvbi1uYW1lIHJlZ2lzdHJ5IGluc2lkZSBgZm5fODAxMUYxODRgKS4KCiMjIExpY2Vuc2luZwoKLSBDb2RlIGluIGBiaW4vYCwgcGxhbiBpbiBgZG9jcy9gOiBNSVQgKHByb2plY3QgZGVmYXVsdDsgYWRqdXN0IGlmIG5lZWRlZCkuCi0gYGRvY3MvRGlzY1V0aWxzLmNwcGAsIGBkb2NzL0RpcmVjdG9yeUJsb2IuY3BwYCwgYGRvY3MvV2lhQW5kUnZ6Lm1kYDogZXhjZXJwdHMgZnJvbSB0aGUKICAqKkRvbHBoaW4gRW11bGF0b3IqKiBwcm9qZWN0IChHUEx2MyksIGtlcHQgdmVyYmF0aW0gYXMgZm9ybWF0IHJlZmVyZW5jZSB1bmRlciBHUEwuCi0gYGludmVudG9yeS9maWxlcy5jc3ZgOiBmaWxlbmFtZXMvc2l6ZXMgZXh0cmFjdGVkIGZyb20gdGhlIGdhbWUncyBGU1QgZm9yIHJlc2VhcmNoOyBjb250YWlucyBubyBkaXNjIGNvbnRlbnQuCi0gKipObyBjb3B5cmlnaHRlZCBkaXNjIGNvbnRlbnQqKiBpcyBjb21taXR0ZWQgKERPTCwgRUxGLCBiYW5uZXIsIHNhbXBsZXMgYXJlIGdpdC1pZ25vcmVkKS4KCiMjIExlZ2FsCgpSZXNlYXJjaC9wcmVzZXJ2YXRpb24gb2YgYSBkaXNjIHlvdSBvd24uIERvIG5vdCByZWRpc3RyaWJ1dGUgUk9NIGNvbnRlbnQuCg==
+# Fire Emblem: Path of Radiance — RE & Port workspace
+
+Reverse-engineering frontend for *Fire Emblem - Path of Radiance* (GFEE01, NTSC-U, Disc 1)
+toward an independent port. Disc container support: **RVZ v1** (zstd, PRNG-packed).
+
+## Status (2026-11-11)
+
+| Milestone | State |
+|---|---|
+| M0 RVZ v1 reader (JS, runtime-neutral node/Bun) | done, all 11139 groups audited |
+| M1 FST inventory + extraction (`main.dol`, `opening.bnr`, samples) | done — 4077 files / 545 dirs / 1297 MB |
+| M2 `main.dol` PPC analysis (DOL→ELF→Ghidra headless) | done — 8125 functions, 5690 strings, entry=`__start` verified |
+| M2b matching-decomp infra (`decomp/`, dtk 1.8.4) | done — split→relink **byte-identical** (build.sha1 OK), 9251 functions auto-detected |
+| M3 `.cmp`/`system.cmp` data tables | pending |
+| M4 assets (tpl/thp/ga/…) | pending |
+| M5 format docs | pending |
+| M6 runtime verification | human-run |
+
+Details & decision log: [`docs/fe9-re-plan.md`](docs/fe9-re-plan.md) (§8 locked decisions, §10 field findings).
+Path C (100% matching decomp) roadmap: [`docs/FE9_PATH_C_PLAN.md`](docs/FE9_PATH_C_PLAN.md).
+
+## Notable field findings (GFEE01)
+
+> **Context correction (2026-11-11):** this disc image is an **NKit-relaxed repack** (RVZ wraps
+> an nkit-relaxed ISO). The header/FST deviations below are NKit Relaxed layout conventions, not
+> original-disc behavior — file *contents* are intact (cross-verified: `main.dol` md5 identical
+> across the JS RVZ reader and NKit 3.2 extraction). Evidence chain:
+> [`docs/FE9_DTK_SESSION_NOTES.md`](docs/FE9_DTK_SESSION_NOTES.md).
+
+- Disc header: `0x420`=DOL off, **`0x424`=FST off**, **`0x428`=FST size** (YAGCD's "0x424=dol size" is wrong for this disc; DOL size derived from sections).
+- **FST uses a non-standard scheme on this disc**: dir flag = bit `0x01000000` of word-0 (not `0x80000000`); the dir "size" field is the **absolute exclusive end-entry index** of its subtree. Validated with 0 anomalies over all 4623 entries.
+- DOL: 10 sections, entry `0x80003154`, max addr inside MEM2 (0x8036c400) — MEM2 sections exist.
+- No `.rel` files in the FST: single executable (no streaming module relocation).
+
+## Tooling
+
+```
+node bin/rvz.mjs ls /                       # list disc
+node bin/rvz.mjs extract <isoPath> <out>    # extract one file (md5 printed)
+node bin/rvz.mjs fstinfo | dolinfo          # structures
+node bin/dol2elf.mjs <in.dol> <out.elf>     # DOL -> PPC32 BE ELF (for analyzers)
+```
+Requires Node ≥ 23.8 (`zlib.zstdDecompressSync`) or Bun.
+
+`FE9_RVZ` env overrides the disc path (default: the user's RVZ path; edit `bin/rvz.mjs` CLI block).
+
+Ghidra path: `bin/ghidra/DumpFns.java` postScript dumps `functions.tsv` + `strings.tsv`
+from a headless run of the converted ELF (`-processor PowerPC:BE:32:default`).
+Note: the `rea`/REA tooling's Windows Ghidra lane accepts only x86/ARM targets, so PPC analysis runs `analyzeHeadless.bat` directly (Ghidra 12.2 + JDK 25).
+
+Matching-decomp lane (`decomp/`): `python configure.py --dtk tools/dtk.exe && ninja`
+— dtk split/analyze/link; objdiff per function. Setup & status: `decomp/README.md`,
+[`docs/FE9_DTK_SESSION_NOTES.md`](docs/FE9_DTK_SESSION_NOTES.md).
+
+## Research notes (2026-11-11)
+
+- [`docs/FE9_AI_NOTES.md`](docs/FE9_AI_NOTES.md) — NPC/AI two-layer model (per-unit AI =
+  4 words in the `dispos` record at `+4C..+58`; behaviour engine = matching-decomp lane),
+  proc-instruction dicts, forge/hash/path-registry structs; all facts mined from
+  `StanHash/FE9-DOC` + feuniverse 8243 and cross-checked against our DOL symbol table.
+- [`docs/FE9_STANHASH_MINING.csv`](docs/FE9_STANHASH_MINING.csv) — address ledger with
+  dtk cross-check status; names 3 functions + 5 data symbols in `symbols.txt`
+  (`hash37`, `DisposFileDecode`, `UnitLoadUnitInfo`, `gFileEntryArray`, `gForgeData`,
+  `gProcInstrDict0/1/2`); relink stays byte-identical.
+- Split targets #1-3: `0x80011D2C` (VM interpreter, hidden inside `fn_80011D20`),
+  `0x8006D437` (dispatcher table, data misread as code in `fn_8006D378`),
+  `0x8011F351` (function-name registry inside `fn_8011F184`).
+
+## Licensing
+
+- Code in `bin/`, plan in `docs/`: MIT (project default; adjust if needed).
+- `docs/DiscUtils.cpp`, `docs/DirectoryBlob.cpp`, `docs/WiaAndRvz.md`: excerpts from the
+  **Dolphin Emulator** project (GPLv3), kept verbatim as format reference under GPL.
+- `inventory/files.csv`: filenames/sizes extracted from the game's FST for research; contains no disc content.
+- **No copyrighted disc content** is committed (DOL, ELF, banner, samples are git-ignored).
+
+## Legal
+
+Research/preservation of a disc you own. Do not redistribute ROM content.

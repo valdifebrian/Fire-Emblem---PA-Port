@@ -1,1 +1,39 @@
-IyBTQ09SRUJPQVJEIOKAlCBzbmFwc2hvdCBrZW1hanVhbiAoMiBwYXBhbiBURVJQSVNBSCwgbWFzdGVyIHBsYW4gwqc1LjEpCgo+IEtlbWFqdWFuIHByb3llayB5YW5nIFNFU1VOR0dVSE5ZQSA9ICoqRnVuY3Rpb25hbCBwYXJpdHkqKi4gQXNzZXQgcmVhZGluZXNzIGhhbnlhIGtlc2lhcGFuCj4gYmFoYW47IERlY29kZWQg4omgIHNpc3RlbSBzZWxlc2FpLiBVcGRhdGUgdGlhcCBjb21taXQgeWFuZyBtZW5ndWJhaCBtYXRyaWtzL3Rlc3QvQlJWLgoKIyMgUGFwYW4gMSDigJQgQXNzZXQgcmVhZGluZXNzIChgRkU5X0FTU0VUX01BVFJJWC5jc3ZgLCA1NyBrZWx1YXJnYSkg4oCUIDIwMjYtMTEtMTAgKHBvc3QtUDEgbW9kZWwpCgp8IFN0YXR1cyB8IEtlbHVhcmdhIHwgQ2F0YXRhbiB8CnwtLS18LS0tfC0tLXwKfCBWZXJpZmllZCB8ICoqMCoqIHwgYmVsdW0gYWRhIGFzZXQgbWFzdWsgZW5naW5lIHwKfCBEZWNvZGVkIHwgMjYgfCArKipzdGFmZnJvbGwgS1JFRElUIFRFUkJBQ0EqKjsgK2BGYWNlfC5iaW5g4omhZmFjZWRhdGEgQ0xPU0VEOyAqKitOQVRJVkUgQ0FUQUxPRyAzOTAvMzkwKiogKEJSVi1TQ1QtMDA0KTsgK2ZhY2VkYXRhIDM1OMOXMy1zbG90OyArYC9zYCAxOTgvMTk4OyBzd2VlcCBgLnRwbC8uY21zYCAwLWZhaWw7IEM0K2JpbmRpbmcrcG90cmV0OyBgLmdjZmAsIFNUTSwgVk0sIDNEIHwKfCBQYXJ0aWFsIHwgMTggfCAqKmtlbHVhcmdhIHRhYmVsIHJla3VyZW4gYFtzaXplL3RhYmxlT2ZmL2NudC9zdWJdYCoqIHRlcnBldGFrYW4gZGkgcmVjdMOXMy9SZWN0QmFzZXMvc2hvcGl0ZW3DlzMvc3RhZmZyb2xsL1JlY3RGaW5hbGUvdHV0X2RhdGEvc291bmRyb29tOyArYGRpc3Bvc19jYCBBSS1zdHJlYW07IFNFIGJhbms7IGRzYi4gfAp8IEludmVzdGlnYXRpbmcgfCAqKjEqKiB8ICoqSEFOWUEgYC5zYW1wYCBwYXlsb2FkKiogKOKJoCBEU1Agc3RhbmRhciwgYnVrdGkgTFNRK1pDUiDigJQgYnV0dWggdHJhY2UgdWNvZGUgQVgsIFAyKSB8CnwgRGlzY292ZXJlZCB8IDEwIHwgaGFueWEgbWFnaWMvZWtzaXN0ZW5zaSB8CnwgRGVmZXJyZWQgfCAyKyB8IFRIUC9lbmRpbmcvSlAtZHVwIGRzdC4sIGRlbmdhbiBmYXNlIHBlbmVyaW1hIHwKCiMjIFBhcGFuIDIg4oCUIEZ1bmN0aW9uYWwgcGFyaXR5IChgRkU5X1RFU1RfTUFUUklYLmNzdmAgKyBgRkU5X0JFSEFWSU9SX1NQRUMubWRgKSDigJQgMjAyNi0xMS0xMAoKfCBNZXRyaWsgfCBOaWxhaSB8CnwtLS18LS0tfAp8IFRlc3QgUEFTUyAvIHRvdGFsIHwgKioxIC8gNTMqKiDigJQgVC1CQVNFLTAwMSBQQVNTIDIwMjYtMTEtMTAgKGZyZXNoIGNsb25lIOKGkiBnZW5lcmF0b3Ig4oaSIGRpZmYgbm9ybWFsaXNhc2ktRU9MIG5vbDsgYC5naXRhdHRyaWJ1dGVzIGVvbD1sZmAgZGl0ZXRhcGthbikgfAp8IEJSViB0ZXJ2ZXJpZmlrYXNpIHwgMjYgZW50cmkgKDEyIHNlZWQgKyBTQ1TDlzcgKGluY2wgKipTQ1QtMDA0IG5hdGl2ZSBjYXRhbG9nIDM5MC8zOTAqKiwgU0NULTAwNSBwcm90b2tvbCB3YWl0L2FyZy9hbnRyZWFuLCBTQ1QtMDA2IHNlbWFudGlrIG5hdGl2ZSBiYXRjaC0yLCAqKlNDVC0wMDcgZGlzcG9zX2MgcmVnaXN0cnkgYWx3YXlzXyogKyBsb2FkZXIgdW5pdmVyc2FsIC5iaW4qKikgKyBDQVAtMDAxIGlucHV0LWNoYW5uZWwrcGV0YS04MDBtcyArIEVWVC0wMDIgKyBBVUQtMDAyLzAwMyArIEZOVC0wMDEgKyBHRlgtMDAxICsgQU5NLTAwNCkg4oCUIDMgZG9tYWluIG1hc2loIGBVbmtub3duYCBwZW51aCB8CnwgQ2hhcHRlciBwYXJpdHkgfCAwLzMwIHwKfCBNaWxlc3RvbmUgUDEgfCAoMSkgTU9ERUwrQU5JTUFTSSB2aXN1YWwg4pyTIGFyY2hlcjsgKDIpIFNDUklQVCBWTSDinJMgKEMwMCBPcGVuaW5nMCB0ZXJiYWNhIGRhdGEpOyAoMykgKipCR00gREVDT0RFRCDinJMqKiDigJQgYGJpbi9zdG0ubWpzYCDihpIgV0FWIDMya0h6IHN0ZXJlbyAoYm9zczEgNjEuMXMpOyAoNCkgKipGT05UIERFQ09ERUQg4pyTKiog4oCUIGBiaW4vZ2NmLm1qc2Ag4oaSIFBHTSBhdGxhcytDU1YsIGZlL3RhbGsvYWxwaGEvYmlnZ2FuYS9zeXN0ZW0oLmdjZisuY21zKTsgKDUpICoqVEVYVFVSRStTS0lOIOKckyoqIOKAlCBDNCBmaXhlZCwgYmluZGluZyBgdGV4XzxpZHg+YCArIGxheWVyZWQgZmFjZSArIGJvbmUtc2tpbm5pbmcgKEFNLTAwOS8wNDcgQ0xPU0VELCBCUlYtR0ZYLTAwMS9BTk0tMDA0KSB8CnwgR2F0ZSBQMeKGklAyIHwgKipmb250IGAuZ2NmYCDinIUgRGVjb2RlZCAoQU0tMDI0KSoqICsgQkdNIOKchTsgdGluZ2dhbDogUG9DLWlucHV0cyArIFQtUkUtQ0FQMSAoU0UgZ2NmZXNuZCA9IG9wc2lvbmFsIFAxLCB0YXJnZXQgUDIpIHwKfCBGYXNlIGFrdGlmIHwgKipQMSoqIHwKCiMjIEdhcCB0ZXJ0aW5nZ2kKMS4gfn5CbGVuZC1za2lubmluZ35+ICoqQ0xPU0VEIDIwMjYtMTEtMTAqKjogYml0MD1ib25lLWluZGV4IChwaXBlbGluZSBnL2dhIG1lbWJ1a3Rpa2FuIHBvc2luZzsgQlJWLUFOTS0wMDQpOyBiaXQxPXBhbGV0dGUgbXVsdGktc2xvdCA9IFAyLWRldGFpbC4KMi4gNDA0IG5hdGl2ZSBgLmNtYmAg4oCUIHNpZ25hdHVyZS9zZW1hbnRpayBwZXIgbmFtYSBiZWx1bSAocG9vbCBuYW1lcyArIGFyZ2NvdW50IHNhamEpLCBzZWJhZ2lhbiBidXR1aCBHaGlkcmEgeHJlZiBwZXIgZnVuZ3NpIOKGkiAqKnNla2FyYW5nIGFkYSBsYW5lIG9iamRpZmYvZHRrIChgZGVjb21wL2ApIHV0ayB4cmVmK21hdGNoIHBlciBmdW5nc2ksIDIwMjYtMTEtMTEqKi4KMy4gRG9tYWluIEJSViBiYXR0bGUvQUkvbWFwL3JuZyBgVW5rbm93bmAg4oCUIGJ1dHVoIGNhcHR1cmUgaHVtYW4gKFQtUkUtQ0FQMSk7IGthbmRpZGF0IG1hdGNoIHBlcnRhbWEgPSBqYWx1ciBCUlYtQkFUIChiYXR0bGUgY2FsYyksIGFsYW1hdCBkaXBpbGloIHZpYSB4cmVmIEdoaWRyYeKGknN5bWJvbHMudHh0Lgo0LiBgLnNhbXBgIHBheWxvYWQgU0UgPSBCVUtBTiBEU1Agc3RhbmRhciAoQlJWLUFVRC0wMDMpIOKAlCBidXR1aCB0cmFjZSBSQU0gdWNvZGUgQVggdmlhCiAgIERvbHBoaW4gKGNhcHR1cmUgaHVtYW4pIEFUQVUgcmV2ZXJzZSBlbmNvZGluZyBjdXN0b207IHRhcmdldCBQMi4KCiMjIEluZnJhIGRlY29tcCAoMjAyNi0xMS0xMSkKLSBgZGVjb21wL2AgKGR0ayAxLjguNCArIGR0ay10ZW1wbGF0ZSwgQ0MwKTogc3BsaXTihpJyZWxpbmsgKipieXRlLWlkZW50aWNhbCoqIChgYnVpbGQuc2hhMWAgT0spOwogIDkuMjUxIGZ1bmdzaSAvIDE3LjU1NCBzeW1ib2xzIHRlcmRldGVrc2kgb3RvbWF0aXM7IENXIHJ1bnRpbWUgdGVybmFtYSAoYF9fc3RhcnRgIGRraykgYXV0by1uYW1lZC4KLSBEaWFnbm9zaXMgZGlzYzogKipOS2l0LXJlbGF4ZWQgcmVwYWNrKiogKGJ1a3RpIGxlbmdrYXAgZGkgYGRvY3MvRkU5X0RUS19TRVNTSU9OX05PVEVTLm1kYCk7CiAgYG1haW4uZG9sYCBtZDUgaWRlbnRpayBsaW50YXMgdG9vbGNoYWluIChKUyBSVlogcmVhZGVyIHZzIE5LaXQgMy4yKS4K
+# SCOREBOARD — snapshot kemajuan (2 papan TERPISAH, master plan §5.1)
+
+> Kemajuan proyek yang SESUNGGUHNYA = **Functional parity**. Asset readiness hanya kesiapan
+> bahan; Decoded ≠ sistem selesai. Update tiap commit yang mengubah matriks/test/BRV.
+
+## Papan 1 — Asset readiness (`FE9_ASSET_MATRIX.csv`, 57 keluarga) — 2026-11-10 (post-P1 model)
+
+| Status | Keluarga | Catatan |
+|---|---|---|
+| Verified | **0** | belum ada aset masuk engine |
+| Decoded | 26 | +**staffroll KREDIT TERBACA**; +`Face|.bin`≡facedata CLOSED; **+NATIVE CATALOG 390/390** (BRV-SCT-004); +facedata 358×3-slot; +`/s` 198/198; sweep `.tpl/.cms` 0-fail; C4+binding+potret; `.gcf`, STM, VM, 3D |
+| Partial | 18 | **keluarga tabel rekuren `[size/tableOff/cnt/sub]`** terpetakan di rect×3/RectBases/shopitem×3/staffroll/RectFinale/tut_data/soundroom; +`dispos_c` AI-stream; SE bank; dsb. |
+| Investigating | **1** | **HANYA `.samp` payload** (≠ DSP standar, bukti LSQ+ZCR — butuh trace ucode AX, P2) |
+| Discovered | 10 | hanya magic/eksistensi |
+| Deferred | 2+ | THP/ending/JP-dup dst., dengan fase penerima |
+
+## Papan 2 — Functional parity (`FE9_TEST_MATRIX.csv` + `FE9_BEHAVIOR_SPEC.md`) — 2026-11-10
+
+| Metrik | Nilai |
+|---|---|
+| Test PASS / total | **1 / 53** — T-BASE-001 PASS 2026-11-10 (fresh clone → generator → diff normalisasi-EOL nol; `.gitattributes eol=lf` ditetapkan) |
+| BRV terverifikasi | 26 entri (12 seed + SCT×7 (incl **SCT-004 native catalog 390/390**, SCT-005 protokol wait/arg/antrean, SCT-006 semantik native batch-2, **SCT-007 dispos_c registry always_* + loader universal .bin**) + CAP-001 input-channel+peta-800ms + EVT-002 + AUD-002/003 + FNT-001 + GFX-001 + ANM-004) — 3 domain masih `Unknown` penuh |
+| Chapter parity | 0/30 |
+| Milestone P1 | (1) MODEL+ANIMASI visual ✓ archer; (2) SCRIPT VM ✓ (C00 Opening0 terbaca data); (3) **BGM DECODED ✓** — `bin/stm.mjs` → WAV 32kHz stereo (boss1 61.1s); (4) **FONT DECODED ✓** — `bin/gcf.mjs` → PGM atlas+CSV, fe/talk/alpha/biggana/system(.gcf+.cms); (5) **TEXTURE+SKIN ✓** — C4 fixed, binding `tex_<idx>` + layered face + bone-skinning (AM-009/047 CLOSED, BRV-GFX-001/ANM-004) |
+| Gate P1→P2 | **font `.gcf` ✅ Decoded (AM-024)** + BGM ✅; tinggal: PoC-inputs + T-RE-CAP1 (SE gcfesnd = opsional P1, target P2) |
+| Fase aktif | **P1** |
+
+## Gap tertinggi
+1. ~~Blend-skinning~~ **CLOSED 2026-11-10**: bit0=bone-index (pipeline g/ga membuktikan posing; BRV-ANM-004); bit1=palette multi-slot = P2-detail.
+2. 404 native `.cmb` — signature/semantik per nama belum (pool names + argcount saja), sebagian butuh Ghidra xref per fungsi → **sekarang ada lane objdiff/dtk (`decomp/`) utk xref+match per fungsi, 2026-11-11**.
+3. Domain BRV battle/AI/map/rng `Unknown` — butuh capture human (T-RE-CAP1); kandidat match pertama = jalur BRV-BAT (battle calc), alamat dipilih via xref Ghidra→symbols.txt.
+4. `.samp` payload SE = BUKAN DSP standar (BRV-AUD-003) — butuh trace RAM ucode AX via
+   Dolphin (capture human) ATAU reverse encoding custom; target P2.
+
+## Infra decomp (2026-11-11)
+- `decomp/` (dtk 1.8.4 + dtk-template, CC0): split→relink **byte-identical** (`build.sha1` OK);
+  9.251 fungsi / 17.554 symbols terdeteksi otomatis; CW runtime ternama (`__start` dkk) auto-named.
+- Diagnosis disc: **NKit-relaxed repack** (bukti lengkap di `docs/FE9_DTK_SESSION_NOTES.md`);
+  `main.dol` md5 identik lintas toolchain (JS RVZ reader vs NKit 3.2).
