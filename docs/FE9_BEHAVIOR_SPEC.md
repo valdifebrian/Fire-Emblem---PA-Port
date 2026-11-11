@@ -629,9 +629,11 @@ Satu chapter penuh (bridge/river, "Clear Escape", Turn 5) = panen widget terleng
   forecast + status window).
 - **CRIT FORMULA OPEN**: panel Mt15 → crit tampil **40** (bukan 3×15−Def sederhana;
   Volke DEF≈0-5). Butuh sampel multi-crit untuk fit.
-- **×2 DOUBLING**: badge di kolom biru (Titania 33 vs 21 = rasio 1.57 → GANDA;
-  Ike 20 vs 24 = tidak). Kandidat rule **HP ≥ 1.5×HP lawan** (2 sampel; FE9 resmi belum
-  dicocokkan — UNKNOWN, butuh 3+ sampel batas 1.5).
+- **×2 DOUBLING — KOREKSI (batch-3)**: Ike 22 vs Soldier 23 ikut menampilkan ×2 → teori
+  rasio-HP **GUGUR**. Semua sampel ×2 = ada **unit sekutu ber-ring biru di sekitar** →
+  **×N = PAIR-UP: N partner support ikut menyerang** (FE9 tidak punya doubling HP — itu
+  FE10; pair-up = satu-satunya double-attack FE9). Rule eksak trigger pair (jarak/
+  pasangan) masih [UNKNOWN] — butuh data support.
 - **POPUP UNIT + INVENTARIS (Titania)**: `Lv 1 EX96 | HP 33/33` (kuning) + jendela item
   4-slot dengan **badge `E` slot aktif**: `E Steel Axe 30/35 / Iron Axe 34/45 /
   Iron Sword 46/46(ABU-ABU) / Iron Axe 44/45`. **ABU = tidak bisa dipilih** (konteks
@@ -670,3 +672,32 @@ navigasi **C-stick/D-pad + A**; hint `Select Topic / Select Content / B Back`:
 11. `Cursor Color:  [palet swatch 4×4]`
 Help bar = deskripsi field per-baris (`"Change type of combat window..."`).
 = spesifikasi layar SETTINGS Android PoC = 1:1 dengan daftar ini [AM-058].
+
+### BRV-BTL-007 — MODEL DISPLAY panel tempur + weapon-diamond + radial penuh — DECODED
+Dari 3 forecast HD (Ike 10−3=7; Titania vs Volke 20−5=15 & Volke 21−9=12; ΔHP aktual
+semua persis): **panel display punya SEMANTIK CAMPUR yang harus ditiru engine**:
+- Panel raw per-unit (kuning): **`Atk | Hit | Avo / Crit | Ddg | Rng / Effect`**
+  (7 field; Effect = efek senjata; Ddg = DEF).
+- **Atk** = kekuatan-serang-total unit (Str+Mt+triangle, TANPA def lawan): Titania
+  Iron Axe **20** = Str12+Mt8+0 ✓ → **Iron Axe Mt=8**. Volke Steel Sword 21.
+- **Mt (kolom forecast) = Atk − DEF target**: 20−5=15, 21−9=12, 10−3=7 ✓✓✓ = kerusakan
+  final = Mt forecast (3× terkonfirmasi + 3× ΔHP).
+- **Hit (kolom) = Hit-raw − AVO target, cap [0,100]**: Volke raw101−46=55 ✓; Ike/Titania
+  raw109/119 clamp→100 ✓. Panel raw `Hit` = nilai SEBELUM avo (109/119).
+- **Avo (panel) = evasion-total diri** (titania 46) — tdk tergantung target.
+- **Crit** kolom = final; cap/effek [OPEN]. **Rng 1** = jangkauan.
+- **Pop-up unit (kuning, klik unit)**: `nama / Lv n EX n / HP x/y` + panah putih = slot
+  equip + **inventaris 4-slot**: `nama_item d/d` + **baril warna** + **row ABU-ABU = item
+  mati-rank-tidak-bisa-dipakai**; item aktif = panah (bukan badge E — E badge = slot
+  equip di layar lain).
+- **WIDGET SWITCH-SENJATA = DIAMOND 2×2** (kanan bawah, 4 ikon = 4 slot inventaris,
+  D-pad) — muncul saat aksi Attack terbuka = UX signature FE9; engine WAJIB ada.
+- **RADIAL WHEEL final (HD)**: pusat `A (Move)`, slot: `Map Menu (Z)` `Status (Y)`
+  `Next Unit (X)` `Cond (—)` `B (Cancel)` + panah biru Z. Menu aksi: `Cancel B / End A`.
+- **Ring**: biru=sekutu, merah=musuh, ungu=kursor, **bracket-putih-putus=unit terpilih**;
+  overlay gerak = BIRU, overlay jangkauan serang = ORANYE, tile escape = panah+`+` biru.
+- Label senjata arena kadang **`Regal Sword`** (?? kemungkinan `Rune Sword` font tipis —
+  verifikasi crop nanti); popup Boyd `Lv 4 HP 31/31 Iron Axe`; objective `Clear Escape`
+  Turn 6 (fase musuh mengepung jembatan).
+- Implikasi: tabel Mt senjata dasar bisa dibaca dari (Atk−Str) unit dikenal → seed
+  `docs/data/FE9_WEAPONS.csv` [AM-059].
