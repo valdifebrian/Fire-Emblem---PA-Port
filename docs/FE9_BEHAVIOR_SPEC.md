@@ -742,3 +742,34 @@ Dari decompil impl (decAll) + katalog:
 - **MapLoad(name)** → `FUN_8014c7c0(&BMAP, name)` (wrapper 1-liner, return 1).
 - Keluarga wrapper BMAP-objek = pola `FUN_8014c***(&0x80330708, args)`; engine memodel
   BMAP sbg objek dgn metode load/sally/camera. [AM-061]
+
+### BRV-SCT-009 — dispos_c.bin GRAMMAR CLOSED (struktur) — DECODED (semantik param = P1-gameplay)
+Loader asli `FUN_8003f87c` (dispos.cmp mode9 / dispos_c.bin mode1; buffer base X,
+header 0x20, data@X+0x20) + verifikasi byte-level `out/raw/dispos_c.bin`:
+- **HDR BE (0x20B)**: `[u32 fileSize][u32 rel=0x3118][u32 R=639][u32 N=36][u32 v6=0]…`
+- **OFFSET TABLE** @ file 0x3138 (X+0x20+rel): **639 u32 BE naik-monoton**
+  (0,8,c,14,54,…,0x2a40) = **start tiap record dlm payload [0x20..0x3118)** =
+  record ke-i = [PAY+off[i], PAY+off[i+1]) — **variable-length, BUKAN stride** ✓.
+- **PASS-1 (pointer patch, sekali per-file)**: utk SETIAP 639 offset-table w:
+  `*(X + (w&~3)) += X` = **WORD PERTAMA TIAP RECORD = pointer relatif pool →
+  di-absolutkan saat load**. Semua record diawali u32 target.
+- **POOL-A [0x2a54..0x3118)** = struktur + nama (PID_/JID_/IID_/SEQ_/EQ_/MTYPE_/SID_/
+  always_T_*) + timestamp build `2005-05-26 14:57:20`; **pool suffix-dedup** (pointer
+  bisa mendarat di tengah nama = share suffix "RIO"⊂"PID_SENERIO" dll — parsing naif
+  per-null SALAH; baca pointer=apa-adanya).
+- **GRUP AI TERBACA (record groups)**: pola berulang
+  `[EQ_BULLHEAL][SEQ_NOMOVATK100_NOJILL_AND_TALK][EQ_NEARESTUNITMOVE]
+  [MTYPE_HEROKILLER + u32 ×5: 0x5010501 0x1004800 0 0 0x1040101]`
+  (grup berikutnya 0x5020502/0x6004800, 0x5030503/0x7004800 = **field id+radius aggro
+  increment per-spawn**) = **kepribadian AI musuh**: EQ_* = kondisi eq, SEQ_* = urutan
+  script AI, MTYPE_* = archetype (HEROKILLER!). Famili hitung: EQ 132, SEQ 95, MTYPE 93,
+  PID 17, JID 23 (kelas), IID (item spawn) etc.
+- **PASS-2 (intern)**: N=36 pasangan `[u32 ptrPayload][u32 i*12]` @0x3b34 = **subtabel
+  36 entri** (event `always_T_05..15`, `ID_TEMP_ON_DIE`, `SID_TURNREGENE`) →
+  di-intern (509-bucket `FUN_8000d3ec`) dgn nama tail-region B [0x3118+?] — record
+  event script-attached.
+- Record len4 tunggal = referensi nama AI/kelas/item utk unit SEBELUMnya (grup
+  per-spawn); record len 40-64 = blok param penuh (class+equip+AI).
+- **STATUS**: struktur + grammar = CLOSED; **semantik tiap u32 param** (radius aggro,
+  id spawn, layer difficulty) = dikerjakan saat implementasi AI (P1-gameplay) dgn
+  cross-check dispos.cmp pack per-chapter. [AM-062]
