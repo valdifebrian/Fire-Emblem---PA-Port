@@ -701,3 +701,30 @@ semua persis): **panel display punya SEMANTIK CAMPUR yang harus ditiru engine**:
   Turn 6 (fase musuh mengepung jembatan).
 - Implikasi: tabel Mt senjata dasar bisa dibaca dari (Atk−Str) unit dikenal → seed
   `docs/data/FE9_WEAPONS.csv` [AM-059].
+
+### BRV-SCT-005b — SEMANTIK NATIVE batch-1 + MODEL UNIT RUNTIME — DECODED
+Dari decompil impl (decAll) + katalog:
+- **MODEL UNIT RUNTIME** (oracle `FUN_80016bdc`, `FUN_800bd4c0`): array **160 slot ×
+  0x280B @ 0x802B14E4**; **`+0x188` = PID interned-id (0=kosong)**; **`+0x198` = BYTE
+  handle-unit = nilai yang DIKEMBALIKAN native ke script** (bukan pointer!);
+  **`+0x19E/+0x19F` = X,Y (i8)**; `+0x1A0` = bits state (mask 0x1C = alive filter);
+  `+0x190` = ptr→tabel info kelas (byte+8 valid). 84 impl native membaca `+0x198` =
+  referensi unit universal script; keluarga **`Unit*ByPID`** (SetPosDirByPID/RotateByPID/
+  MoveDirByPID/…) bekerja LANGSUNG dgn PID arg (string C01 membuktikan `PID_BOLE_MAP1`
+  → `UnitSetPosDirByPID`); UnitWalkDir(dir) = enqueue utk **unit AKTIF global**
+  (`DAT_803307a8` ikut tersimpan di record antrean queue `DAT_80296f90`).
+- **UnitGetByPID(pid)**: scan 0x188==pid → return slot[0x198]; 0 jika absen.
+- **UnitGetByPos(x,y)**: scan valid (kelas ok, state&0x1C==0) x==param1 && y==param2;
+  arg-parse `FUN_80015320(argc,buf)`.
+- **WaitM(ms)**: jika `scriptglobal&1` (fast-forward/Min) → 0 = skip; else
+  frames = (ms − tickFrac)/msPerFrame; push `frames−1` ke antrean global `DAT_8028d22c`
+  (via intern-FUN_8000caa0) → return 1 (script block s/d queue kosong). = protokol
+  SCT-005 terkonfirmasi dr impl.
+- **MapLoad(name)**: → `FUN_8014c7c0(&DAT_80330708=BMAP, name)`; return 1 sinkron.
+- Native argc & pasangan nama-impl = `native_catalog.csv` (authoritative). Lainnya dlm
+  katalog ber-argc: `UnitWalkDir(1) UnitMoveWait(0) UnitFocusOff(0) UnitFadeOff(0)
+  UnitFadeOut(0) UnitGetNext(1) UnitGetNext(1) UnitSetCpMoveSeq(2) UnitFadeIn(0)
+  UnitSetCpAttackSeq(2) UnitGetX(1)&LAB UnitGetY(1)&LAB UnitRotate(3) UnitEscape(2)
+  UnitMoveDir(2) UnitTransform(2) UnitQueryJID(2) UnitAddItem(2) UnitGetWeaponCount(1)`
+  — semantik per-arg = batch berikutnya (pseudocode tersedia).
+- CSV field-unit runtime: `docs/data/FE9_UNIT_RUNTIME.csv`. [AM-060]

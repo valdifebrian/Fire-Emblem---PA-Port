@@ -1,0 +1,11 @@
+offset,size,field,notes,evidence
+0x188,4,int,PID interned-id; 0=slot kosong,FUN_80016bdc scan
+0x190,4,ptr,info kelas (byte+8 = valid flag),FUN_800bd4c0
+0x198,1,u8,handle unit utk script (dikembalikan UnitGetByPID/ByPos; dibaca 84 impl),FUN_800bd5ac/FUN_800bd4c0
+0x19E,1,i8,X peta,FUN_800bd4c0 cmp param1
+0x19F,1,i8,Y peta,FUN_800bd4c0 cmp param2
+0x1A0,4,u32,bits state; mask 0x1C = filter alive,FUN_800bd4c0
+stride,0x280,,slot unit,,FUN_80016bdc loop 160x
+base,0x802B14E4,,unit array base (=-0x7fd4eb1c),,FUN_80016bdc
+argapi,,,FUN_80015320(argc,buf) = arg-reader wajib native; 53 impl pakai,,grep
+active,0x803307A8,,global unit aktif (UnitWalkDir dkk enqueue utk ini),,FUN_801a1db8
