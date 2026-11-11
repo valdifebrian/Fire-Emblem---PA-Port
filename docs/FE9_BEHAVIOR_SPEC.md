@@ -521,20 +521,17 @@ layar (OCR-vision), konsisten silang antar-frame.
   perilaku yang selama ini belum punya bukti visual; kini punya frame referensi di
   `fe9-re/out/yt/fx_*.png` (work-dir, tidak di-commit). [AM-056]
 
-### BRV-BTL-004 — Sampel tempur terpasang (pair-panel + outcome) — PARTIAL (data terkumpul, formula OPEN)
+### BRV-BTL-004 — Sampel tempur terpasang (pair-panel + outcome) — SUPERSEDED (lihat BTL-005)
 Sumber: frame-accurate seek `fe9_ch1.mp4` (640×480, seek akurat pasca-temuan offset keyframe-seek
 = harvest lama bisa meleset ±6 dtk; selalu `-i` dulu baru `-ss` ATAU verifikasi isi frame).
-Tabel data: `docs/data/FE9_BATTLE_SAMPLES.csv` (NEW; 3 sampel terpasang + kolom lengkap).
+Tabel data: `docs/data/FE9_BATTLE_SAMPLES.csv` (3 sampel terpasang + kolom lengkap).
 
-- **Pair-forecast panel (bukan 6-field tunggal)**: dua kolom berpasangan per label
-  `HP | Mt | Hit | Crit` — baris header BIRU (penyerang/pemain) di atas, MERAH (target) di
-  bawah; BOYD vs Bandit (Plain, Turn 1): Boyd 30/Mt11/Hit82/Crit2, Bandit 24/Mt7/Hit76/Crit0
-  (senjata sama Iron Axe dua-duanya). **Outcome arena: 24→13 (kena 11), 30→23 (kena 7)** ⇒
-  dmg Boyd→Bandit **11**, Bandit→Boyd **7**.
-- Kandidat interprestasi (belum DECIDED — butuh ≥3 sampel varian): `Mt` kolom = ATK final?
-  (11 dmg = Mt11 − Def0? tapi Bandit mt7 − Boyd def4 = 3 ≠ 7). **DEF terreno "Plain =
-  Avo0/Def0/Mdf0"** ⇒ Boyd Def4 dari mana? ⇒ Mt kolom BUKAN atk-final ATAU dmg punya
-  suku lain (rank/skill/Str terpisah). **JANGAN implement formula sebelum 3+ sampel fit.**
+- **KOREKSI SOURCE-IDENTITAS (BTL-005, HD)**: sampel "BOYD vs Bandit" = SEBENARNYA
+  **IKE (Ranger Lv2, HP20/20, 4×Iron Sword, slot E) vs Bandit (Fighter, HP24, Iron Axe)**;
+  angka "Boyd 30/Mt11/Hit82 + outcome 24→13/30→23" = artefak keyframe-seek salah-tempo
+  di 640p (bar 30 tidak pernah ada; HD menunjukkan bar 20/24→14/17). Angka lama DI-CABUT.
+- Pair-forecast panel = dua kolom berpasangan per label `Mt | Hit | Crit` (MERAH kiri =
+  musuh, BIRU kanan = pemain) + baris identitas + panah triangle — format terkonfirmasi HD.
 - **Panel terrain kiri-atas live**: `[nama] Avo n | Def n | Mdf n` + objective `Clear Seize`
   + `Turn n` = HUD BRV-MAP: terrain stat field trio = Avo/Def/Mdf (magic/defense physical?).
 - **Popup unit-info di peta (Oscar t251)**: `Lv 1 | HP 26/26 | Hit ~34 | Iron Lance | Lv1 Mov5
@@ -568,3 +565,54 @@ Tabel data: `docs/data/FE9_BATTLE_SAMPLES.csv` (NEW; 3 sampel terpasang + kolom 
 - Langkah berikutnya: harvest Ch2 window 380-400+540-560+660-690 (arena+status screen
   Oscar/Boyd terlihat di grid) cari varian triangle (lance-vs-axe) + zoom pair-panel Ch1
   fcB t237 untuk menguji Mt kolom = Ddg? ⇒ fit formula dengan ≥4 sampel.
+
+### BRV-BTL-005 — SUMBER HD 720p: forecast panel TERBACA PENUH; Mt = kerusakan final — DECODED (observasi)
+Sumber BARU: rekaman HD lokal `Fire Emblem： Path of Radiance - Full Game in HD!
+[Vf53jqrC3L8] 720p.mp4` (1280×720@30, 21h55m, Jimmy Longplays; LOKAL saja — tidak
+di-commit, aset berhak pihak lain). Timeline chapter = deskripsi video (tabel di bawah).
+Kualitas 720p = teks panel 100% terbaca tanpa ambiguitas (menggantikan semua bacaan 640p).
+**Gotcha seek: `-ss` sebelum `-i` di file ini = keyframe-jump PALSU (frame hitam/hanya
+keyframe); pakai filter-stream (`-ss` + `-t` + `select`/`fps` setelah `-i`) = frame-accurate.**
+
+- **PANEL FORECAST HD (satu-satunya widget, bukan dua)** = tabel tempur pra-serang:
+  ```
+  ┌──────────┬────┬──────────┐   ← badge "×2" kanan-atas (lihat bawah)
+  │ 6    Mt  7 │      Ike    │
+  │ 52   Hit 100│   Iron Sword│
+  │ 0    Crit 3 │             │
+  ├──────────┴────┴──────────┤
+  │        Bandit            │
+  │  🪓 Iron Axe  ↓           │   ← panah MERAH BAWAH = triangle劣势 (axe vs sword)
+  └───────────────────────────┘
+  ```
+  Kolom MERAH = musuh (kiri), BIRU = pemain (kanan); label tengah `Mt | Hit | Crit`;
+  baris bawah = identitas target + senjata terpasang + panah triangle.
+- **GROUND TRUTH (Ike vs Bandit, Ch1, t_HD≈745.5):**
+  - Ike: Ranger Lv2 EXP67 HP20/20; inv **4× Iron Sword** (slot aktif **E**), dur 46/46.
+  - Panel kiri-bawah Ike: `Atk 10 | Hit 109 | Avo 19 / Crit 3 | Ddg 4 | Rng 1` (raw).
+  - Forecast: **Bandit 6 Mt / 52 Hit / 0 Crit vs Ike 7 Mt / 100 Hit / 3 Crit**.
+  - Outcome arena (bar terukur): Bandit 24→17, Ike 20→14 ⇒ **damage nyata = Mt persis**
+    (7 dan 6 = ΔHP). **DECIDED: kolom `Mt` forecast = kerusakan final per-hit**
+    (sudah dikurangi DEF+terrain+triangle); sampel lama "Mt11→dmg11, Mt7→dmg7" ikut cocok.
+  - `Hit 109` raw → forecast **100 = cap 100%**; `Ddg 4` = DEF Ike (raw ATK musuh
+    = 6+4 = 10); raw ATK Ike 10 − DEF Bandit 3 = 7 ✓.
+  - Badge **`×2`** muncul di kolom Ike (HP 20 vs 24) tapi outcome 1-hit/0.5-dua-hit —
+    trigger doubling FE9 = **UNKNOWN** (kandidat: ATK/HP ratio; butuh sampel ganda jelas).
+- **HUD dalam arena**: label `Ike` / `Bandit` + tag senjata di atas bar HP (`Iron Sword 45`
+  = durability live 46→45 pasca-attack ✓); popup inventory target = daftar 4 slot
+  `🗡 Iron Sword 46/46 ×4` (durabilitas hijau).
+- **INVENTARIS BANDIT = 3×Iron Sword + Iron Axe** ⇒ musuh humanoid membawa 4 item =
+  bukti drop-pool/loot (perlu dicek dispos record: field item1-4).
+- **Timeline chapter HD** (dari deskripsi video; HH:MM:SS → detik): Prologue 0(0);
+  Ch1 08:46(526); Ch2 22:45(1365); Ch3 41:26(2486); Ch4 01:01:44(3704); Ch5 01:30:03(5403);
+  Ch6 02:06:54(7614); Ch7 02:33:34(9214); Ch8 03:20:52(12052); Ch9 04:03:53(14633);
+  Ch10 04:41:42(16902); Ch11 05:26:01(19561); Ch12 06:15:53(22553); Ch13 06:45:20(24320);
+  Ch14 07:36:46(27406); Ch15 08:17:39(29859); Ch16 08:50:37(31837); Ch17 09:47:56(35276);
+  Ch18 11:51:58(42718); Ch19 12:45:55(45955); Ch20 13:37:22(49042); Ch21 14:15:17(51317);
+  Ch22 15:26:46(55606); Ch23 16:17:45(58665); Ch24 17:06:19(61579); Ch25 17:44:35(63875);
+  Ch26 18:22:22(66142); Ch27 19:14:54(69294); Ch28 19:49:16(71356); Final 20:28:38(73718).
+- **Status screen roster Ch2 terlihat** (contact sheet): Brom Knight Lv4 HP28/28,
+  Volke Thief, Miermirrian Mage Lv9 75EXP HP21/21, dll. = jendela harvest berikutnya
+  (window Ch2 1365-2486: buka status screen semua unit = ground truth stat awal roster).
+- Implikasi P2: engine WAJIB menghasilkan Mt/Hit/Crit forecast identik + cap 100 + panah
+  triangle; `Ddg` panel = DEF. CSV `docs/data/FE9_BATTLE_SAMPLES.csv` +bari B005. [AM-057]
