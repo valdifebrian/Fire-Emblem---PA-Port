@@ -409,3 +409,26 @@ sweep loose 437 lalu. Semua ter-parse `bin/dbx.mjs` → `out/dbx_core/*.json`.
   daftar layer 2D (lensflare/Window/Caption/desktop), bgList/lensflare.dbx = aset.
 - Gapatis: rumus damage angka TETAP butuh decomp (gForgeData ×5/×3) — tabel ini menutup
   *timing, reaksi, kamera, fisik, pemetaan nama* tanpa capture. [AM-053]
+
+### BRV-SCT-008 — dispos per-peta (zmap/bmapNN) : container pack + grid record per-varian — PARTIAL (structure CONFIRMED)
+- `//zmap/bmapNN/dispos.cmp` (LZ77) → unpack = container **`pack`** berisi
+  `dispos_c/h/m/n.bin` (4 varian; bmap01: 905/586/566/566 B — m≡n ukuran). 58 folder bmap + `always`.
+- Decoder resmi = **`FUN_80107b54` (= `DisposFileDecode` dtk-verified)** baca stream per-record:
+  **20×u32 + 26×u8 + align(+3&~3) = 106..108 B** → cocok presisi varian `always` (payload
+  10.800 = 100×108, semua record align penuh). Field terpetakan dari pseudocode:
+  `+0x00/+0x04` u32, `+0x08` u32 (skip), `+0x10..2F` 8×u32, `+0x30..37` 8 u8 (slot item),
+  `+0x38..47` **4 kata AI** (→UnitInfo+38/3C/40/44, StanH ✓), `+0x48..5B` 5×u32,
+  `+0x5C=x, +0x5D=y` (u8 koord), `+0x5E..66` u8 flag, `+0x67` runtime.
+- Varian bmap pakai **grid 0x70** (terbukti independen: triplet konstanta @+0x50/54/58
+  berjarak 0x70 ×4; 4 record×0x70 = 0x244 = awal pool string pas). bmap01_c = **4 unit**
+  (pool: PID_BOLE_MAP1, PID_GREIL_MAP1, PID_IKE, PID_MIST = cast masuk Bab 1 ✓) + string
+  region pra-pool: `IID_PRACTICESWORD, JID_CLERIC/F, JID_FIGHTER, JID_HERO_G, JID_RANGER,
+  MTYPE_NORMAL` + timestamp `2005-02-23`.
+- OPEN (serahkan ke M-C6 decomp lane, mereka pegang decoder + UnitLoadUnitInfo 0x6C4):
+  semantik u32 kecil (~470..600) di b/c/f10 — kandidat indeks intern registry gabung
+  always+bmap (uji indeks-langsung ke pool-A 136 string gagal, jadi tabel lain);
+  plus kenapa header u16 record-count tak cocok jumlah grid.
+- Semua 58 bmap ter-parse parser generik `bin/dispos.mjs` (NEW, mirror fe9-port/bin) —
+  CSV spawn/pool; auto-deteksi grid (108/112) + region u32 sebelum string (anchor
+  timestamp + scan + kandidat align). Tervalidasi: always 100×108; bmap01 4×112;
+  bmap02 3; bmap05 6; bmap12 **107 unit**; bmap20 49 (semua stride 108 varian umum). [AM-054]
