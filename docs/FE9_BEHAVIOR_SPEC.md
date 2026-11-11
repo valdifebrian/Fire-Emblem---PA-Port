@@ -425,6 +425,27 @@ sweep loose 437 lalu. Semua ter-parse `bin/dbx.mjs` → `out/dbx_core/*.json`.
   **effectList.dbx** = efek → `EID_*`, **camera.dbx** = 6 preset cam tempur
   (cam0 eyeCenter, camCharaL0 dist50 offs[0,7,0] rot[6,110,0]), **battle/system.dbx** =
   daftar layer 2D (lensflare/Window/Caption/desktop), bgList/lensflare.dbx = aset.
+
+- **VALIDASI VIDEO OFFLINE (longplay NTSC `1B95v-cnXVo`, pipeline yt-dlp+ffmpeg,
+  2026-11-11)** — oracle perilaku non-emulator, segmen Prologue (02:00-09:40):
+  - UI tempur: bar HP dua-sisi + label + **ikon senjata & durabilitas** ("Trainer
+    96/114"); TIDAK ADA angka damage mengambang — damage = delta bar per exchange
+    (konsisten param.dbx `gauge-*`/`dmg-*` tanpa float-damage).
+  - **Popup EXP terlihat: `Exp 11/11` → sparkle putih di kepala pasca-combat** =
+    weapon-rank exp (baris exp kecil) + unit-exp; urutan exchange:
+    player-hit → (counter WaitAtk2=20f) → gauge shake → Exp popup → sparkle →
+    (LvUp bila cukup: `Levelling Up...` banner → **Ranger Lv2: HP+20 (19→39),
+    Sp+3, Sk+6, Spd+3, Lck+1, Def+1, Res+0** → "Level Up!" flash).
+  - Sample damage prologue: Ike(Trainer) vs Boyd(Practice Axe) 19/18→19/9 =
+    9 dmg/hit-trainer terakumulasi; Greil vs Myrm 11/7 delta — cocok kelas
+    Mt4-def; validasi formula penuh tetap butuh frame-per-exchange (P2 opsional,
+    formula sudah punya Direct Combat CAP1 + zdbx Wait*).
+  - Banner **ENEMY PHASE** full-screen merah (fade-in/out ~2s) = transisi fasa;
+    menu aksi peta terbukti [Attack|Items|Wall|...] + **Voluntary (retreat)** +
+    [Use Item|Skills] saat item; **option: Combat Window Default, Message Speed**.
+  - Save: format entri `Prologue: Mercenaries` / `Ch.N: <judul>` + timestamp main.
+  - Demo sesi emulator = Ch1-flavored tutorial; prologue longplay = map nyata
+    (Ike vs Boyd + Greil vs Myrm) — dua-duanya valid untuk BRV-BTL.
 - Gapatis: rumus damage angka TETAP butuh decomp (gForgeData ×5/×3) — tabel ini menutup
   *timing, reaksi, kamera, fisik, pemetaan nama* tanpa capture. [AM-053]
 
