@@ -327,8 +327,26 @@ A/B pada MENU aksi & dialog = responsif dengan hold 800 ms. **TAPI A setelah sel
 Hipotesis: konfirmasi move butuh C-stick/press-analog atau gate "arrow settled" yang tak
 terpenuhi tap diskrit; WEDGE-LIKE kelas baru — kandidat workaround: hold A > 1500 ms,
 A dua-kali-jarak-3s, atau Z (tombol tidak terpakai FE9) sbg alternate-confirm.
-Status: Open (belum Confirmed). Implikasi: capture tempur manual T-RE-CAP1 tetap jalur
-utama; harness belum bisa auto-play stage.
+Status lama Open -> **RESOLVED sesi 2026-11-11 (battle Ch1 real-time, Turn 8-9)**:
+konfirmasi move via A=X `keybd_event` BEKERJA; yang terjadi sebelumnya = ambang durasi +
+antrean input, bukan mode mati. Atang ambang terkalibrasi ulang:
+- **ACTION (A/B/X/Y/Z/Start): hold >= 2100 ms WAJIB** — 150/450/900/1500 ms semua TERBUKTI
+  lost di peta (uji X di 4 state); 2100 ms selalu mendarat (deselect, menu, Wait, move-confirm).
+- **D-pad T/G/F/H: 900-1000 ms cukup** (kursor peta + menunya responsif; panah MAIN-STICK
+  tetap mati total - jangan dipakai).
+- **Input ter-ANTRE selama animasi**: burst 3×2100 saat animasi move-range -> game memproses
+  confirm BEBERAPA DETIK kemudian (Ike ternyata pindah 2 tile lalu menu aksi muncul). Jangan
+  spam ulang sebelum screenshot konfirmasi state (double-confirm risk = aksi salah).
+- **Dead-state scripted**: kursor + semua tombol mati sementara marker panah boss kuning
+  berputar-rotasi = sekuens event (boss mendekati unit / dialog AI "Yaaaawn..." nunggu A);
+  BUKAN wedge — tunggu; fasa musuh lanjut sendiri setelah dialog di-A.
+Peta fakta battle Ch1 (Turn 8-9, GFEE01): misi "Defeat Boss"; Ike = kelas **RANGER Lv1**
+HP19/19, senjata Trainer: **Atk 11, Hit 173, Crit 0, Ddg 6**, EXP 0; jangkauan Serang Trainer
+= tidak ada target pada jarak yang ada (boss + bandit axe di luar range 1-2); menu aksi =
+[Items|Wait] saja tanpa target; terrain panel [nama|Avo/Def/MDf]; panah kuning = pointer
+boss-world (bukan musuh terseleksi); fasa musuh punya dialog idle AI per unit.
+Harness KINI BISA main-peta penuh (gerak+menu+fasa). Capture animasi tempur masih menunggu
+engagement (boss scripted mendekat) — burst 70 s aktif. [AM-055]
 
 ### BRV-SCT-006 — Semantik native batch-2 (unit/map/camera/env) — CONFIRMED (pseudocode)
 Dari `out/ghidra/decAll/FUN_*.c` (impl ptr katalog), argc = switch `FUN_80011a5c`:
