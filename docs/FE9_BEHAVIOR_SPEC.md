@@ -284,3 +284,50 @@ Model pack battle punya varian sufiks `_ja/_no` (`amr1_ja.pak`, `kni2_no.pak`) �
 set per region. Port WAJIB meniru pemilihan varian disc USA sebelum bake (bukan asal pilih).
 Confidence: Strong (pola nama + disc USA). Test: T-CNT-CH varian check.
 
+### BRV-CAP-001 — Saluran input replika demo + resep reproduksi wedge — CONFIRMED
+Input disuntik host→Dolphin via `keybd_event` (Win32, `bin/sendkey.ps1`) ke jendela game;
+peta tombol GCPadNew (DInput Keyboard Mouse, GC pad 1): **A=`X`, B=`Z`, X=`C`, Y=`S`, Z=`D`,
+Start=`RETURN`, L=`Q`, R=`W`, D-pad=`T G F H`, stick=arrows (Modifier=`Shift`), C-stick=`I J K L`**.
+Temuan lintas sesi: semua tombol mendarat di layer hotkey QT (F9 screenshot = bukti); layer pad
+game menerima SEMUA tombol termasuk stick saat menu/peta; kegagalan awal "stick mati" = salah
+interpretasi, bukan jalur rusak. Wajib `SetForegroundWindow` + verifikasi `GetForegroundWindow`
+per tap (kunci foreground Windows bisa gagal senyap = tap nyasar; kirim tap ALT bila verifikasi
+gagal). Protocol aman dialog: jeda ≥ 4 s antar tap (typewriter). **Durasi press Krusial: di mode peta
+(map state) game TIDAK membaca tap pendek — `keybd_event` hold ≥ 800 ms WAJIB agar tombol
+terbaca gate dialog/parchment tutorial; di menu/dialog cinematic tap 150-300 ms cukup. Bukti:
+parchment `"As you play the game, tutorial windows..."` tak bergerak >6 menit terhadap tap 300 ms
+(SendKeys WinForms, durasi ±40 ms juga gagal) lalu LANJUT dalam <8 s setelah hold 800 ms.
+Artinya kegagalan-tap selama ini BUKAN wedge pad — ambang polling map-mode.**
+**Wedge terdokumentasi (2026-11-11, GFEE01 USA, Dolphin 2609b, jendela 1042×786)**: demo
+Demonstration — setelah unit sekutu mengonfirmasi Attack→Iron Sword dengan tooltip script
+`"This is the display shown here on the left. It's called the combat-information window."`
+muncul: framebuffer statis > 3 menit; pad handler game tampak mati (A/B/X/R/Start tanpa efek),
+emulator + hotkey layer hidup (F9 PNG baru). **KOREKSI pasca-temuan hold-800ms: state ini
+kemungkinan besar BUKAN wedge, hanya gate yang tak terbaca tap 200 ms; repro ulang wajib
+dengan hold ≥800 ms sebelum diklasifikasi wedge.** Hotkey save F1/F2 default TIDAK membuat
+berkas di `User/StateSaves` (kosong).
+Signature observasi = kriteria freeze governance: layar beku, logika beku, shell hidup —
+tapi klasifikasi final tertunda sampai replay memakai hold 800 ms.
+Repro untuk harness: sequence input manusia terekam = boot disc → lewati opening (tap A per 4 s)
+→ New Game → skip prologue → demo Demonstration → gerak unit ke musuh (stick, screenshot di
+antara gerak dan confirm) → menu action → Attack → tooltip combat-info muncul → **spam A ±40×
+interval 3 s pada tooltip = Wedge** (hipotesis terkuat: script demo mengonsumsi tap ekstra lalu
+menunggu event yang tak pernah datang; status: Strong, belum Confirmed sampai trace ucode).
+Konsekuensi engine: parser script port WAJIB mengabaikan input tak terduga di sela message,
+bukan mengonsumsinya. Catatan demo: window preview tempur menampilkan pasangan
+[Ally|Enemy]: HP 19/19, Mt 4/4, Hit 100/91, Crit 2/2 + senjata Iron/Slim/Steel Sword (HP 19
+Myrmidon sekutu, durability 46/35/35) — seed validasi BRV-BTL damage.
+Test: T-STA-FRZ replay sekuens di harness; T-C1-UI angka damage vs tangkapan. [AM-050]
+
+**Update sesi 2026-11-11 (grind 100-loop, Turn 7 Demonstration)**: di peta, `B` (cancel),
+`T G F H` (kursor bergerak, kamera pan — DOWN d-pad terkonfirmasi hidup; stick bawah mati),
+A/B pada MENU aksi & dialog = responsif dengan hold 800 ms. **TAPI A setelah select unit
+(mode "arrow" aktif, move-range tampil) tidak pernah mengonfirmasi move** — siklus
+`B,A,A,G,A` berulang 100× (11 mnt) tanpa turn ever advance (101 frame identik Turn 7).
+Hipotesis: konfirmasi move butuh C-stick/press-analog atau gate "arrow settled" yang tak
+terpenuhi tap diskrit; WEDGE-LIKE kelas baru — kandidat workaround: hold A > 1500 ms,
+A dua-kali-jarak-3s, atau Z (tombol tidak terpakai FE9) sbg alternate-confirm.
+Status: Open (belum Confirmed). Implikasi: capture tempur manual T-RE-CAP1 tetap jalur
+utama; harness belum bisa auto-play stage.
+
+
