@@ -743,6 +743,21 @@ Dari decompil impl (decAll) + katalog:
 - Keluarga wrapper BMAP-objek = pola `FUN_8014c***(&0x80330708, args)`; engine memodel
   BMAP sbg objek dgn metode load/sally/camera. [AM-061]
 
+### BRV-SCT-005d — SCENARIO FLOWS 43 .cmb TEREKSTRAK LENGKAP — DECODED
+- Tool bin/cmbflow.mjs: 2075 func (43 /Scripts/C???.cmb) -> docs/data/cmb_flows.csv
+  (file,func,id,argc,seq; token = 'native/argc', 'i:const', 's:str', '_'=DROP, 'RET').
+- 145 func berscenario-MapLoad = SEMUA peta (chapter + battle map) punya flow utuh.
+- CH1 main (C01, 392 token) VERBATIM: Comeback; Fade(2); FadeWait; ENVSilentOn(0);
+  MapLoad("bmap01"); SetGrid(0); SetCircle(0); SetOutLink(0); UnitFocusOff;
+  InstantFocus(4,7); InstantSetMapCamera(-55,55,18); SallySetByGroup("bmap01_mikata_c");
+  InstantDisposFirst("bmap01_first_c"); InstantDisposFirst("bmap01_first_g_n/h/m") x3 +
+  InstantDisposFirstSetMode(n,h,m); InstantDisposFirst("bmap01_first_n/h/m"); ...;
+  UnitSetPosDirByPID("PID_BOLE_MAP1",15,13,dir4); UnitRotateByPID("PID_IKE",1,0);
+  UnitRotateByPID("PID_MIST",2,0); ... = spawn koordinat + rotasi eksak per unit.
+- Dispos per-difficulty = pack terpisah bmap01_first_n/h/m (+_g_* group) — engine
+  memuat varian n/h/m sesuai flag difficulty (pola sama shopitem_h/m/n).
+- Definisi sukses PoC P2 �8 kini punya skrip referensi nyata per chapter. [AM-063]
+
 ### BRV-SCT-009 — dispos_c.bin GRAMMAR CLOSED (struktur) — DECODED (semantik param = P1-gameplay)
 Loader asli `FUN_8003f87c` (dispos.cmp mode9 / dispos_c.bin mode1; buffer base X,
 header 0x20, data@X+0x20) + verifikasi byte-level `out/raw/dispos_c.bin`:
