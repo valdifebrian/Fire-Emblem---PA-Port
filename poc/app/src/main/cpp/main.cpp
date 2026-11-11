@@ -455,9 +455,11 @@ static std::condition_variable g_windowCv;
 static void touch_event(float nx, float ny, int action, int slot) {
   if (action <= 1) { /* down / move: hit-test & track */
     int code = 0;
+    float best = BR * BR * 2.25f; /* 1.5x visual, nearest-wins on overlap */
     for (int i = 0; i < 6; i++) {
       float dx = nx - BTN[i].cx, dy = ny - BTN[i].cy;
-      if (dx * dx + dy * dy <= BR * BR * 1.6f) { code = BTN[i].code; break; }
+      float d2 = dx * dx + dy * dy;
+      if (d2 <= best) { best = d2; code = BTN[i].code; }
     }
     if (code) {
       if (g_slotCode[slot] != code) {
@@ -525,7 +527,7 @@ static void engine_main(AAssetManager* am) {
       g_frame++;
       if (g_ga.endF > 0) {
         if (g_frame > g_ga.endF) {
-          if (g_ga.loop) { g_frame = g_ga.startF; for (int i = 0; i < g_ga.nEvents; i++) LOGI("evt f=%d c0=%04x", g_ga.events[i].frame, g_ga.events[i].codes[0]); }
+          if (g_ga.loop) { g_frame = g_ga.startF; for (int i = 0; i < g_ga.nEvents; i++) if (g_ga.events[i].codes[0]) LOGI("evt f=%d c0=%04x", g_ga.events[i].frame, g_ga.events[i].codes[0]); }
           else g_frame = g_ga.endF;
         }
       }
