@@ -1717,6 +1717,39 @@ static int scrMovie(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
 static int scrIsE3(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   (void)V; (void)a; (void)c; *o = 0; return 0; /* retail build [BRV-SCT-005e] */
 }
+/* set/get/clr/regist(name) [BRV-SCT-005l/m FUN_800bb018/800bb04c/800bafe4/800bb080]:
+ * FE9 = NAMED EVENT-FLAG BITSET — 96-slot table @803307bc (u32 ptr + hash +0x180,
+ * bitset +0x300); names registered at RUNTIME by script `regist(name)` (38 sites,
+ * e.g. Startup x18), clr clears the bit, miss-lookup = 0/no-op. C-flags gf_*
+ * (gameover/complete/canceled/reserved2-4) share the same table.
+ * Engine: sparse map — regist=declare(0), set=1, clr=0, get=bit. */
+static std::unordered_map<std::string, uint8_t> g_scrFlags;
+static int scrSetFlag(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  char b[256]; const char* s = sarg(V, c > 0 ? a[0] : 0, b);
+  g_scrFlags[s] = 1;
+  LOGI("scr set(\"%s\") flags=%d", s, (int)g_scrFlags.size());
+  (void)o;
+  return 0;
+}
+static int scrGetFlag(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  char b[256]; const char* s = sarg(V, c > 0 ? a[0] : 0, b);
+  auto it = g_scrFlags.find(s);
+  *o = it == g_scrFlags.end() ? 0 : it->second;
+  (void)V;
+  return 0;
+}
+static int scrClrFlag(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  char b[256]; const char* s = sarg(V, c > 0 ? a[0] : 0, b);
+  g_scrFlags[s] = 0;
+  (void)o;
+  return 0;
+}
+static int scrRegistFlag(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  char b[256]; const char* s = sarg(V, c > 0 ? a[0] : 0, b);
+  g_scrFlags.emplace(s, 0); /* declare, keep existing value [SCT-005m] */
+  (void)o;
+  return 0;
+}
 struct ScrOv { const char* n; int (*fn)(vm::Vm&, uint32_t*, int, uint32_t*); };
 static const ScrOv SCR_OVS[] = {
   {"WaitM", scrWaitM}, {"Wait", scrWaitM}, {"WaitM2", scrWaitM}, {"WaitSecs", scrWaitM},
@@ -1742,7 +1775,8 @@ static const ScrOv SCR_OVS[] = {
   {"BGMPlay", scrBgm}, {"BGMEffectPlay", scrBgm}, {"BGMFadeOut", scrBgmFadeOut}, {"BGMSetVol", scrPass},
   {"SFXPlay", scrSfx}, {"SEPlay", scrSfx}, {"SEStop", scrPass},
   {"MoviePlay", scrMovie}, {"ChapterMoviePlay", scrMovie},
-  {"IsE3Version", scrIsE3}, {"ENVSilentOn", scrPass}, {"ENVNoisyOn", scrPass}, {"ENVNoisyOff", scrPass},
+  {"IsE3Version", scrIsE3}, {"ENVSilentOn", scrPass}, {"ENVNoisyOn", scrPass}, {"ENVNoisyOff", scrPass}, {"ENVSilentOff", scrPass},
+  {"set", scrSetFlag}, {"get", scrGetFlag}, {"clr", scrClrFlag}, {"regist", scrRegistFlag},
 };
 static void script_init(void) {
   const uint8_t* d; int n;
@@ -1782,6 +1816,7 @@ static void script_begin(void) {
   g_scr.waitUntil = 0; g_scr.ringDumped = false; /* fresh deadline slot + re-arm wedge probe */
   delete g_scr.vt;
   g_scr.vt = vm::start(g_scr.vm, "Opening0", nullptr, 0);
+  g_scr.lastLog = g_playFrames; /* grace: wedge clock starts AT begin, not at f=0 */
   LOGI("script: begin Opening0 %s", g_scr.vt ? "ok" : "NO ENTRY -> WORLD");
   if (!g_scr.vt) scene_req(1, SC_WORLD);
 }

@@ -1145,6 +1145,70 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   tanpa device: `VMGOLD=... VMSTR=1 vmtest dir Cxx.cmb`); wave schedule engine
   diberi label data-gap yang sama. [AM-053]
 
+### BRV-SCT-005m — REGISTRAR FLAG & INVENTARIS NAMA FLAG SCRIPT (501 nama, SJIS) — DECODED
+- **Mekanisme registrasi**: `regist(name)` `FUN_800bb080`→`FUN_800bddcc` =
+  MENDEKLARASKAN string ke slot kosong tabel 96-slot (ptr+hash) — BUKAN registry
+  modul proc; `clr(name)` `FUN_800bafe4`→`FUN_800bdbc8` = clear-bit by-name;
+  helper bit terverifikasi: test `FUN_800bdb9c`, set-index `FUN_800bdb78`,
+  clear-index `FUN_800bdb54` (semua +idx>>3 | +0x300, mask 1<<(idx&7));
+  `FUN_800bded8` = reset-seluruh-tabel (dipanggil `FUN_800b727c/800b72cc` =
+  cleanup antar-bab). Nama TIDAK preloaded — dipopulasinya dari
+  `regist(...)` dalam .cmb saat chapter load (≤96 per sesi; 501 unik total
+  lintas 31 bab ✓ muat). C-code ikut membaca table yg sama via simbol statis
+  `gf_gameover/gf_complete/gf_canceled/gf_reserved2..4` ⇒ **flag `set` script
+  = kondisi victory/defeat engine (`FUN_80028724` get gf_gameover,
+  `FUN_8002da30` get gf_complete)** — rantai objective resmi: script→flag→
+  gameover/complete. [AM-081]
+- **INVENTARIS STATIS 2121 situs / 501 nama** (`out/data/FE9_SCRIPT_FLAGS.csv`,
+  mirror `docs/data/`): nama = SJIS-Jepang terekode-benar (TextDecoder shift_jis
+  atas latin1). Kelas sistemik: `宝箱NN` (PETI 1-5, set+get: buka→set,
+  AI/kondisi→get), `増援トリガN`/`増援イベントN` (TRIGGER/EVENT bala bantuan:
+  trigger set 17x→event get 7x = dua-flag handshake spawn), `ボス死亡` (mati
+  boss → get 8x = pemicu ending bab), `訪問NN` (kunjungi rumah), `情報Nフラグ`
+  (1-6), `ボス戦闘会話<unit>` (dialog boss per karakter ×29 bab), `F0203`-style
+  ASCII (event lintas-bab C80/C82/C95). ⇒ **peta semantik event-objective bab
+  terbaca statis TANPA device**; engine wajib: flag-store persist antar-rekaman,
+  handshake trigger→event, dan wiring gf_gameover/gf_complete ke win/lose.
+- Engine: `set/get/clr/regist` handler map tunggal (`g_scrFlags`) — live
+  terverifikasi cold-boot C00 (`scr set("DBG_…") flags=1`); grace-clock wedge
+  detector di-fix (false-positive `WEDGE lastLog=0` saat begin f>>240).
+
+### BRV-SCT-005l — SEMANTIK NATIVE BATCH-6: EVENT-FLAGS set/get + ACTION-QUEUE + EVENT-CAMERA KEYFRAME + FORCE-COUNT — DECODED
+- **`set(name)`/`get(name)` `FUN_800bb018/800bb04c`** = **NAMED EVENT-FLAG BITSET**:
+  tabel `DAT_803307bc` = 96 entri (u32 ptr string @stride4, hash cadangan +0x180,
+  **bitset 12B @+0x300**); lookup = intern-hash `FUN_8000d598` + str-eq
+  `FUN_802342b8`; set → bit[idx]|=1, get → bit; miss = no-op/0. Slot dipopulasi
+  RUNTIME oleh native `regist(name)` (lihat SCT-005m — bukan preload).
+  ⇒ mekanisme `always_*` conditionals dispos terhubung ke flag script INI.
+  Engine: implemented (sparse map + log; live set("...")×1 terverifikasi
+  cold-boot C00). [AM-081]
+- **`UnitWalkDir(dir)` `FUN_801a1db8`**: bukan per-unit — **script ACTION-QUEUE
+  `DAT_80296f90`**: rekaman baru auto-init (+0x30=enable, +0x33=global speed
+  `DAT_803307a8`, +0x36=1, +0x3c=1) lalu **nibble dir numpad → +0x34&0xF**
+  (skema sama path-digit SCT-005c). Semua "Unit*-family argc kecil" yang
+  share-prefiks init identik = operasi FIELD rekaman yang sama:
+  **`SetEventCameraPrec(p)`** +0x3c=p; **`UnitFocusOff()`** +0x30=0;
+  **`UnitFadeOff()`** +0x32=0. Pump unit meng-konsumsi rekaman tsb.
+- **`UnitMoveWait()` `FUN_801a2464`** RE-ENTRANT: cek `DAT_80296fa8` +
+  `FUN_80183974()` (masih ada unit animating) → push timer `DAT_80296fcc` +
+  flush antrean; return 1 selalu (bukan blok). = resep anti-wedge yang engine
+  sudah pegang (scrMoveWait tidak boleh hang — catatan 2104 konsisten).
+- **EVENT-CAMERA keyframe family** (×36 tiap fungsi di C*: cutscene standard):
+  `CreateEventCamera`=FUN_800177e0, `StartEventCamera`=FUN_8001779c,
+  `DeleteEventCamera`=FUN_80017774; **`SetEventCameraAt(tag,x,y,z)`**=
+  `FUN_80017840(x,y,z, TYPE=0 POSISI, tag)` (normalisasi /(272-slot^xor));
+  **`SetEventCameraRot(tag,rx,ry,rz)`** = TYPE=1; **float argumen XOR-biased
+  (`^0x80000000` − bias f64) = konfirmasi ULANG dua-jalur ABI SCT-005h**;
+  `EventCameraWait` = busy-check `FUN_8001772c` → re-entrant (list `DAT_80297010`).
+- **`ForceGetCount(force)` `FUN_800bd5e0`**: = panjang LIST PER-FAKSI
+  `DAT_802ca264 + force*0xC` (kepala list 0/4/8) → `FUN_80015680`. AI/Sally
+  condition (`SEQ_ATTACK100` dkk.) memakai ini. **`AllUnitEscape()` `FUN_800ba784`**:
+  2-pass 160 slot stride 0x280 (runtime SCT-005b): pass-1 filter-tabel
+  `FUN_80015320(type3)` + `+0x1A0` bit1 → clear bit0; pass-2 setiap unit lolos →
+  `FUN_8003dfb8()` (despawn/escape) → flush `DAT_802ca268` + camera refresh.
+  **`ENVSilentOff()` `FUN_800b7990`** = `FUN_80145520()` (fungsi KE-3 keluarga
+  env-audio, beda dari NoisyOn `FUN_80145488`).
+
 ### BRV-SCT-005k — SEMANTIK NATIVE BATCH-5: AUDIO-ENV + BGM NAMED + WAIT/CAMERA-HARD — DECODED
 - **`BGMPlay(slot u8, ptrStr)` `FUN_800b8070`**: arg1 WAJIB pointer RAM valid
   (guard `0x80000000..0x817ffffff` ⇒ TERBUKTI string, konsisten golden
