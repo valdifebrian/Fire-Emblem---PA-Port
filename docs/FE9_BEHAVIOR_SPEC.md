@@ -995,6 +995,14 @@ scene runner diimplementasi; parser-nya = target investigasi berikutnya).
   bertingkat per-Lv (`My Lv 21 HP/Mt/Def/Avo/Hit`) — tabel support per-tier.
 - Status domain: **Partial** — terrain CSV masih sampel (4), AI = observasi
   konvergensi + guard harta (54000-54090), EXP per-kill belum numerik.
+- **VERDICT terrain (2× dicek)**: TIDAK ada tabel terrain struktural di
+  zdbx (zbg bridge = prop 3D), FE8Data (bigIDtable = lookup msg), s_rect,
+  DOL (string = cuaca). Nilai panel = data biner DOL/.data TANPA string ATAU
+  per-map. Engine: default `Avo 0 Def 0 MDf 0` + exception dari sampel UI
+  (Thicket Def1) SAMBIL trace runtime P2. Terrain HUD terbukti selalu-on,
+  jadi validator UI mudah dibuat nanti.
+- **Objektif `Clear` resmi teramati**: Seize · Defeat Boss · Escape · Rout
+  (4 tipe) + widget HP-bar boss merah + label senjata (Javelin) saat target.
 
 ### BRV-SYS-003 — JUDUL BAB RESMI (dari layar Save) — PARTIAL (5/30)
 - `Ch.4: Roadside Battle` · `Ch.8: Despair and Hope` · `Ch.21: Without a King`
