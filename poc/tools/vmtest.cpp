@@ -79,10 +79,19 @@ static int waitFStub(Vm& V, uint32_t* args, int argc, uint32_t* out) {
 static int existsStub(Vm& V, uint32_t* args, int argc, uint32_t* out) {
   (void)V; (void)args; (void)argc; *out = 1; return 0; }
 
-/* native-name histogram (VMHIST=1) */
+/* native-name histogram (VMHIST=1) + golden trace (VMGOLD=path.csv) */
 static std::map<std::string, int> gHist;
-static void histHook(Vm& V, int ni, const uint32_t*, int) { gHist[V.natives[ni].name]++; }
+static FILE* gGold = nullptr;
+static void histHook(Vm& V, int ni, const uint32_t* args, int argc) {
+  gHist[V.natives[ni].name]++;
+  if (gGold) {
+    std::fprintf(gGold, "%llu,%s", (unsigned long long)V.frame, V.natives[ni].name);
+    for (int i = 0; i < argc; i++) std::fprintf(gGold, ",0x%x", args[i]);
+    std::fputc('\n', gGold);
+  }
+}
 static void histDump(Vm& V) {
+  if (gGold) { std::fflush(gGold); std::fclose(gGold); gGold = nullptr; }
   if (!V.onNative) return;
   std::vector<std::pair<int, std::string>> v;
   for (auto& kv : gHist) v.push_back({kv.second, kv.first});
@@ -146,6 +155,8 @@ if (V.nativeIx.count("WaitF")) V.natives[V.nativeIx["WaitF"]].fn = waitFStub;
     if (V.nativeIx.count(d)) V.natives[V.nativeIx[d]].fn = existsStub;
 
   if (getenv("VMHIST")) V.onNative = histHook;
+  if (const char* g = getenv("VMGOLD")) { gGold = std::fopen(g, "w"); V.onNative = histHook;
+    if (gGold) std::fprintf(gGold, "frame,native,argc?args(hex)\n"); }
 
   if (entry.empty() && !loaded[0]->recs.empty())
     for (auto& r : loaded[0]->recs) if (!r.name.empty()) { entry = r.name; break; }
