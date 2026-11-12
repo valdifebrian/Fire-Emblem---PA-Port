@@ -1,4 +1,4 @@
-id,source_scope,format,count,decoder,output,status,verification,dependencies,engine_consumer,notes
+id,source_scope,ext,count,format,decoder,output,status,verification,dependencies,engine_consumer,notes
 AM-001,"/ymu",.ga,1130,GA [probe✓spec],"bin/ga.mjs","anim bin (target)",Decoded,"keyframe=[u16 frame][i16 value] FIXED; wait_N 15bone/34curv loop1..60; atk1 events 13=>SE,41=>DAMAGE; posing via meshview verified visually","spec tellius v2.0.1",Animation System,""
 AM-002,"/zu",.tpl,539,TPL FE9 539/539✓,"bin/tpl2png.mjs","PNG (1353 img)",Decoded,"battle tex ter-render semua (amr1 shield panel koheren)","BRV-GFX-001",Battle tex,""
 AM-003,"/Face",.cms,360,LZ77(TPL) [probe],"bin/tpl2png.mjs","PNG RGBA",Decoded,"BERLAPIS (BRV-GFX-001d): img0 192x128 base + img1..13 lapisan ekspresi 16x32; C4 fix 2026-11-10 (sebelumnya blok putih sensor); vision 360/360","lz77,tpl",UI portrait,"4347 PNG; komposit+mapping ekspresi = P2"
