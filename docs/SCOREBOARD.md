@@ -61,3 +61,7 @@
   pool = 41 IID_* + MDV_* + ts 2005-02-20; tail pool = hook event `WSHOP_ITEMS_C0..C31` per chapter.
   PR kecil: rule presisi pointer→nama (posisi 4-aligned meleset 0-8 dr start) + field harga/qty = P5 ekonomi.
 - Counts tetap: 31 Decoded / 13 Partial / 1 Investigating / 10 Discovered / 2 Deferred.
+- **P2 gate package [BRV-P2-001]**: `docs/FE9_P2_GATE.md` (tabel 5 kemampuan + bukti + 3 keputusan D-P2-A/B/C)
+  + build **b57** = instrumentasi gate: `tapLatMax/tapLatN` (ACTION_DOWN→render), `th=..C` thermal_zone0,
+  tombol overlay **T** = cycle semua gambar tpl+`face/system.cms` ke slot unit (`tex pick:`). BUILD SUCCESSFUL;
+  install+capture = aksi human berikutnya; keputusan (i)/(ii) per D-P2-A/B/C mengunci gate.

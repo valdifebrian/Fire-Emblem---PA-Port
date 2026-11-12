@@ -541,9 +541,9 @@ static void render(int w, int h) {
 /* ---------- GL-drawn touch overlay ----------
  * Canonical button layout in normalized coords (y down). Hit-test + visuals
  * share one source of truth; held[] drives continuous actions (rapid fire). */
-static const struct { float cx, cy; int code; } BTN[6] = {
+static const struct { float cx, cy; int code; } BTN[7] = {
   {0.09f, 0.72f, 1}, {0.25f, 0.72f, 2}, {0.17f, 0.585f, 3}, {0.17f, 0.855f, 4},
-  {0.88f, 0.76f, 5}, {0.755f, 0.885f, 6},
+  {0.88f, 0.76f, 5}, {0.755f, 0.885f, 6}, {0.88f, 0.615f, 7},
 };
 #define BR 0.070f /* hit radius, fraction of screen height */
 static std::atomic<int> g_held[8];
@@ -588,6 +588,7 @@ static void build_button_geometry(int w, int h) {
   }
   disc(BTN[4].cx, BTN[4].cy, BR, 5, 14);  /* A big disc */
   disc(BTN[5].cx, BTN[5].cy, BR * 0.85f, 6, 14); /* B smaller */
+  disc(BTN[6].cx, BTN[6].cy, BR * 0.62f, 7, 4);  /* T (texture cycle): 4-seg diamond */
   g_btnN = (int)(V.size() / 3);
   glGenVertexArrays(1, &g_btnVao); glBindVertexArray(g_btnVao);
   glGenBuffers(1, &g_btnVbo); glBindBuffer(GL_ARRAY_BUFFER, g_btnVbo);
@@ -606,7 +607,7 @@ static void draw_buttons(int w, int h) {
   GLuint lu = glGetUniformLocation(g_prog2, "uScr");
   glUniform2f(lu, (float)w, (float)h);
   float held[8] = {};
-  for (int i = 1; i <= 6; i++) held[i] = (float)g_held[i].load();
+  for (int i = 1; i <= 7; i++) held[i] = (float)g_held[i].load();
   glUniform1fv(glGetUniformLocation(g_prog2, "uHeld"), 8, held);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -617,8 +618,27 @@ static void draw_buttons(int w, int h) {
   glEnable(GL_DEPTH_TEST);
 }
 
+static int g_texPickSel = -1; /* engine-thread only */
 static void on_input(int action) {
   if (g_paused.load() && action <= 4) return; /* paused: grid nav frozen */
+  if (action == 7) { /* T = cycle every decodable FE9 image (tpl+cms) into the unit slot */
+    if (!g_texId) return;
+    tpl_file* srcs[2] = {&g_texA, &g_tex};
+    int total = 0, siPick = 0, iPick = 0;
+    for (int si = 0; si < 2; si++)
+      for (int i = 0; i < srcs[si]->count; i++) if (srcs[si]->imgs[i].ok) total++;
+    if (total <= 0) return;
+    g_texPickSel = (g_texPickSel + 1) % total;
+    int k = g_texPickSel;
+    for (int si = 0; si < 2; si++)
+      for (int i = 0; i < srcs[si]->count && k >= 0; i++)
+        if (srcs[si]->imgs[i].ok && --k < 0) { siPick = si; iPick = i; k = -2; break; }
+    tex_img* s = &srcs[siPick]->imgs[iPick];
+    glBindTexture(GL_TEXTURE_2D, g_texId);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, s->w, s->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, s->rgba);
+    LOGI("tex pick: src=%d #%d %dx%d ok=%d (pick %d/%d)", siPick, iPick, s->w, s->h, s->ok, g_texPickSel + 1, total);
+    return;
+  }
   switch (action) {
     case 1: case 2: case 3: case 4: dpad_step(action); break; /* screen-direction -> world axis */
     case 5: g_mixB.store(1.f - g_mixB.load()); g_mixer.targetB.store(g_mixB.load()); break; // A = mix B on/off
@@ -701,11 +721,17 @@ static std::mutex g_windowMx;
 static std::condition_variable g_windowCv;
 
 /* core touch logic: normalized x,y + action 0 down / 1 move / 2 up|cancel */
+/* P2 gate instrumentation (BRV-P2-001): tap->present latency + thermal meter */
+static std::atomic<long long> g_tapDownT{0}; /* CLOCK_MONOTONIC ns of last ACTION_DOWN */
+static inline long long mono_ns() {
+  struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
+  return ts.tv_sec * 1000000000LL + ts.tv_nsec;
+}
 static void touch_event(float nx, float ny, int action, int slot) {
   if (action <= 1) { /* down / move: hit-test & track */
     int code = 0;
     float best = BR * BR * 2.25f; /* 1.5x visual, nearest-wins on overlap */
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 7; i++) {
       float dx = nx - BTN[i].cx, dy = ny - BTN[i].cy;
       float d2 = dx * dx + dy * dy;
       if (d2 <= best) { best = d2; code = BTN[i].code; }
@@ -717,6 +743,7 @@ static void touch_event(float nx, float ny, int action, int slot) {
         g_slotCode[slot].store(code);
         g_held[code].store(1);
         if (action == 0) { /* fresh press edge */
+          g_tapDownT.store(mono_ns());
           g_tapsIn100ms.fetch_add(1);
           g_action.store(code);
         }
@@ -724,7 +751,7 @@ static void touch_event(float nx, float ny, int action, int slot) {
     } else if (action == 0) {
       int prev = g_slotCode[slot].exchange(0);
       if (prev) g_held[prev].store(0);
-      if (slot == 0) { g_tapNX.store(nx); g_tapNY.store(ny); g_tapReq.store(1); } /* ground tap */
+      if (slot == 0) { g_tapDownT.store(mono_ns()); g_tapNX.store(nx); g_tapNY.store(ny); g_tapReq.store(1); } /* ground tap */
     }
   } else { /* up / cancel */
     int prev = g_slotCode[slot].exchange(0);
@@ -779,6 +806,7 @@ static void engine_main(AAssetManager* am) {
   build_grid();
   audio_start();
   long long last = 0; int frames = 0; long long fpsT0 = 0;
+  long long g_latMax = 0; int g_latN = 0; /* 2s-window tap->render stats */
   while (true) {
     InputState in = input_poll();          /* ONE object for all layers */
     pad_update(in.pad);                    /* inert until a pad is seen */
@@ -823,10 +851,20 @@ static void engine_main(AAssetManager* am) {
     frames++;
     struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
     long long now = ts.tv_sec * 1000000000LL + ts.tv_nsec;
+    /* tap->frame-completion latency (post-render timestamp; ~= present) */
+    long long td = g_tapDownT.exchange(0);
+    if (td) { long long lat = now - td; if (lat > 0 && lat < 1000000000LL) { if (lat > g_latMax) g_latMax = lat; g_latN++; } }
     if (!fpsT0) fpsT0 = now;
     if (now - fpsT0 >= 2000000000LL) {
-      LOGI("fps=%d taps2s=%d tile=%d,%d path=%d camYaw=%.0f", frames * 500000000LL / (now - fpsT0), tapr, g_gx, g_gy, g_pathN, g_camYaw.load());
-      frames = 0; fpsT0 = now;
+      int millic = -1;
+      if (FILE* tf = fopen("/sys/class/thermal/thermal_zone0/temp", "r")) {
+        long long v; if (fscanf(tf, "%lld", &v) == 1) millic = (int)v;
+        fclose(tf);
+      }
+      LOGI("fps=%d taps2s=%d tile=%d,%d path=%d camYaw=%.0f tapLatMax=%lldus tapLatN=%d th=%dC",
+           frames * 500000000LL / (now - fpsT0), tapr, g_gx, g_gy, g_pathN, g_camYaw.load(),
+           g_latMax / 1000, g_latN, millic < 0 ? -1 : millic / 1000);
+      frames = 0; fpsT0 = now; g_latMax = 0; g_latN = 0;
     }
     (void)last;
   }
