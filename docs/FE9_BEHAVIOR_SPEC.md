@@ -921,15 +921,23 @@ Dari decompil impl (decAll) + katalog:
   GameData, GroupData, **ItemData@0x9c90**, JobData@0x6fa0, KiznaData, **PersonData@0xc**
   (0xc..0x6fa0 = 28KB stats karakter), RelianceData, SkillData@0xe374 + **100 SID_***
   (skill/efek bernama SID_*) = 112.
-- **BattleTerrData hdr = [u16 77][u16 42]** ⇒ **77 terrain × 42 field u16** = tabel
-  bonus tempur per terrain-id (DEF/AVO/MDEF/CRIT/heal dll — BRV-BTL-008 video-ok).
-  Rec0 = [ptr-str 0x19aa0=MW_未到_16?][ptr 0x1c135 skill-region]… = campuran
-  ptr+numeric; pemetaan field 42 = kerja P4 (cross-check display help tempur).
-- **TerrainData@0xf538** = tabel induk 77 terrain (konsumer hash `FUN_8005b7a4`:
-  h=(h+c)*0x10 per char ⇒ Nama≤4 char = packed-ASCII; tabel 77 runtime dibangun
-  boot `FUN_8005b820`; special idx9/33→0x1c). Records stride-12 = [ptr SJIS
-  region 0x1c7xx][ptr pool 0x198xx][sub-offset 0xf8dc-0xfa2c region internal];
-  region record tumpang-tindih ekor SID_* — pemetaan record↔id presisi = P4.
+- **BattleTerrData hdr = [u16 77][u16 42]** ⇒ **77 terrain × 42 slot u32**
+  (0xfa44..0x12d78 = 13108B = 4+77×42×4 ✓). **TERUKUR 2026-11-13**: sel =
+  POINTER POOL (bukan numeric) — campuran **nama scene/interior battle**
+  (`map06_fort map14_ship01 map28_room01 map09_fort01 map04_harbor01
+  map16_castle01 map18_ruins map05_lake map17_room02` baris0; baris40
+  village/cliff; baris70 = laut: `map14_sea SID_WEAPONDESTROY
+  SID_WINGSHIELD`) + **SID_* skill grant per-terrain** (bukti MEKANISME
+  bonus: DEF/AVO/weapon-destroy = SID yg di-grant terrain, bukan angka
+  langsung) + nama SE (`csfxseal`). Pointer mendarat TENGAH string ⇒ wajib
+  backward-walk. Distribusi: banyak baris kosong (plain = tanpa efek).
+  Pemetaan baris↔terrain-id + role per-kolom-42 = P4 (grid penuh ada di
+  out/system/FE8Data.bin via parseRegistryBin).
+- **TerrainData@0xf538** (1204B) = blok triplet-ish [ptr pool][ptr][u32] —
+  BUKAN bonus numeric (pointer saja; stride ≠12 presisi). Konsumer hash
+  `FUN_8005b7a4`: h=(h+c)*0x10 per char ⇒ Nama≤4 char = packed-ASCII;
+  tabel 77 runtime dibangun boot `FUN_8005b820`; special idx9/33→0x1c.
+  Pemetaan record↔id presisi = P4.
 - **POOL KOSAKATA TERBACA (SJIS Shift-JIS, tool decode)**:
   - `MT_*` ×52 = **nama material tileset**: 移動不可(impassable!), 平地(plains), 海,
     海岸, 川, 水路, 沼, 砂漠, 雪原, 山道, 茂み, 木, 岩, 崖, 橋, 石畳, 床, 壁, 屋根,
