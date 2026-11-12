@@ -8,11 +8,11 @@
 | Status | Keluarga | Catatan |
 |---|---|---|
 | Verified | **0** | belum ada aset masuk engine |
-| Decoded | **31** | +**/zbg cmp + /zmap cmp CLOSED (probe 241/241; bug truncate LZ77 u24-hint bohong DI-FIX cmp.mjs — 21 file peta utk-ekstraksi)**; +**/zu pak + /xwp cmp + /xcam cmp ISI CLOSED (probe 374/374 pack: matriks kelas×senjata + kosakata aksi BRV-ANM-005)**; +**staffroll KREDIT TERBACA**; +`Face|.bin`≡facedata CLOSED; **+NATIVE CATALOG 390/390** (BRV-SCT-004); +facedata 358×3-slot; +`/s` 198/198; sweep `.tpl/.cms` 0-fail; C4+binding+potret; `.gcf`, STM, VM, 3D |
-| Partial | 13 | **keluarga tabel rekuren `[size/tableOff/cnt/sub]`** terpetakan di rect×3/RectBases/shopitem×3/staffroll/RectFinale/tut_data/soundroom; +`dispos_c` AI-stream; SE bank; dsb. |
-| Investigating | **1** | **HANYA `.samp` payload** (≠ DSP standar, bukti LSQ+ZCR — butuh trace ucode AX, P2) |
-| Discovered | 10 | hanya magic/eksistensi |
-| Deferred | 2+ | THP/ending/JP-dup dst., dengan fase penerima |
+| Decoded | **33** | **BUG KEY MATRIX DIPERBAIKI**: 9 entri MAP berkey `"/|X"` tak pernah match family `"/X|.ext"` → status diam-diam jatuh UNKNOWN; kini pulih (FE8Data register, cp_data, FE8Anim, tut_data×2, soundroom, client, opening.bnr). +**/zbg cmp + /zmap cmp CLOSED (probe 241/241; bug truncate LZ77 u24-hint bohong DI-FIX cmp.mjs — 21 file peta utk-ekstraksi)**; +**/zu pak + /xwp cmp + /xcam cmp ISI CLOSED (probe 374/374 pack: matriks kelas×senjata + kosakata aksi BRV-ANM-005)**; +**staffroll KREDIT TERBACA**; +`Face|.bin`≡facedata CLOSED; **+NATIVE CATALOG 390/390** (BRV-SCT-004); +facedata 358×3-slot; +`/s` 198/198; sweep `.tpl/.cms` 0-fail; C4+binding+potret; `.gcf`, STM, VM, 3D |
+| Partial | **16** | +tut_data_en+soundroom+FE8Anim pulih dari UNKNOWN. **keluarga tabel rekuren `[size/tableOff/cnt/sub]`** terpetakan di rect×3/RectBases/shopitem×3/staffroll/RectFinale/tut_data/soundroom; +`dispos_c` AI-stream; SE bank; dsb. |
+| Investigating | **2** | `.samp` payload (≠ DSP standar, bukti LSQ+ZCR — butuh trace ucode AX, P2); FE8Effect.bin (P6) |
+| Discovered | **2** | client.bin + 1 UNKNOWN riil — hanya magic/eksistensi |
+| Deferred | **4** | THP/ending/JP-dup/opening.bnr dst., dengan fase penerima |
 
 ## Papan 2 — Functional parity (`FE9_TEST_MATRIX.csv` + `FE9_BEHAVIOR_SPEC.md`) — 2026-11-10
 
