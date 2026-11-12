@@ -963,16 +963,32 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
 - `FUN_800b36d8` = pembuka bank suara (session 0x80319aa8, path "/pool") — titik
   masuk SE utk PoC Android saat AUD. [AM-079]
 
-### UNKNOWN-U012 — Pool deskriptor `0x802832E0+0x21EE0` (segmen data) — Unknown
-Serat `FUN_8002e0d0` TIDAK dipanggil `bl` manapun; satu-satunya xref = **ptr @0x80284FA8**
-(dlm segmen data `0x802832E0+0x21EE0`). Dump area menampilkan pola berulang
-`{u16 tag; u32 funcptr/data}` — tag teramati: 0x200F(+func), 0x2012, 0x2025(+ptr 0x80269311),
-0x100A/0x11001/0x13120B/0x14120B/0x19120B, 0x28100A, 0x21001/0x31001, 0x6100C — kandidat:
-blok cmd scene/event terserialisasi (keluarga CmSleepScript SCT-005) ATAU tabel state
-UI. Handler terikat contoh: FUN_8002e780/8002e648/8002df54/8002df8c/80018af4/801b87e8/
-801f649c. String "TRK_CMD_*" berdekatan = distractor (opcode TRK byte, bukan u16).
-Bukti: `bin/pxref.mjs 8002e0d0` + dump word region. Prioritas: P1-map (saat event/
-scene runner diimplementasi; parser-nya = target investigasi berikutnya).
+### BRV-SCT-010 — REGISTRY MODUL PROC (pool `0x802832E0`) — DECODED (struktur; semantik per-modul = P1-fitur)  [menutup UNKNOWN-U012]
+- **Pool = REGISTRY PROC/MODUL ENGINE** (framework `Proc(0x%08X:%s)` — string debug
+  satu blok). Grammar record: `[u16 param][u16 tag][u32 payload]`; **0x2003/0x2025 = NAMA modul**
+  (ptr string), **0x200F = handler code** (1228× total), 0x2005/0x2010 = varian handler,
+  tag lain (0x201A×429, 0x2004×156, 0x2012×51, 0x2014×63, 0x2015×40) = record bertipe param.
+- **Hasil ekstrak: 319 record nama → 307 modul unik, 232 punya handler code.**
+  Top-handler: `E_BMapMenuSeq`(74) `GameController`(65) `BasesOutfitProc`(64)
+  `BasesForgeShopProc`(42) `E_OnBtSeq`(38) `BasesProc`(36) `E_TerInfo`(32) `BasesEducateProc`(31).
+  Kelas modul: mode (`GameController`,`BMapMain`), sekuens panggung (`E_AttackSeq`,
+  `E_FallSeq`,`E_StealSeq`,`E_RoundEarth/Sky`,`E_OnBtSeq`), wajah (`E_Face`,`E_FaceSlider`,
+  `E_FaceEyeCtrl`,... 12 modul), base (`Bases*` 6), build (`E_Build*` 4), traject proyektil
+  (`E_TrajectProc/Evaluate`), token giliran (`E_TaikiToken/TurnToken/TurnAToken`),
+  `E_WarpDest/E_StoneDest`, `AutoProc/DelayProc/ProgressiveProc`, cuaca (`E_MapWeather`).
+- **`FUN_8002e0d0` TIDAK punya `bl` karena = update-handler `E_BMapBGMCtrl` — didispatch lewat
+  tabel Proc** (ptr @0x80284FA8). Resolver teka-teki "xref tunggal".
+- **Manifest boot TERBACA satu blok**: `system.cmp`,`FE8Data.bin`,`s/rect.bin`,
+  `window/rectdesc.bin`,`mess/common.m` + daftar mode `TITLE/FILEMENU/TrialMenu/JOYBOOT/
+  Opening0-2` + font list (4 .gcf) + nama bahasa — konfirmasi independen urutan `FUN_80005c8c`.
+- **KOREKSI temuan**: registrar `FUN_80013ae8` bukan cuma 407 situs bootstrap — histogram `bl`
+  main.dol = **1618 call-site** (delta kode off+0x8000C930; entri alternatif interior
+  0x80013C18×88). Grep pseudocode 407 = agregat 7 fungsi bootstrap saja. Katalog 390 nama TETAP valid.
+- Alat: `bin/modreg.mjs` → `docs/data/module_registry.csv` (name,handlers,extras).
+  Bukti: dump word file 0x2802e0..0x2a21c0 main.dol (peta data flat +0x80003000 terverifikasi
+  label string), string `E_BMapBGMCtrl`@0x80269311 = payload record 0x2025.
+- Sisa P1-fitur: semantik tiap handler (init/update/draw per modul) — dikerjakan per-fitur
+  engine saat implementasi, bukan blocker RE.
 
 ### BRV-BTL-008 — TAMBANG VIDEO LONGPLAY (pipeline hdframe) — PARTIAL (berjalan)
 - Pipeline: `bin/hdframe.mjs scan|shot|sheet` — video longplay USA full (21,9 jam,
