@@ -1079,17 +1079,32 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
 - **API stream**: u8 `FUN_8017a9dc`, u16-BE `FUN_8017a9b0`, blok-n `FUN_8017a810`
   (memcpy cursor→dst, cursor+=n); lookup template: item `base+(id−1)*0x48`
   (r13−0x7BBC), dua tabel stride-100 (karakter/class) via r13−0x7BC4/−0x7BCC.
-- **GRAMMAR record UNIP (urutan stream loader — = layout kartu), runtime target**:
-  `[u16 tmplID→ptr unit+0x18C]` (tabel 100B; tmplID 0x141=321 contoh ≤340 roster ✓) →
-  `[u8 h+u8 h+u8 h → unit+0x180/0x184/0x194 pointer-unit ((h−1)*0x280+0x802B14E4 ✓ SCT-005c)]` →
-  **`[u8×7 → unit+0x199..0x19F]`** (b9 record = EXP ✓ delta SVT-001 = offset ke-4 blok ini =
-  runtime +0x19D) → `[4B→+0x1A0][4B→+0x1A4][u8×3→+0x1A8][8B→+0x1AB][8B→+0x1B4][16B→+0x1BC]` →
-  **8 slot item** (`FUN_8001c15c`: u16 flag=0 ⇒ kosong; else ptr item-template + u16) →
-  `[8B→+0x20C][6×u16+u8×n→+0x228][10B→+0x214]` + ekor `FUN_8003c21c`(+0x238..) `FUN_8004bc48`.
+- **GRAMMAR record UNIP (TERKOREKSI+TERVALIDASI walker `.gci` — stream 159 slot unit!)**:
+  per slot unit (0x9F): flag u16; **flag==0 ⇒ record kosong = 2 byte saja** (sisa slot =
+  run `0000` terbukti di blok), jika ≠0 record penuh **143 B = 0x8F tepat** (total stream
+  4×143+run-zero tervalidasi slot0). Urutan stream → runtime (kode 8003c830):
+  `[u16 flag/pid → FUN_80019eac → unit+0x188 (tabel-2 stride100, (id−1)*100)]` →
+  `[u16 tmpl → FUN_80019e68 → unit+0x18C (tabel-1 karakter stride100)]` →
+  `[u8 GRP → push unit ke list faksi DAT_802CA264+grp*0xC (8 list, skip list-4)]` →
+  `[u8 h1][u8 h2][u8 h3] → ptr slot ((h−1)*0x280+0x802B14E4) di +0x180/+0x184/+0x194` —
+  empiris: h1 = identitas slot unit stabil antar-save (1,5,9,13..), **h2 = anchor list
+  faksi per peta (0x41=65 di bmap02; 0x10/0x11 di save slot6-7)**, h3=link cadangan;
+  `[u8×7 → +0x199..0x19F]` (XY runtime di +0x19E-F = byte ke-6/7 blok ini) →
+  `[4B→+0x1A0][4B→+0x1A4][u8×3→+0x1A8][8B→+0x1AB][8B→+0x1B4][16B→+0x1BC]` →
+  **8 slot item @32B tetap** (`FUN_8001c15c`: flag u16 = id item (0 ⇒ kosong +skip2);
+  non-kosong: `FUN_80019e24(id)` → ptr `base+(id−1)*0x48` + u16 nilai (durabilitas/pack)) —
+  contoh ground-truth unit: id 7,5,0x91,0x8D,0x8E,0x94 = baris `items.csv` (self-ID
+  `01 01 <id>` raw template mengunci) ✓ → `[8B→+0x20C][6×u16+2×u8→+0x228][10B→+0x214]` →
+  **ekor SEQID 15B** (`FUN_8003c21c`: u8 ATK/MOV/HEAL/MTYPE lookup via
+  `ATK_SEQID_LIST/MOV_SEQID_LIST/HEAL_SEQID_LIST/MTYPE_TABLEID_LIST` = **link langsung
+  SE-bank ↔ nama SEQ_* dispos!** + 2 u8 flag + u32 + 2×u16 + u8) →
+  `[u16→+0x2C6][u8×2 skip]` (`FUN_8004bc48`) + skip2 final = 143 ✓.
+- Writer = fungsi berbeda (mirror); reader = ground truth layout.
 - **JAWAB U013**: blok +0x13..0x36 = **LIVE mirror** (bukan template) — writer nyalin field
   runtime apa adanya; identik antar-save karena field BELUM dipakai (rank senjata/akumulasi),
-  EXP bergerak ✓ bukti. Ekor item TERPETAKAN (`.gci` ground-truth slot0): 8×`[id u8][dur u8]`,
-  sentinel `0xFB`=empty: contoh unit = id 7/d15, 5/d25, **0x91=145/d3, 0x8D=141/d2, 0x8E=142(KNIGHTKILLER)/d2, 0x94=148/d5** — id = indeks persis `items.csv`
+  EXP bergerak ✓ bukti. Ekor item TERPETAKAN (`.gci` ground-truth slot0): 8 slot tetap
+  4B = `[u16 id BE][u8 dur/pakai][u8]`, flag 0 = kosong: contoh unit = id 7/d15, 5/d25,
+  **0x91=145/d3, 0x8D=141/d2, 0x8E=142(KNIGHTKILLER)/d2, 0x94=148/d5** — id = indeks persis `items.csv`
   (byte self-ID `01 01 <id>` dlm raw template mengunci pemetaan ✓).
 - Status: Unknown → **Partial→Decoded-struktur**. Sisa P2: penamaan 7-byte + blok 4/8/16B
   via diff 8 slot save (validator engine saat implementasi). Ground truth:
