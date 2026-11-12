@@ -1145,6 +1145,35 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   tanpa device: `VMGOLD=... VMSTR=1 vmtest dir Cxx.cmb`); wave schedule engine
   diberi label data-gap yang sama. [AM-053]
 
+### BRV-REG-001 — KELUARGA POINTER-PATCH-REGISTRY CLOSED (FE8Anim/FE8Effect/cp_data) — DECODED
+- **Semantik loader universal DEFINITIF** (`FUN_8003fccc`→`FUN_8003f87c`,
+  dibaca penuh 174 baris): payload base = block+**0x20**; **tabel pointer-patch
+  @ base+(hdr[4]&~3)**, `cnt` × u32 = **POSISI slot-pointer (payload-relatif,
+  4-aligned)**; tiap slot berisi offset pool → di-reloc `+= base` in-place
+  sekali (idempoten via checksum 7-byte + flag di block+0x18/0x1F). Pool
+  strings **suffix-dedup** (pointer bisa di TENGAH string — resolver WAJIB
+  walk-back ke batas pool). Ini penjelasan resmi "tabOff aneh" di semua
+  anggota keluarga — `bin/tablereg.mjs` mengimplementasikan verbatim.
+- **`FE8Anim.bin` 508 registry** (cnt=1016 = 2 slot/record): **AID_* nama
+  anim-set ↔ DIR model unit** (`knight/ general/ mage2/ lofa/ archer2/` …
+  74 dir; 2 record anomali pair-name) ⇒ **tabel routing aset
+  anim↔class↔model engine**, sambungan langsung ANM-005 + roster pack.
+  `docs/data/FE9_ANIM_REGISTRY.csv`.
+- **`FE8Effect.bin` 316 registry**: nama **EID_*** pool efek/battle-SE
+  (EID_ATTACK, EID_HIT, EID_COUNTER, EID_CLOUDOFDUST1..5, EID_CLASSCHANGE,
+  EID_MACHIBUSE, EID_LIGHT_LONG_2D, 2D-varian). `docs/data/FE9_EFFECT_REGISTRY.csv`.
+- **`cp_data.bin` 396 refs** (sub=134): census **SEQ_*×182 + IID_×75 +
+  MTYPE_*×64 + PID_*×39 + nonprefixed×36** = **chapter-checkpoint seeds**
+  (kondisi AI + item + tipe unit + PID); handle global disimpan
+  **r13-0x74A0 = 0x80367800** oleh `FUN_800fc678` (lalu init `FUN_8010f970`/
+  `FUN_80129374`). `docs/data/FE9_CPDATA_REFS.csv`.
+- **`client.bin`** (18468B hi-entropy): dimuat `FUN_801f6260/801f6294` via
+  ROMFS-path loader (FUN_8005c84c size / FUN_8005c268 read, clamp min
+  0xE400=57KiB) ke struct+0x30/34 — payload opaque, BUKAN keluarga table;
+  kandidat modul link/GBA-player → **Deferred P2** (tidak menyentuh Ch1).
+- **`/ymu` FST census disc**: 1333 file = ga1130/cmp86/tpl117, **.bin = 0**
+  (phantom-check handoff tertutup; tak ada baris matrix untuk dihapus).
+
 ### BRV-SCT-005p — SEMANTIK NATIVE BATCH-9: UNIT-SNAPSHOT-STACK + RANK-SUFFIX DIFFICULTY + RECT-OFFSET — DECODED
 - **UNIT SNAPSHOT-STACK CLOSED**: `UnitsPop()` `FUN_800b7410` = **capture**:
   flush unit (`FUN_800162b8`) → duplikasi buffer snapshot global
