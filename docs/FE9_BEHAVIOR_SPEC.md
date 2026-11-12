@@ -759,10 +759,10 @@ Dari decompil impl (decAll) + katalog:
 - Definisi sukses PoC P2 �8 kini punya skrip referensi nyata per chapter. [AM-063]
 
 ### BRV-SCT-005e — NATIVE SKENARIO CH1 + FLAG TABLE + COMMAND QUEUE — DECODED
-- **Arg koordinat kamera (InstantFocus/InstantSetMapCamera)**: u32 VM di-transform
-  situs: `(f64)(0x43300000hi | (p ^ 0x80000000lo)) - bias` (konstanta magic f64
-  ~2^11). Bentuk PERSIS encoding = P2 (decode dari nilai referensi Ch1 -55/55/18
-  + hasil capture bila perlu). Engine: simpan arg mentah, transform saat apply.
+- **Arg koordinat kamera = INTEGER BIASI (TERBUKTI)**: pseudocode f64-magic
+  `bits{0x43300000,p^0x80000000} - bias` = identitas (uji numerik: p=4,7,-55,55,18
+  hasil = p persis; bias=2^52+2^31 = artefak konversi PPC). InstantFocus(4,7)
+  = tile (4,7); InstantSetMapCamera(-55,55,18) = kamera XY tile + zoom 18.
 - **COMMAND QUEUE (async scene cmds)**: SetGrid/SetCircle/SetOutLink/UnitFocusOff/...
   = `FUN_8000c0c0(&DAT_80296f90)` cari / `FUN_8000caf0` alokasi record cmd di pool
   `FUN_800c0658`, isi field +0x30..0x3c (on/off + param) ${em} renderer/engine memproses
