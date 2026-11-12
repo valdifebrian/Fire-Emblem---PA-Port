@@ -1173,6 +1173,12 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   kandidat modul link/GBA-player → **Deferred P2** (tidak menyentuh Ch1).
 - **`/ymu` FST census disc**: 1333 file = ga1130/cmp86/tpl117, **.bin = 0**
   (phantom-check handoff tertutup; tak ada baris matrix untuk dihapus).
+- **VALIDASI ROUTING (reg↔disc)**: 71/74 dir registry = **subfolder `/ymu/`**
+  persis (`/ymu/mage2/atk1_n.ga` dkk; 3 miss = 3 record anomali pair-name
+  ter-inferensi; 15 ymu-extra = direktori legacy FE8-style tanpa entri AID:
+  bishop/mage/thief/pegasu/dragon/tiger/dummy/crow/heron/...). ⇒ **rantai
+  aset engine CLOSED: AID(anim-set) → /ymu/<dir>/ (body gs + anim ga + tex
+  tpl) → model unit**; tinggal lookup AID per unit dari table unit (P4-CHR).
 
 ### BRV-SCT-005p — SEMANTIK NATIVE BATCH-9: UNIT-SNAPSHOT-STACK + RANK-SUFFIX DIFFICULTY + RECT-OFFSET — DECODED
 - **UNIT SNAPSHOT-STACK CLOSED**: `UnitsPop()` `FUN_800b7410` = **capture**:
