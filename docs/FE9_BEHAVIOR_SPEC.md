@@ -255,6 +255,22 @@ skinning gap" AM-009 = SUDAH TERJALANI lewat pipeline g/ga; amr1 28 submesh semu
 vertex, TCI0-style). arketipe 0x3802=palette, 0x3801/0x380d=blend. Confidence: Confirmed (blend,
 render); Partial (palette-semantik detail). Test: T-C1-MODEL battle pose A/B.
 
+### BRV-ANM-005 — Gramatika nama file animasi & varian senjata — DECODED (probe 374 pack)
+Nama entri `.ga`/`.dbx` dalam pack = `<kelas|ref>[_<AKSI>][_<VARIAN-SENJATA>].ext` (dibuktikan
+full-scan 300 `/zu|.pak` + 74 `/xcam|.cmp`, 374/374 parse). **AKSI** (tag akhir, frekuensi):
+`poi` pose/stand · `mov` move · `at0/at1/at2` attack (stage/multi-hit) · `cr0/cr1/cr2` counter ·
+`sk0/sk1` skill · `dam` damage · `ded` dead (kosakata FE standar) · `lda/ldc` load-A/C (draw) ·
+`dog` mount (kuda — hadir di kelas berkuda amr/kni/red ✓ [INFERENCE kuat]) · `arc/lar` (bow
+kelas-spesifik [INFERENCE]). **VARIAN senjata** (= nama pack `/zu/<job>/<job>_<VAR>.pak`):
+`sw`(548) sword · `sp`(357) spear/lance · `ax`(261) axe · `no`(572) normal/unarmed ·
+`ar`(84) bow · `ja`(21) katana · `mg` magic · `ms` staff · `kn/ha/cr/br/dog/lar/arc` (minor) —
+set varian per kelas = **syarat engine: aset model per (class,weapon-type)** persis dispos JobList.
+`/xcam|.cmp` = pack `.dbx` CameraAnime dgn kosakata SAMA (`at/cr/sk` × varian) — kamera battle
+per aksi ✓ sinkron /xcam|.dbx 437. `/xwp|.cmp` 88 = `g+gs+tpl` per nama senjata (prop tanpa ga).
+`/yme|.cmp` 292 = `g+ga+gs+tpl` per EID_* (anomi `ga curves=0` via parser unit = gap tunggal,
+kemungkinan track non-bone scroll/warp — P6). Confidence: Confirmed (gramatika/vocab/frekuensi);
+Partial (semantik `ldc/lar/arc/h/kn/cr/br` — perlu konteks C*.cmb call-site saat P1-map). [AM-075]
+
 ### BRV-FNT-001 — `.gcf` = font metrics + sheet tekstur GX I4 polos — DECODED
 Header (semua BE): **u32@0x00 = magic 0x20**; u16@0x08 ascent / @0x0a descent / @0x0c lineH
 (fe 29/3, talk 22/5, alpha 28/6); u32@0x14 = BYTES per sheet (0x2000 = 128×128 I4,
