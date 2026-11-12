@@ -3,3 +3,6 @@ poc/app/.cxx/
 poc/build*.log
 poc/*.log
 *.o
+
+# desktop harness binaries
+poc/tools/*.exe

@@ -94,14 +94,45 @@ Confidence: Confirmed (switch bytecode langsung). Test: T-SCT-VM.
 Tabel lengkap di komentar `bin/cmb.mjs`; ringkas: 0x01–0x18 akses locals/globals
 (window-indexed: push/load/deref/add-idx; operand u8 / u16-BE), 0x19/1a/1b push imm
 (i8/i16-BE/i32-BE), 0x1c/1d/1e push pool+off→cstring (i8/u16/u32-BE), 0x1f DUP, 0x20 DROP,
-0x21 OVER, 0x22–0x34 aritmatika/compare/shift/bitwise (0x31/0x33 varian signed [Partial]),
+0x21 STORE_IND (pop val, pop ptr, *ptr=val, push val; label lama "OVER" salah),
+0x22–0x34 aritmatika/compare/shift/bitwise (0x31/0x33 varian signed [Partial]),
 0x35/0x36 STR_EQ/NE, 0x37 CALL_LOCAL u8 (indeks entries-array), 0x38 CALL u16BE pool-off
 + u8 argclean (call by NAME via hash global — native ATAU script), 0x39 RET,
-0x3a–0x3e JMP/JZ/JNZ rel i16-BE (0x3c/0x3e push 1/0 saat branch), 0x3f YIELD, 0x40 SKIP4,
-0x41 CALLN u8 argcount 1..9 (target ptr dari stack — jalur GameBind). Default ⇒ error.
+0x3a–0x3e JMP rel i16-BE; branch: 0x3b=JNZ, 0x3c=JNZ_PUSH1 (push 1 bila branchTaken),
+0x3d=JZ, 0x3e=JZ_PUSH0 (push 0 bila branchTaken — nilai pop hilang bila tak branch);
+0x3f YIELD, 0x40 SKIP4 (+4 pc, operand 4B di-skip),
+0x41 LOGF u8 n = DEBUG-printf: pop n arg → FUN_800056cc (stub retail `return 0`) — TANPA
+push hasil; BUKAN dispatch native (koreksi dari case 0x41 FUN_80011edc; marga "CALLN"
+salah). Default ⇒ error.
 Statistik 43 script: semua 65 opcode terpakai; 0 DB non-padding di dalam code (112 byte
 = string trailing setelah RET). Bukti: `FUN_80011edc.c` per-case + `cmb dis` bersih 100%.
 Confidence: Confirmed (0x31/0x33 Partial). Test: T-SCT-VM.
+
+### BRV-SCT-002b — Temuan replay VM (harness vmtest, 43 .cmb) — DECODED
+Replay penuh mengoreksi 6 semantik yang sebelumnya salah di VM port:
+1. **Hasil native argc-0 TETAP dip-push** (slot top-of-stack setelah call = hasil; bug
+   lama: push hanya bila argc>0 ⇒ spin `while(isFading)` membaca garbage lama).
+2. **0x41 = LOGF debug-printf** (pop n, FUN_800056cc stub, tanpa push) — BUKAN dispatch.
+3. **0x3e = JZ_PUSH0** (branch+push 0 saat v==0; saat tak branch nilai hilang) — 0x3b/3c/3d
+   terverifikasi cocok. Branch target = pc-setelah-operand + i16 − 2.
+4. **RET lintas-file**: save-frame slot+1 menyimpan POINTER rec (identitas file). Port
+   harus men-tag (fileIx<<20|rec+1); tanpa tag, return ke file pemanggil salah bytes
+   (gejala: opcode liar 0x6c = byte string pool).
+5. **CALL script & RET stack model** (FUN_80011d20 script-path + case 0x39): ARGUMEN TIDAK
+   dipop — lbase callee = posisi arg pertama (argumen jadi L[0..argc-1]), L[argc..nLoc)
+   di-zero, 4 slot save (pc,rec,gbase,lbase) di atas locals; **RET: pop hasil, sp = lbase
+   MILIK CALLEE SENDIRI (slot arg0), hasil menimpa arg0** (bukan saved lbase pemanggil —
+   salah baca byte-ptr vs slot di `SP=lbase+nLoc*4+0x10` lalu pop-4 lalu −nLoc*4 ⇒ gejala:
+   sp longgar/underflow +0x21 OVER setelah helper argc<2 → UND @UnitSetPosDirByPID).
+6. **PUSH_POOL interning**: satu salinan RAM per (file,poolOff) — push berulang dalam loop
+   wajib reuse alamat (RAM 16MB habis kalau alloc per-push; gejala "ram exhausted").
+Gate spin startup: `FadeWait` = `while(isFading) YIELD` (0x3d); `Fade(mode,time)` args=
+(mode u8, durasi u16 frame — call-site: (2,500),(6,1000)); isFading=1 selama aktif
+[INFERENCE arah: loop exit saat 0]. Wrapper script startup (UnitSetPosDirByPID dkk)
+memanggil helper Lokal — bukan rekursi; CALL 0x38 resolve global(last-wins) lalu
+native-table.
+Confidence: Confirmed (bukti: FUN_80011edc per-case + trace ring 16K + replay done).
+Test: T-SCT-VM sweep 128 entri Opening/Final.
 
 ### BRV-SCT-003 — Interning nama & native GameBind
 Saat load (FUN_800140b4): tiap record di-intern ke hash global 509 bucket (FUN_8000d3ec,

@@ -14,8 +14,9 @@
 //    u8 / u16-BIG-ENDIAN / u32-BIG-ENDIAN (CONCAT11 pairs). Locals L = u32[] at
 //    frame+0x14; globals G = u32[] at *(r13-0x7c08). FUN_80011d20 = op 0x38:
 //    u16-BE pool offset → NUL name → hash lookup; if native (rec+8==0) run native
-//    trampoline, else push script frame. FUN_800056cc = op 0x41 native call,
-//    target = top-of-stack pointer, operand = fixed arg count 0..9.
+//    trampoline, else push script frame. Op 0x41 = LOGF debug-printf: pop n args
+//    → FUN_800056cc (retail stub returns 0, pushes nothing). Branch truth:
+//    0x3b=JNZ 0x3c=JNZ_PUSH1 0x3d=JZ 0x3e=JZ_PUSH0 (push only when taken).
 // STATUS: container + interpreter SEMANTICS DECODED (all 64 cases). Record header
 //  fields +0x0d argc(i8) / +0x12 nLocals(i16) / +0x20 globOff(u16) confirmed vs pump.
 import { readFile, writeFile, mkdir } from "fs/promises";
@@ -47,10 +48,10 @@ const OPS = new Map(Object.entries({
   0x37: ["CALL_LOCAL", "u8"],                                       // entry-array index
   0x38: ["CALL", "u16", "u8"],                                      // [poolOff BE][argc]
   0x39: ["RET"],
-  0x3a: ["JMP", "i16"], 0x3b: ["JZ", "i16"], 0x3c: ["JZ_PUSH1", "i16"],
-  0x3d: ["JNZ", "i16"], 0x3e: ["JNZ_PUSH0", "i16"],
+  0x3a: ["JMP", "i16"], 0x3b: ["JNZ", "i16"], 0x3c: ["JNZ_PUSH1", "i16"],
+  0x3d: ["JZ", "i16"], 0x3e: ["JZ_PUSH0", "i16"],
   0x3f: ["YIELD"], 0x40: ["SKIP4"],
-  0x41: ["CALLN", "u8"],                                            // fn ptr on stack
+  0x41: ["LOGF", "u8"],                                             // debug-printf args; retail stub = no-op pop
 }).map(([k, v]) => [Number(k), v]));
 
 const W = { u8: 1, i8: 1, u16: 2, i16: 2, u32: 4, i32: 4 };

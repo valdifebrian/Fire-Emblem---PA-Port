@@ -1,7 +1,7 @@
 id,phase,name,method,signature_ref,device,status
 T-BASE-001,P0,Reproducible baseline fresh-clone,fresh clone + generator + diff eol-normalized + sha256 artefak kunci,-,PC,PASS-2026-11-10
 T-BASE-002,P0,Leftover triage closed,baris .gcf/.sdir/.stbl dkk = Deferred dengan alasan,-,PC,Planned
-T-RE-SCRIPT1,P1,Script opcode inventory 43 file,stat-diff + strings Ghidra korelasi,AM-017,PC,Planned
+T-RE-SCRIPT1,P1,Script opcode inventory 43 file,stat-diff + strings Ghidra korelasi,AM-017,PC,PASS-2026-11-12
 T-RE-SCRIPT2,P1,Script branch/condition map dua chapter cabang,parse block vs capture route diverge,AM-017,PC,Planned
 T-RE-MODEL1,P1,Skeleton unit locate + parser .g/render wireframe,wireframe IKE+KNIGHT vision-check,-,PC,Planned
 T-RE-PAK1,P1,.pak + /s magic + stage unpack,daftar isi + 1 stage terbaca,AM-004/006,PC,Planned
@@ -40,7 +40,7 @@ T-SYS-GROW,P5,Growth/level-up paritas,golden 100 level-up vs capture seed,BRV-CH
 T-SYS-EFF,P5,Effectiveness/triangle/arena/crit/break,kasus golden per aturan,BRV-BAT,Desktop,Planned
 T-SYS-AI,P5,Enemy AI golden (pursue/engage/retreat),replay 5 skenario,BRV-AI,Desktop,Planned
 T-SYS-PROG,P5,Recruitment/promotion/seal/convo/shop,gapless alur capture,BRV-PROG,Android,Planned
-T-SCT-VM,P5,Script VM semua chapter load-able,parse 43/43 + smoke run,§7,Desktop,Planned
+T-SCT-VM,P5,Script VM semua chapter load-able,parse 43/43 + smoke run,§7,Desktop,PASS-2026-11-12
 T-SCT-1,P5,Branch route chapter divergensi benar,capture dua route,§7.3,Desktop,Planned
 T-AUD-MIX,P6,BGM loop points+duck dialog vs capture,A/B audio human,REQ-AUD-1,Android,Planned
 T-CNT-CH,P6,30 chapter load + parity scoreboard,tracker per chapter,§8P6,Desktop,Planned
