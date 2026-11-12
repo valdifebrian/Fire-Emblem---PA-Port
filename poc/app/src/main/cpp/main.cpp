@@ -348,7 +348,7 @@ static void load_asset(AAssetManager* am) {
     if (!buf_ga[i].empty()) ga_load(&g_gas[i], buf_ga[i].data(), (int)buf_ga[i].size());
   if (rd("archer/tex_4.tpl", buf_tex) && texfile_decode(buf_tex.data(), (int)buf_tex.size(), &g_texA) == 0)
     LOGI("tex_4.tpl: %d images", g_texA.count);
-  if (rd("face/system.cms", buf_cms) && texfile_decode(buf_cms.data(), (int)buf_cms.size(), &g_tex) == 0) {
+  if (rd("face/anna.cms", buf_cms) && texfile_decode(buf_cms.data(), (int)buf_cms.size(), &g_tex) == 0) {
     for (int i = 0; i < g_tex.count; i++)
       LOGI("tex[%d] %dx%d fmt=%d ok=%d", i, g_tex.imgs[i].w, g_tex.imgs[i].h, g_tex.imgs[i].fmt, g_tex.imgs[i].ok);
   }

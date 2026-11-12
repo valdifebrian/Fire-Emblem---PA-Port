@@ -3,6 +3,16 @@
 Status = bukti per capability dari repo + perangkat (bukan klaim). Angka/log = artefak yang sudah ada.
 Tiga keputusan manusia diminta di bawah (D-P2-A/B/C). Setelah keputusan → gate CLOSED atau gap ditutup.
 
+## Update build b58 (2026-11-12, `[BRV-P2-001]` fix, BUILD SUCCESSFUL + terpasang)
+KOREKSI dari capture sesi b57: entri `face/system.cms` yang dibake ternyata = **atlas font GCF**
+(/Fonts/system.cms, magic 0x20, 20 sheet 3988 glif = AM-043) — BUKAN tekstur wajah; decode TPL-nya
+gagal senyap sehingga cycle T cuma punya 1 gambar. Re-bake `poc1.fpk` (manifest kini di version
+control: `fe9-re/out/poc/poc1.list`) pakai **`/Face/ANNA.cms`** asli: boot device log =
+`tex[0..13] ... ok=1` (14 gambar: base 192x128 + lapisan 24x24/16x16/24x16/64x64 = atlas wajah +
+ekspresi FE9, native LZ77+TPL+I8 pal di GLES3). Cycle T kini 15 gambar. Catatan harness:
+`adb shell input tap` DIBLOK vivo (OriginOS) → `taps2s=0`; input perangkat = tangan manusia (aturan).
+Latensi b57 valid: 8 jendela, tapLatMax terburuk 16,5 ms, median ~11 ms << 50 ms (REQ-TIME).
+
 ## Update build b57 (2026-11-12, `[BRV-P2-001]`, BUILD SUCCESSFUL)
 Instrumentasi gate kini DI APK: (a) `tapLatMax=..us tapLatN=..` per-tap ACTION_DOWN→render-complete
 pada baris log 2-detik; (b) `th=..C` (thermal_zone0; -1 = zona tak terbaca); (c) tombol overlay baru
