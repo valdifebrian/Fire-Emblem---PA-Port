@@ -35,7 +35,43 @@ font/talk.gcf       gcf_atlas 719488 B  font dialog (atlas+metrics)
 Catatan jujur: SFX asli = `.samp` payload masih P2-blocked (BRV-AUD-003);
 bukti "mixing" PoC = 2 stream STM + gain/pan — deviasi dicatat di SCOREBOARD.
 
+## Override aset eksternal (jalur swap IP komersial)
+Sebelum lookup FPK, loader cek folder override per nama entri:
+`<root>/<nama-entri>` (mis. `archer/tex_4.tpl`; leading `/` diterima).
+Root dicek berurutan: env `FE9_OVERRIDE_DIR`, lalu DUA default:
+`/storage/emulated/0/Android/data/<pkg>/files/assets_override` dan
+`/data/user/0/<pkg>/files/assets_override`. Folder/file tidak ada → perilaku
+identik 100% dengan FPK. Ganti aset = taruh file di path yang sama, tanpa
+rebuild FPK/kode; `OVERRIDE HIT` dicatat di logcat.
+**Pitfall SELinux (API 29+): `adb push` langsung ke Android/data memberi label
+`shell_data_file` yang TIDAK terbaca app (gagal senyap fopen) — resep deploy
+yang teruji (emulator + HP fisik, tanpa root):**
+```
+adb push out/rt/anna_override.tpl /data/local/tmp/tex_4.tpl
+adb shell "cat /data/local/tmp/tex_4.tpl | run-as com.fe9.poc sh -c \
+  'mkdir -p files/assets_override/archer && cat > files/assets_override/archer/tex_4.tpl'"
+```
+Uji diterima (2026-11-12, emulator API 34 x86_64): potret ANNA 192×128
+(aiconv CMPR) menggantikan `archer/tex_4.tpl` → `OVERRIDE HIT` + texture
+`192x128` + unit tampil beda total (fe9-captures/override base.png vs hit3.png);
+FPK utuh (sha256 lolos; g/gs/ga/stm/gcf tetap dari FPK). Ordo-dimensi juga
+membuktikan fix h/w: file 192×128 terbaca 192×128 (loader lama bakal 128×192).
+
+## Konversi aset (PNG → TPL/CMS) — `bin/aiconv.mjs`
+- TPL writer: I8 IA8 RGB5A3 RGBA8 C4 C8 CMPR; CMS = LZ77-magic-0x10 dari TPL.
+- Verifikasi round-trip (`tex_4.tpl` asli 128×128 CMPR, 6 varian): hasil encode
+  di-decode pipeline engine sendiri (texfile.h ≡ tpl2png.mjs); CMPR→CMPR
+  meanΔ=0.58 maxΔ=58 (endpoint block ±karena encoder median-cut vs CM
+  proprietary) — visual tak terbedakan. auto/rgb5a3 meanΔ 4.5; 4bpp 10.7 (banding
+  wajar palet 16 warna).
+- LZ77 = klon byte-Exact decoder disc (`texfile.h`): blok 8B [flag][8×LZ77 0x11],
+  backref max back=4096 len 3..18, match ≥3, literal 0x00 → write 0x11 (bug
+  tersembunyi decoder disc yang direplikasi sengaja).
+- Layout header image TPL FE9 (verified byte, 1300+ image): u16 **h dulu**, baru u16 w.
+  Loader C++ lama (w-first) sudah diselaraskan — bug laten di tekstur non-persegi.
+
 ## Tools
 - `bin/fpkpack.mjs` — baker (list → fpk1; bisa dipakai berdiri sendiri).
 - `bin/pocbake.mjs` — resolve entri `disc:` dari RVZ + panggil pack().
+- `bin/aiconv.mjs` — PNG→TPL/CMS writer + LZ77 (di atas; dipakai jalur override).
 - Loader C++ = bagian harness PoC (`poc/`, P2).

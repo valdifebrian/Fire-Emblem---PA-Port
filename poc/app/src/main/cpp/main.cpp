@@ -27,6 +27,7 @@
 #include <cstring>
 #include <ctime>
 #include <mutex>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -170,6 +171,52 @@ static mat4 m4mul(const mat4& a, const mat4& b) {
 // ---------- engine state ----------
 static std::vector<uint8_t> g_fpkg;
 static fpk_file g_fpak;
+
+/* ---------- external asset override (commercial IP-swap path, docs/FPK_FORMAT.md)
+ * Checked BEFORE the FPK lookup: drop <root>/<fpk-entry-name> (e.g.
+ * archer/tex_4.tpl) and the engine loads the replacement with zero code change
+ * and zero FPK rebuild. Roots in order: env FE9_OVERRIDE_DIR, else BOTH
+ * /storage/emulated/0/Android/data/<pkg>/files/assets_override (explorer-visible)
+ * AND /data/user/0/<pkg>/files/assets_override (run-as-pipe deployable — plain
+ * `adb push` into Android/data is SELinux-blocked to the app since API 29).
+ * No dir / no file = every lookup falls through to the FPK path untouched. ---------- */
+static std::vector<std::string> g_overrideRoots;
+static void override_init() {
+  const char* e = getenv("FE9_OVERRIDE_DIR");
+  if (e && *e) { g_overrideRoots.push_back(e); }
+  else {
+    /* files adb-push'd into Android/data carry shell_data_file SELinux label and
+     * are unreadable to the app since API 29; the internal dir via run-as pipe
+     * works everywhere incl. non-root physical devices. */
+    g_overrideRoots.push_back(
+        "/storage/emulated/0/Android/data/com.fe9.poc/files/assets_override");
+    g_overrideRoots.push_back("/data/user/0/com.fe9.poc/files/assets_override");
+  }
+  for (auto& r : g_overrideRoots) LOGI("override: root=%s", r.c_str());
+}
+static bool override_read(const char* name, std::vector<uint8_t>& v) {
+  if (g_overrideRoots.empty() || !name || !*name) return false;
+  while (*name == '/') name++;             /* accept /Face/x.cms and Face/x.cms */
+  for (auto& root : g_overrideRoots) {
+    std::string p = root;
+    if (p.back() != '/') p += '/';
+    p += name;
+    FILE* f = fopen(p.c_str(), "rb");
+    if (!f) continue;
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    bool ok = sz > 0;
+    if (ok) {
+      v.resize((size_t)sz);
+      ok = fread(v.data(), 1, (size_t)sz, f) == (size_t)sz;
+    }
+    fclose(f);
+    if (ok) { LOGI("OVERRIDE HIT %s <- %s (%ld B; FPK entry ignored)", name, p.c_str(), sz); return true; }
+    v.clear();
+  }
+  return false;
+}
 static g_model g_g; static gs_body g_gs; static ga_anim g_ga;
 static ga_anim g_gas[4]; static int g_gaSel = 0;
 static const char* const GA_LABEL[4] = {"move_n", "move_bw", "wait_n", "wait_bw"};
@@ -273,11 +320,13 @@ static void load_asset(AAssetManager* am) {
   int r = fpk_open(&g_fpak, g_fpkg.data(), g_fpkg.size());
   LOGI("fpk_open=%d (0=ok)", r);
   if (r) return;
-  auto rd = [&](const char* name, std::vector<uint8_t>& v) -> const fpk_entry* {
+  override_init();
+  auto rd = [&](const char* name, std::vector<uint8_t>& v) -> bool {
+    if (override_read(name, v)) return true;
     const fpk_entry* e = fpk_find(&g_fpak, name);
     if (e) v.assign(g_fpak.data + e->off, g_fpak.data + e->off + e->len);
     LOGI("entry %s -> %s len=%u", name, e ? "ok" : "MISSING", e ? e->len : 0);
-    return e;
+    return e != nullptr;
   };
   rd("archer/skeleton.g", buf_g); rd("archer/body.gs", buf_gs);
   for (int i = 0; i < 4; i++) rd(GA_ENTRY[i], buf_ga[i]);

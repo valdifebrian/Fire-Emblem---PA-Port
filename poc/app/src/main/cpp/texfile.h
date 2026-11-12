@@ -54,7 +54,10 @@ static int tpl_decode(tpl_file* t, const uint8_t* d) {
   for (int i = 0; i < count; i++) {
     uint32_t ip = be_u32(d + tableOff + (uint32_t)i * 8);
     uint32_t pp = be_u32(d + tableOff + (uint32_t)i * 8 + 4);
-    int w = be_u16(d + ip), h = be_u16(d + ip + 2);
+    /* byte-verified FE9 img header (tpl2png.mjs, 1300+ images incl. non-square
+     * window icons vision-checked): u16 h FIRST, then u16 w. Previous w-first
+     * read was a latent swap bug on any non-square game texture. */
+    int h = be_u16(d + ip), w = be_u16(d + ip + 2);
     uint32_t fmt = be_u32(d + ip + 4), dp = be_u32(d + ip + 8);
     tex_img* im = &t->imgs[i];
     im->w = w; im->h = h; im->fmt = (int)fmt;
