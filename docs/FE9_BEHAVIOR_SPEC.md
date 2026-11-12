@@ -562,6 +562,22 @@ sweep loose 437 lalu. Semua ter-parse `bin/dbx.mjs` → `out/dbx_core/*.json`.
   CSV spawn/pool; auto-deteksi grid (108/112) + region u32 sebelum string (anchor
   timestamp + scan + kandidat align). Tervalidasi: always 100×108; bmap01 4×112;
   bmap02 3; bmap05 6; bmap12 **107 unit**; bmap20 49 (semua stride 108 varian umum). [AM-054]
+- **ADDENDUM stream-order (re-read FUN_80107b54 penuh, AM-054b)**: urutan stream per
+  record = `u32 A | u32 B | u32 skip | 8×u32 | 5×u32 | 8×u8 | 4×u32 | 8×u8(scatter ke
+  struct +0x08..0x0E,+0x66) | 8×u8(ke struct +0x30..37) | pad 4` = **108B stream** —
+  stride bmap 112 = 108 + u32 ekstra (selalu 0 di bmap01). Struktur ≠ stream: 8 u8
+  scatter ditulis ke celah +0x08..0x0F. KOREKSI penting: byte x,y stream (+64) = **0
+  untuk semua record bmap01/h/m/n**; pasangan koordinat (u8,u8)×2 ada di 8 byte terakhir
+  (struct +0x30): c: BOLE (0,7)(0,7), cleric (6,7)(3,9), ranger (15,13)×2, HERO_G
+  (15,13)×2; h/m/n (2 record): FIGHTER (9,0)(9,7), HERO_G (10,5)(10,5) —
+  kandidat (spawn, tujuan-pasca-cutscene) [INFERENCE; skrip C01 menimpa BOLE ke
+  (15,13)@f1250 lalu (9,0)@f2706 — cocok pola field 1 vs 2 varian c]. Referensi string
+  per-record: u32 kecil = OFFSET pool file itu sendiri + aturan prefix (full-entry
+  terdekat ≤ v) + suffix — contoh rek c: `B0=PID_BOLE_MAP1`(586), `skip0=JID_CLERIC/F`,
+  `w5_1=SEQ_NOATTACK`(630), `ai3=SEQ_ALLUNITATTACK100` (h) — tapi beberapa resolve
+  = noise kebugungan (angka kecil kebetulan masuk range pool) ⇒ **tabel kebugungan
+  field-per-field tetap butuh konsumen runtime (UnitLoadUnitInfo) = P2-validator**;
+  jangan klaim penuh. Konfirmasi positif: h/m/n = 2 record (bukan 4; GREIL+1) vs c=4.
 
 ### BRV-BTL-003 — Harvest video Ch1+Ch2: forecast tempur, triangle damage, rescue UI — CONFIRMED (observasi)
 Sumber: longplay `1B95v-cnXVo` segmen `fe9_ch1.mp4` (video 09:25-22:35) + `fe9_ch2.mp4`
@@ -1128,6 +1144,33 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
 - Impl: tooling replay kini jadi oracle string statis (setiap bab bisa dibaca
   tanpa device: `VMGOLD=... VMSTR=1 vmtest dir Cxx.cmb`); wave schedule engine
   diberi label data-gap yang sama. [AM-053]
+
+### BRV-SCT-005k — SEMANTIK NATIVE BATCH-5: AUDIO-ENV + BGM NAMED + WAIT/CAMERA-HARD — DECODED
+- **`BGMPlay(slot u8, ptrStr)` `FUN_800b8070`**: arg1 WAJIB pointer RAM valid
+  (guard `0x80000000..0x817ffffff` ⇒ TERBUKTI string, konsisten golden
+  `"BGM_EVT_IKE1"@0x45d10`); bila audio-on: `FUN_8014832c(slot,ptr,VOL=100,1)` =
+  putar BGM NAMED per slot; `slot==0` → `FUN_80146af0()` ekstra (flush/layer utama);
+  nama dicatat ke registry `DAT_8026f6b8`. Engine SUDAH benar (bake BGM by name ✓).
+- **`BGMFadeOut(slot u8, dur i16)` `FUN_800b7db4`**: slot ×**0x30** (tabel slot BGM
+  stride 0x30 = SCT-005f ✓ `DAT_8032ff14` flag bit0=aktif, objek `DAT_8032ff10`);
+  vtbl+8(obj) dulu (pause/stop hook) lalu `FUN_80148980(obj,dur)` set durasi fade;
+  `slot==0` → `FUN_80146b00()` fade-SEMUA. Return 1 selalu (non-yielding).
+- **`ENVSilentOn(n)` `FUN_800b79b4`**: clamp n<0→0 → `FUN_801455b8(n)` = senyapkan
+  lingkungan SE/ambience dengan parameter (durasi/level; naming Silent-vs-Noisy
+  = pasangan). **`ENVNoisyOn()` `FUN_800b796c`**: `FUN_80145488()` = batal senyap.
+  Keduanya instan (return 1) — C01 memakai `ENVSilentOn(0)` sebelum MapLoad dan
+  `ENVNoisyOn` setelah unit siap = ambience dipadamkan selagi movie/peta loading.
+- **`WaitF(frames)` `FUN_800b7828`**: flush antrean (`FUN_80013864` — SAME pump
+  helper family WaitM); flag fast-forward (ram `-0x7c90`&1) → return 0 = SKIP
+  (pola identik WaitM ff-skip SCT-005b); else entri timer ke list `DAT_8028d22c`
+  dengan **`+0x60 = frames-1`** (field hitung mundur). Konfirmasi: wait via LIST
+  timer, bukan blok.
+- **`FocusHardWait()` `FUN_800babfc`** (argc 0, re-entrant): bila mode-hard OFF:
+  tanyakan selesai-gerak-kamera `FUN_800188a4(1)`; belum → return 0 (yield);
+  selesai → simpan slot kamera (`FUN_800c0658` → list `DAT_8028d19c`), flush
+  antrean, SET flag hard `0x80320060`, return 1. Mode-hard sudah ON →
+  `FUN_800187f0()` + return 0 (= dilewati). ⇒ setelah Focus/FocusHardWait,
+  mode kamera "hard" aktif SAMBIL di-finalize. [AM-080]
 
 ### BRV-SCT-005i — KONTRAK RUNTIME NATIVE TERVERIFIKASI DEVICE (C01 end-to-end) — DECODED/VERIFIED
 - **Bukti**: emulator-5554 2026-11-12 19:29–19:31 — `script: Opening0 DONE @f=2316 -> WORLD`

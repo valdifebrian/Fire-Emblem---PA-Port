@@ -85,13 +85,22 @@ struct InputState  { TouchState touch; PadState pad; };
 struct Mixer : oboe::AudioStreamDataCallback, oboe::AudioStreamErrorCallback {
   static const int NBGM = 2, NSLOT = 4;
   struct S { const int16_t* p = nullptr; int n = 0, pos = 0, loop = 0;
-             std::atomic<float> tgt{0.f}; float g = 0.f; } s[NSLOT];
+             std::atomic<float> tgt{0.f}; std::atomic<float> ramp{0.02f}; float g = 0.f; } s[NSLOT];
   std::atomic<float> master{1.f}, duck{1.f};
   int seNext = NBGM;
   oboe::AudioStream* stream = nullptr;
   void bindBgm(int i, const stm_file& d) { /* call on engine thread before start */
     s[i].p = d.pcm; s[i].n = d.pcmFrames; s[i].pos = 0; s[i].loop = d.loopStart >= 0 ? d.loopStart : 0;
     s[i].tgt.store(i == 0 ? 0.8f : 0.f);
+    s[i].ramp.store(0.02f);
+  }
+  /* [BRV-SCT-005k] BGMFadeOut(slot,dur_ms): slot×0x30 table semantics -> our
+   * 2-slot BGM pair; exponential ramp sized ~95% in dur (k=3/T). */
+  void bgmFadeOut(int slot, float ms) {
+    if (slot < 0 || slot >= NBGM) return;
+    float T = std::max(8.f, std::min(240.f, ms / 16.667f));
+    s[slot].ramp.store(3.f / T);
+    s[slot].tgt.store(0.f);
   }
   void bgmMix(float x) { s[1].tgt.store(x); }
   void setDuck(float v) { duck.store(v); }             /* menu/dialog duck for BGM */
@@ -112,7 +121,7 @@ struct Mixer : oboe::AudioStreamDataCallback, oboe::AudioStreamErrorCallback {
         S& c = s[i];
         if (!c.p) continue;
         float tgt = c.tgt.load() * (i < NBGM ? dk : 1.f);
-        c.g += (tgt - c.g) * (i < NBGM ? 0.02f : 0.3f); /* BGM slow crossfade, SE fast attack */
+        c.g += (tgt - c.g) * (i < NBGM ? c.ramp.load() : 0.3f); /* BGM ramp (bind/fade), SE fast attack */
         mL += c.p[c.pos * 2] * c.g;
         mR += c.p[c.pos * 2 + 1] * c.g;
         if (++c.pos >= c.n) {
@@ -1685,6 +1694,16 @@ static int scrBgm(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   (void)V; (void)o;
   return 0;
 }
+/* BGMFadeOut(slot,dur) [BRV-SCT-005k FUN_800b7db4]: dur ms, slot 0 = both BGM */
+static int scrBgmFadeOut(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)V; (void)c; (void)o;
+  int slot = (int)(a[0] & 0xff);
+  float dur = (float)(int16_t)(a[1] & 0xffff);
+  LOGI("scr BGMFadeOut(slot=%d dur=%.0fms)", slot, dur);
+  if (slot == 0) { g_mixer.bgmFadeOut(0, dur); g_mixer.bgmFadeOut(1, dur); }
+  else g_mixer.bgmFadeOut(slot & 1, dur);
+  return 0;
+}
 static int scrMovie(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   (void)c; (void)o;
   uint64_t& wu = g_scr.waitUntil;
@@ -1720,7 +1739,7 @@ static const ScrOv SCR_OVS[] = {
   {"DisposFirst", scrPass}, {"Dispos", scrPass}, {"DisposSetMode", scrPass}, {"InstantSetFirstMode", scrPass},
   {"SetGrid", scrPass}, {"SetCircle", scrPass}, {"SetOutLink", scrPass},
   {"SetWhiteBackdrop", scrPass}, {"RemoveBackdrop", scrPass},
-  {"BGMPlay", scrBgm}, {"BGMEffectPlay", scrBgm}, {"BGMFadeOut", scrPass}, {"BGMSetVol", scrPass},
+  {"BGMPlay", scrBgm}, {"BGMEffectPlay", scrBgm}, {"BGMFadeOut", scrBgmFadeOut}, {"BGMSetVol", scrPass},
   {"SFXPlay", scrSfx}, {"SEPlay", scrSfx}, {"SEStop", scrPass},
   {"MoviePlay", scrMovie}, {"ChapterMoviePlay", scrMovie},
   {"IsE3Version", scrIsE3}, {"ENVSilentOn", scrPass}, {"ENVNoisyOn", scrPass}, {"ENVNoisyOff", scrPass},
