@@ -930,6 +930,32 @@ Dari decompil impl (decAll) + katalog:
   terpetakan (tile→MT_ via panel np + runtime table capture); MW_* = enum objective
   world-loop. [AM-050]
 
+### BRV-MAP-005 — WATER MASK CH1 = FOOTPRINT `bmap01_water0.gs` + `maplinkAt` = PATCH TILING (bukan air) — DECODED (kelas terrain 0x0B/0x0D = Partial)
+- **Kebenaran air = model `bmap01_water0.gs`** (di-load engine sbg bagian pack
+  bmap01): rasterisasi footprint segitiga xz (pos/10 → tile 29×24) = **124 tile
+  DANAU kiri-bawah** (baris 11..23, kolom 0..11; material `map_water:img3`).
+  Bake `bin/waterbake.mjs` → `maps/bmap01_cost.bin` (696B, land=1 water=99).
+- **`maplinkAt` (map.bin) = deret rekaman [u8 x][u8 y][u8 type] mulai dataOff+2**,
+  berakhir terminator type=0 (rekaman terakhir (10,11,0) disambung pool nama
+  `map01/bmap01_water0/flower_01/tree_01/tree_02` + string SJIS). Ch1: **27 titik**
+  — type 0x0F×24 membentuk TANGGA DIAGONAL (3,3)→(12,7)→(9,10) di kuadran kiri-atas
+  = BUKAN air (danau ada kiri-bawah; water0.gs membuktikan) ⇒ pita HUTAN/tile
+  event [INFERENSI kuat: bentuk tangga tepi pita vegetasi, FE9 Ch1 thief di hutan];
+  0x0B×2 + 0x0D×1 = kelas lain (Partial). BUKAN exit spawn — pool spawn wave
+  memakai titik ini sampai dispos_c param grammar closed.
+- **Panel q bukan enum**: uniquepanel 86 rec = 4 kata u16 berteks packed (keluarga
+  FE8, sentinel 0xF336) + np→pool (SJIS); grid 16×14 = panel GRAFIS, bukan taktis
+  — terrain taktis CH1 datang dari gs/water0 (v1), bukan panelindex. [AM-052]
+- **Loader engine [P4-M1.1]**: `maps/bmap01_cost.bin` (water blokir BFS/move
+  `g_cost>=99`) + `maps/bmap01_exits.bin` (pool spawn wave, u16 n + n×[x,y]) via
+  rd()/override; deploy device: push /data/local/tmp → `run-as cp` ke
+  `files/assets_override/maps/` (SELinux API29). Log verifikasi: `wloop: cost grid
+  loaded water tiles=124/696` + `wloop: exits=27` (TERPASANG device 22:08 ✓).
+- **FIX BUG Z-KONVENSI [BRV-MAP-005]**: unit/cursor/kamera memakai `tile_cx(gy)`
+  (=-140+10g, konvensi X) untuk Z ⇒ unit ter-render 2.5 tile di luar sel grid;
+  sumber kebenaran grid=tanah=`p[2]-120` ⇒ helper baru `tile_cz(g)=-115+10g`,
+  9 call-site z dialihkan; tap inverse (`(hz+120)/10`) sudah benar → konsisten.
+
 ### BRV-SCT-005e — NATIVE SKENARIO CH1 + FLAG TABLE + COMMAND QUEUE — DECODED
 - **Arg koordinat kamera = INTEGER BIASI (TERBUKTI)**: pseudocode f64-magic
   `bits{0x43300000,p^0x80000000} - bias` = identitas (uji numerik: p=4,7,-55,55,18

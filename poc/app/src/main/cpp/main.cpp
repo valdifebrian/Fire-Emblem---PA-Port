@@ -52,7 +52,6 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "FE9PoC", __VA_ARGS__)
 
 static ActQueue g_acts;  // [P3-INP-001] one edge queue, three producers (touch/pad/keyboard)
-static std::atomic<float> g_touchYaw{0.f};
 static std::atomic<int> g_tapsIn100ms{0};
 static std::atomic<float> g_mixB{0.f};    // gain of stream B 0..1
 
@@ -154,8 +153,9 @@ layout(location=0) in vec3 aPos; layout(location=1) in vec3 aNrm; layout(locatio
 uniform mat4 uMVP; out vec3 vN; out vec2 vUV;
 void main(){ vN=aNrm; vUV=aUV; gl_Position=uMVP*vec4(aPos,1.0); })";
 static const char* FS = R"(#version 300 es
-precision mediump float; in vec3 vN; in vec2 vUV; uniform sampler2D uTex; uniform float uDim; out vec4 o;
-void main(){ vec3 c=texture(uTex,vUV).rgb; float l=0.35+0.65*max(dot(normalize(vN),normalize(vec3(0.4,0.8,0.6))),0.0); o=vec4(c*l*uDim,1.0); })";
+precision mediump float; in vec3 vN; in vec2 vUV; uniform sampler2D uTex; uniform float uDim;
+uniform vec3 uTint; uniform float uAlpha; out vec4 o;
+void main(){ vec3 c=texture(uTex,vUV).rgb; float l=0.35+0.65*max(dot(normalize(vN),normalize(vec3(0.4,0.8,0.6))),0.0); o=vec4(c*l*uDim*uTint,uAlpha); })";
 static const char* VS2 = R"(#version 300 es
 layout(location=0) in vec2 aPos; layout(location=1) in float aIdx;
 uniform vec2 uScr; uniform float uHeld[8]; out float vH;
@@ -288,7 +288,6 @@ static ResMgr g_res;
 
 static g_model g_g; static gs_body g_gs; static ga_anim g_ga;
 static ga_anim g_gas[4]; static int g_gaSel = 0;
-static const char* const GA_LABEL[4] = {"move_n", "move_bw", "wait_n", "wait_bw"};
 static tpl_file g_tex; static tpl_file g_texA; static uint32_t g_texId = 0;
 /* M2.2 terrain [BRV-MAP-001]: bmap01 static mesh + texpack img0 atlas */
 static gs_body g_mapgs; static tpl_file g_maptex; static GLuint g_mapTex = 0;
@@ -307,12 +306,10 @@ static std::vector<uint8_t> g_gcf;
 static std::vector<uint8_t> g_stmA, g_stmB;
 static stm_file g_sA, g_sB;
 static std::atomic<float> g_camYaw{45.f}; /* deg; FIXED isometric default, pad-orbit writable */
-static float g_unitYaw = 45.f, g_unitYawT = 45.f; /* T = target; yaw eases for FE9-style turns */
 static std::atomic<float> g_camPitch{24.f}; /* deg; RIGHT_STICK look, L3/R3 refit resets it */
-static int g_gx = 14, g_gy = 14;     /* unit tile coords on 29x24 map [BRV-MAP-001] */
-static float g_ux = 0.f, g_uz = 0.f; /* unit world pos (tile centers: -140+10*g) */
+static int g_gx = 14, g_gy = 14; /* mirror of the active unit tile for save/cursor [P4-M1] */
+static float g_ux = 0.f, g_uz = 0.f; /* mirror world pos of the active unit (camera focus) */
 static float g_camFx = 0.f, g_camFz = 0.f; /* smoothed camera focus */
-static int g_path[48]; static int g_pathN = 0; /* queued tiles, flat (gx,gy) FIFO */
 static std::atomic<int> g_tapReq{0};
 static std::atomic<float> g_tapNX{0.f}, g_tapNY{0.f};
 static float g_scrW = 1.f, g_scrH = 1.f;
@@ -328,21 +325,102 @@ static int g_frame = 0; static long long g_frameMs = 0;
 #define MAP_TW 29
 #define MAP_TH 24
 static float tile_cx(int g) { return -140.f + 10.f * g; }
-static void path_push(int tx, int ty) {
-  if (g_pathN >= 22) return; /* spam cap */
-  g_path[2 * g_pathN] = tx; g_path[2 * g_pathN + 1] = ty; g_pathN++;
+/* Z rows start at world -120 (build_grid / mesh p[2]-120 / tap_to_tile hz+120);
+ * tile center = -115+10g. Units must land INSIDE their tile, not on the line. */
+static float tile_cz(int g) { return -115.f + 10.f * g; }
+/* ============================================================================
+ * [P4-M1] WORLD SIMULATION — Ch1 taktis loop pasca-opening (P4-M1.1).
+ * Unit table (script natives fill it: UnitSetPosDirByPID / UnitGetByPID ...),
+ * real terrain cost baked from bmap01 panelindex water panels
+ * (maps/bmap01_cost.bin; water=99 blocks movement), maplinkAt exits
+ * (maps/bmap01_exits.bin) as enemy-wave spawn pool.
+ * Combat = BRV-BTL-009 mirror: RNG = 3x u16 LFSR @8032F3B0 exactly as decoded;
+ * hit% = HIT-AVO clamp[0,100] with TWO-ROLL average (FUN_8000cd88), crit via
+ * single roll (FUN_8000ce68), crit x3, double strike when def.AS+4 <= atk.AS,
+ * dmg = max(0, ATK-DEF). [INFERENCE flagged] weapon-item column mapping
+ * (practice sword mt5/hit90/crit0) and per-unit stat semantics stay P4-CHR
+ * placeholders — formulas are the verified gate, numbers are v1 constants.
+ * Wave schedule T5/T10/T15 x4 = placeholder until dispos_c record grammar
+ * closes (never claim it as extracted data).
+ * ==========================================================================*/
+#define MAXU 24
+#define U_TEAM_PLAYER 0
+#define U_TEAM_ENEMY 1
+struct WUnit {
+  char pid[24];
+  int gx, gy;
+  float ux_i, uz_i;              /* smooth world pos (tile arrival snaps exact) */
+  float yaw, yawT;               /* eased facing */
+  int team, hp, mhp, pow_, skl, spd, lck, def_, res, mov;
+  int wmt, whit, wcrit;          /* weapon (practice-grade v1) */
+  int waited, dead, hide;
+  int path[64]; int pathN;       /* flat (gx,gy) FIFO per unit */
+};
+static WUnit g_u[MAXU]; static int g_nu = 0;
+static int g_cur = 0;            /* active unit index (script moves / camera) */
+static uint8_t g_cost[MAP_TW * MAP_TH]; /* baked: 1=land, 99=water */
+static uint8_t g_exits[64][2]; static int g_nExits = 0;
+static void scene_req(int op, SceneId id); /* defined with scene stack (below) */
+
+/* RNG mirror [BRV-RNG-010 CLOSED]: state 3xu16; w2'=(w2<<1|w1>>15);
+ * u=((w1<<11|w0>>5)^w2'); (w2,w1,w0):=(w1,w0,u) — verbatim from spec. */
+static struct { uint16_t w0, w1, w2; } g_lfsr = {1, 0xC0FF, 0xEEu};
+static void lfsr_seed(uint32_t s) {
+  g_lfsr.w0 = (uint16_t)(s | 1u); g_lfsr.w1 = (uint16_t)((s >> 16) | 1u);
+  g_lfsr.w2 = (uint16_t)(((s * 2654435761u) >> 16) | 1u);
 }
-static void step_tile(int dgx, int dgy) { /* enqueue 1 tile step from queue tail */
-  int sx = g_gx, sy = g_gy;
-  if (g_pathN > 0) { sx = g_path[2 * (g_pathN - 1)]; sy = g_path[2 * (g_pathN - 1) + 1]; }
+static uint16_t lfsr_u(void) {
+  uint16_t w0 = g_lfsr.w0, w1 = g_lfsr.w1, w2 = g_lfsr.w2;
+  uint16_t nw2 = (uint16_t)(((w2 << 1) | (w1 >> 15)) & 0xFFFFu);
+  uint16_t u = (uint16_t)((((w1 << 11) | (w0 >> 5)) & 0xFFFFu) ^ nw2);
+  g_lfsr.w2 = w1; g_lfsr.w1 = w0; g_lfsr.w0 = u; /* (w2,w1,w0):=(w1,w0,u) */
+  return u;
+}
+static int rng_pct(int p) { int v = ((int)lfsr_u() * 100) >> 16; return v < p; }       /* FUN_8000ce68 */
+static int rng_pct2(int p) { /* FUN_8000cd88: two rolls averaged (hit rolls) */
+  int v1 = ((int)lfsr_u() * 100) >> 16, v2 = ((int)lfsr_u() * 100) >> 16;
+  return (v1 + v2) / 2 < p;
+}
+
+static int clampi(int v, int a, int b) { return v < a ? a : (v > b ? b : v); }
+static int wu_find(const char* pid, int createTeam) {
+  for (int i = 0; i < g_nu; i++) if (!g_u[i].dead && !strcmp(g_u[i].pid, pid)) return i;
+  if (!createTeam || g_nu >= MAXU) return -1;
+  WUnit* u = &g_u[g_nu++];
+  memset(u, 0, sizeof *u);
+  snprintf(u->pid, sizeof u->pid, "%s", pid ? pid : "UNIT");
+  u->team = createTeam > 0 ? U_TEAM_ENEMY : U_TEAM_PLAYER;
+  u->yaw = u->yawT = 45.f; u->mov = 5; u->hp = u->mhp = 1;
+  return g_nu - 1;
+}
+static int wu_find_create(const char* pid) {
+  int i = wu_find(pid, 0);
+  if (i >= 0) return i;
+  int enemy = !!(pid && (strstr(pid, "THIEF") || strstr(pid, "BANDIT") || strstr(pid, "ENEMY")));
+  return wu_find(pid, enemy ? 1 : 0);
+}
+static int wu_at(int gx, int gy, int team /*-1 any*/) {
+  for (int i = 0; i < g_nu; i++)
+    if (!g_u[i].dead && !g_u[i].hide && g_u[i].gx == gx && g_u[i].gy == gy &&
+        (team < 0 || g_u[i].team == team)) return i;
+  return -1;
+}
+static int path_push_u(WUnit* u, int gx, int gy) {
+  if (u->pathN >= 32) return 0;
+  u->path[u->pathN * 2] = gx; u->path[u->pathN * 2 + 1] = gy; u->pathN++; return 1;
+}
+static void step_tile_u(WUnit* u, int dgx, int dgy) { /* enqueue 1 tile step from tail */
+  int sx = u->gx, sy = u->gy;
+  if (u->pathN > 0) { sx = u->path[2 * (u->pathN - 1)]; sy = u->path[2 * (u->pathN - 1) + 1]; }
   int nx = sx + dgx, ny = sy + dgy;
-  if (nx < 0 || nx > 28 || ny < 0 || ny > 23) return; /* M2.2: full 29x24 map grid */
-  g_unitYawT = atan2f((float)dgx, (float)dgy) * 57.29578f;
-  path_push(nx, ny);
+  if (nx < 0 || nx >= MAP_TW || ny < 0 || ny >= MAP_TH) return;
+  if (g_cost[ny * MAP_TW + nx] >= 99) return; /* baked water: no path across [BRV-MAP-001] */
+  u->yawT = atan2f((float)dgx, (float)dgy) * 57.29578f;
+  path_push_u(u, nx, ny);
 }
-/* dpad button (1 L,2 R,3 U,4 D) -> best world axis so that motion matches the
-   screen direction under the current camera yaw (any yaw works, iso 45 too) */
-static void dpad_step(int code) {
+/* dpad button (1 L,2 R,3 U,4 D) -> best world axis so motion matches screen
+   direction under any camera yaw (iso 45 included) — used for unit AND cursor */
+static int dpad_axis(int code, int* dx, int* dy) {
   float yr = g_camYaw.load() * 0.017453292f;
   float rx = cosf(yr), rz = -sinf(yr);            /* screen right in world xz */
   float ux = -sinf(yr), uz = -cosf(yr);           /* screen up (view dir, xz) */
@@ -354,8 +432,297 @@ static void dpad_step(int code) {
     float d = sv[0] * axes[i][0] + sv[1] * axes[i][1];
     if (d > bestDot) { bestDot = d; best = i; }
   }
-  step_tile(axes[best][0], axes[best][1]);
+  *dx = axes[best][0]; *dy = axes[best][1];
+  return code >= 1 && code <= 4;
 }
+
+/* ---- world state machine ---- */
+enum { WP_SELECT = 0, WP_RANGE, WP_ANIM, WP_ENEMY, WP_WON, WP_LOSE };
+struct World {
+  int phase;            /* WP_* */
+  int cx, cy;           /* cursor tile */
+  int sel;              /* selected unit index or -1 */
+  int turn, spawned;    /* player turn counter + enemies spawned this chapter */
+  int aiIdx, aiT;       /* enemy phase cursor + pacing countdown */
+  int waveMask;         /* bit0 T5, bit1 T10, bit2 T15 already spawned */
+} static g_w = { WP_SELECT, 14, 14, -1, 1, 0, 0, 0, 0 };
+static int g_worldReady = 0;
+
+/* BFS movement field for one unit. dist[tile] = cost spent to ENTER tile
+ * (start excluded); blocked: water, enemy-occupied (through yes ally, stop-on
+ * blocked at endpoint check). v1 all land cost 1 -> plain BFS. */
+static uint8_t g_dist[MAP_TW * MAP_TH];
+static int16_t g_par[MAP_TW * MAP_TH];
+static void bfs_field(WUnit* u) {
+  for (int i = 0; i < MAP_TW * MAP_TH; i++) { g_dist[i] = 0xFF; g_par[i] = -1; }
+  uint8_t q[MAP_TW * MAP_TH]; int qh = 0, qt = 0;
+  g_dist[u->gy * MAP_TW + u->gx] = 0; q[qt++] = (uint8_t)(u->gy * MAP_TW + u->gx);
+  const int dxy[4][2] = { {1,0}, {-1,0}, {0,1}, {0,-1} };
+  while (qh < qt) {
+    int t = q[qh++]; int tx = t % MAP_TW, ty = t / MAP_TW;
+    int spent = g_dist[t];
+    if (spent >= u->mov) continue;
+    for (int k = 0; k < 4; k++) {
+      int nx = tx + dxy[k][0], ny = ty + dxy[k][1];
+      if (nx < 0 || nx >= MAP_TW || ny < 0 || ny >= MAP_TH) continue;
+      int nt = ny * MAP_TW + nx;
+      if (g_dist[nt] != 0xFF) continue;
+      if (g_cost[nt] >= 99) continue; /* water */
+      int occ = wu_at(nx, ny, -1);
+      if (occ >= 0 && g_u[occ].team != u->team) continue; /* enemies block path */
+      g_dist[nt] = (uint8_t)(spent + 1); g_par[nt] = (int16_t)t; q[qt++] = (uint8_t)nt;
+    }
+  }
+}
+static int in_range(WUnit* u, int gx, int gy) {
+  if (gx < 0 || gx >= MAP_TW || gy < 0 || gy >= MAP_TH) return 0;
+  return g_dist[gy * MAP_TW + gx] <= u->mov;
+}
+static void queue_bfs_path(WUnit* u, int tx, int ty) { /* walk parents -> FIFO */
+  u->pathN = 0;
+  int chain[64], n = 0;
+  int t = ty * MAP_TW + tx;
+  while (t >= 0 && g_par[t] >= 0 && n < 60) { chain[n++] = t; t = g_par[t]; }
+  for (int i = n - 1; i >= 0; i--) {
+    u->yawT = 45.f;
+    path_push_u(u, chain[i] % MAP_TW, chain[i] / MAP_TW);
+  }
+}
+
+/* combat exchange [BRV-BTL-009 mirror] */
+static void strike_seq(WUnit* A, WUnit* D) {
+  int hit = clampi(A->whit + A->skl + A->lck / 2 - (2 * D->spd + D->lck / 2), 0, 100);
+  int crt = clampi(A->wcrit + A->skl / 2 - D->lck / 2, 0, 100);
+  int strikes = 1 + (A->spd >= D->spd + 4 ? 1 : 0); /* AS+4 double rule [BRV-BTL-009] */
+  for (int i = 0; i < strikes && !D->dead; i++) {
+    if (!rng_pct2(hit)) { LOGI("btl: %s misses %s (hit %d%%)", A->pid, D->pid, hit); continue; }
+    int dmg = clampi(A->pow_ + A->wmt - D->def_, 0, 999);
+    int crit = rng_pct(crt);
+    if (crit) dmg *= 3;
+    D->hp -= dmg;
+    LOGI("btl: %s->%s dmg=%d%s hp=%d/%d", A->pid, D->pid, dmg, crit ? " CRIT" : "",
+         D->hp > 0 ? D->hp : 0, D->mhp);
+    if (D->hp <= 0) { D->dead = 1; LOGI("btl: %s DOWN", D->pid); }
+  }
+}
+static void battle_exchange(WUnit* A, WUnit* D) {
+  strike_seq(A, D);
+  if (!D->dead) strike_seq(D, A); /* counter if survivor adjacent (both range 1 v1) */
+}
+
+static void world_stats(WUnit* u) { /* v1 stat bake; semantics gate = P4-CHR */
+  if (u->mhp > 1) return; /* already configured (e.g. enemy wave stats) */
+  if (!strcmp(u->pid, "PID_IKE")) { u->mhp = u->hp = 24; u->pow_ = 6; u->skl = 6; u->spd = 6;
+    u->lck = 4; u->def_ = 4; u->res = 1; u->mov = 5; u->wmt = 5; u->whit = 90; u->wcrit = 0; }
+  else { u->mhp = u->hp = 14; u->pow_ = 4; u->skl = 3; u->spd = 5; u->lck = 2;
+    u->def_ = 2; u->res = 0; u->mov = 5; u->wmt = 4; u->whit = 80; u->wcrit = 5; }
+}
+static void spawn_wave(int turn) { /* placeholder schedule [NOT extracted data] */
+  if (g_nExits <= 0) { LOGE("wloop: no exits baked — wave skipped"); return; }
+  int made = 0;
+  for (int k = 0; k < 4; k++) {
+    int e = (turn * 5 + k * 3 + turn) % g_nExits;
+    int gx = g_exits[e][0], gy = g_exits[e][1];
+    if (g_cost[gy * MAP_TW + gx] >= 99 || wu_at(gx, gy, -1) >= 0) continue;
+    WUnit* u = nullptr; int idx = -1;
+    for (int i = 0; i < MAXU; i++) if (g_u[i].dead) { idx = i; break; }
+    if (idx < 0) { if (g_nu < MAXU) idx = g_nu++; else break; }
+    u = &g_u[idx]; memset(u, 0, sizeof *u);
+    snprintf(u->pid, sizeof u->pid, "THIEF_T%d_%d", turn, k);
+    u->team = U_TEAM_ENEMY; u->gx = gx; u->gy = gy;
+    u->ux_i = tile_cx(gx); u->uz_i = tile_cz(gy);
+    u->yaw = u->yawT = 45.f;
+    int lv = turn / 5; /* T5=1 ... T15=3 [INFERENCE] */
+    u->mhp = u->hp = 6 + 3 * lv; u->pow_ = 3 + lv; u->skl = 2 + lv; u->spd = 6 + lv;
+    u->lck = 1; u->def_ = 1; u->res = 0; u->mov = 5;
+    u->wmt = 4; u->whit = 85; u->wcrit = 5;
+    g_w.spawned++; made++;
+  }
+  LOGI("wloop: wave T%d spawned=%d (placeholder schedule pending dispos grammar)", turn, made);
+}
+static void world_init(int force) {
+  if (force) { g_nu = 0; g_cur = 0; }
+  int ike = -1;
+  for (int i = 0; i < g_nu; i++) if (!strcmp(g_u[i].pid, "PID_IKE")) { ike = i; break; }
+  if (ike < 0) {
+    ike = wu_find_create("PID_IKE");
+    g_u[ike].gx = 14; g_u[ike].gy = 14;
+    g_u[ike].ux_i = tile_cx(14); g_u[ike].uz_i = tile_cz(14);
+  }
+  for (int i = 0; i < g_nu; i++) { world_stats(&g_u[i]); g_u[i].waited = 0; }
+  g_cur = ike;
+  g_w.phase = WP_SELECT; g_w.sel = -1; g_w.turn = 1; g_w.spawned = 0; g_w.aiIdx = 0;
+  g_w.aiT = 0; g_w.waveMask = 0; g_w.cx = g_u[ike].gx; g_w.cy = g_u[ike].gy;
+  lfsr_seed(g_rng);
+  g_worldReady = 1;
+  LOGI("wloop: world live units=%d turn=1 (T5/10/15 waves x4 PLACEHOLDER; win=survive T15",
+       g_nu);
+}
+static int wu_player_alive(int team) {
+  int n = 0;
+  for (int i = 0; i < g_nu; i++) if (g_u[i].team == team && !g_u[i].dead && !g_u[i].hide) n++;
+  return n;
+}
+static int all_waited(void) {
+  for (int i = 0; i < g_nu; i++)
+    if (g_u[i].team == U_TEAM_PLAYER && !g_u[i].dead && !g_u[i].hide && !g_u[i].waited) return 0;
+  return 1;
+}
+static void world_end_phase(void) { /* player -> enemy */
+  g_w.sel = -1; g_w.phase = WP_ENEMY; g_w.aiIdx = 0; g_w.aiT = 12;
+  LOGI("wloop: turn %d enemy phase", g_w.turn);
+}
+static int any_moving(void) {
+  for (int i = 0; i < g_nu; i++) if (!g_u[i].dead && g_u[i].pathN > 0) return 1;
+  return 0;
+}
+/* per-frame stepper for ALL units (script-driven paths included): drains under
+ * dialogs too, exactly like FE9 animating units during talk [P4-M0 invariant] */
+static void world_step(void) {
+  for (int i = 0; i < g_nu; i++) {
+    WUnit* u = &g_u[i];
+    { float d = u->yawT - u->yaw; /* FE9-style eased turns, every unit every frame */
+      while (d > 180.f) d -= 360.f; while (d < -180.f) d += 360.f;
+      u->yaw += d * 0.25f; }
+    if (u->pathN <= 0 || u->dead) continue;
+    float tx = tile_cx(u->path[0]), tz = tile_cz(u->path[1]);
+    float dx = tx - u->ux_i, dz = tz - u->uz_i;
+    float dl = sqrtf(dx * dx + dz * dz);
+    if (dl < 0.9f) {
+      u->gx = u->path[0]; u->gy = u->path[1];
+      u->ux_i = tx; u->uz_i = tz; /* snap exact on tile arrival */
+      for (int k = 1; k < u->pathN; k++) { u->path[2*k-2] = u->path[2*k]; u->path[2*k-1] = u->path[2*k+1]; }
+      u->pathN--;
+    } else { u->ux_i += dx / dl * 0.85f; u->uz_i += dz / dl * 0.85f; } /* same cadence as old single-unit stepper */
+  }
+}
+static void world_mirror(void) {
+  WUnit* u = &g_u[clampi(g_cur, 0, g_nu > 0 ? g_nu - 1 : 0)];
+  g_gx = u->gx; g_gy = u->gy; g_ux = u->ux_i; g_uz = u->uz_i;
+}
+/* enemy AI: nearest player, greedy BFS tile minimizing manhattan, attack when
+ * adjacent. SEQ_*-grammar conditions stay dispos_c P2; default aggression v1. */
+static void ai_take_turn(WUnit* e) {
+  int bestT = -1, bestD = 1 << 30;
+  for (int i = 0; i < g_nu; i++) {
+    WUnit* p = &g_u[i];
+    if (p->team != U_TEAM_PLAYER || p->dead || p->hide) continue;
+    int d = abs(p->gx - e->gx) + abs(p->gy - e->gy);
+    if (d == 1) { battle_exchange(e, p); return; } /* adjacent now: attack, no move */
+    if (d < bestD) { bestD = d; bestT = i; }
+  }
+  if (bestT < 0) return;
+  WUnit* tgt = &g_u[bestT];
+  bfs_field(e);
+  int bt = e->gy * MAP_TW + e->gx, bd = bestD;
+  for (int t = 0; t < MAP_TW * MAP_TH; t++) {
+    if (g_dist[t] == 0xFF || g_dist[t] > e->mov) continue;
+    int tx = t % MAP_TW, ty = t / MAP_TW;
+    if (wu_at(tx, ty, U_TEAM_PLAYER) >= 0) continue; /* can't stop on player */
+    int d = abs(tgt->gx - tx) + abs(tgt->gy - ty);
+    if (d < bd) { bd = d; bt = t; }
+  }
+  if (bt != e->gy * MAP_TW + e->gx) queue_bfs_path(e, bt % MAP_TW, bt / MAP_TW);
+  /* attack resolves next AI visit (or same tile adjacency check above) */
+}
+static void world_tick(void) {
+  if (!g_worldReady) return;
+  if (g_w.phase == WP_ANIM && !any_moving()) { /* arrival combat: adjacent enemy = auto-strike */
+    WUnit* u = &g_u[g_w.sel >= 0 ? g_w.sel : g_cur];
+    g_w.sel = -1; g_w.phase = WP_SELECT;
+    for (int k = 0; k < 4; k++) {
+      static const int dxy[4][2] = { {1,0}, {-1,0}, {0,1}, {0,-1} };
+      int e = wu_at(u->gx + dxy[k][0], u->gy + dxy[k][1], U_TEAM_ENEMY);
+      if (e >= 0) { LOGI("wloop: auto-engage on arrival"); u->waited = 1; battle_exchange(u, &g_u[e]); break; }
+    }
+  }
+  if (g_w.phase == WP_SELECT && !any_moving() && wu_player_alive(U_TEAM_PLAYER) > 0 && all_waited()) {
+    g_w.aiT = 8; world_end_phase(); /* FE9 auto-switches once every unit has acted */
+    return;
+  }
+  if (g_w.phase == WP_ENEMY) {
+    if (any_moving()) return;
+    if (--g_w.aiT > 0) return;
+    int done = 1;
+    for (int i = 0; i < g_nu; i++) {
+      if (g_u[i].team != U_TEAM_ENEMY || g_u[i].dead) continue;
+      if (i < g_w.aiIdx) continue;
+      ai_take_turn(&g_u[i]); g_w.aiIdx = i + 1; g_w.aiT = 14; done = 0; break;
+    }
+    if (done) { /* enemy phase over -> new player turn + waves */
+      g_w.turn++;
+      int wi = g_w.turn == 5 ? 0 : g_w.turn == 10 ? 1 : g_w.turn == 15 ? 2 : -1;
+      if (wi >= 0 && !(g_w.waveMask & (1 << wi))) { g_w.waveMask |= 1 << wi; spawn_wave(g_w.turn); }
+      for (int i = 0; i < g_nu; i++) if (g_u[i].team == U_TEAM_PLAYER) g_u[i].waited = 0;
+      g_w.phase = WP_SELECT; g_w.sel = -1;
+      LOGI("wloop: turn %d player phase", g_w.turn);
+    }
+  }
+  /* win/lose [BRV-MAP-004 MW_REACH_15 reading = survive-to-15, role-map P4] */
+  int ike = -1;
+  for (int i = 0; i < g_nu; i++) if (!strcmp(g_u[i].pid, "PID_IKE")) { ike = i; break; }
+  if (ike >= 0 && g_u[ike].dead) { g_w.phase = WP_LOSE; g_w.sel = -1; LOGI("wloop: DEFEAT"); }
+  else if (g_w.phase != WP_WON && g_w.waveMask == 7 && wu_player_alive(U_TEAM_ENEMY) == 0)
+    { g_w.phase = WP_WON; g_w.sel = -1; LOGI("wloop: VICTORY (all waves cleared)"); }
+  else if (g_w.phase != WP_LOSE && g_w.turn > 15 && wu_player_alive(U_TEAM_PLAYER) > 0)
+    { g_w.phase = WP_WON; g_w.sel = -1; LOGI("wloop: VICTORY (survived past turn 15)"); }
+}
+/* A-button semantics by phase; cursor already at g_w.cx/cy */
+static void world_confirm(void) {
+  if (g_w.phase == WP_WON || g_w.phase == WP_LOSE) { g_worldReady = 0; g_nu = 0; scene_req(1, SC_ATTRACT); return; }
+  if (g_w.phase == WP_SELECT || g_w.phase == WP_ANIM) {
+    int i = wu_at(g_w.cx, g_w.cy, U_TEAM_PLAYER);
+    if (i >= 0 && !g_u[i].waited) {
+      g_w.sel = i; g_cur = i; bfs_field(&g_u[i]); g_w.phase = WP_RANGE;
+      LOGI("wloop: select %s mov=%d", g_u[i].pid, g_u[i].mov);
+    }
+    return;
+  }
+  if (g_w.phase == WP_RANGE) {
+    WUnit* u = &g_u[g_w.sel];
+    if (g_w.cx == u->gx && g_w.cy == u->gy) { g_w.sel = -1; g_w.phase = WP_SELECT; return; } /* deselect */
+    int e = wu_at(g_w.cx, g_w.cy, U_TEAM_ENEMY);
+    if (e >= 0) { /* attack without moving (already adjacent) */
+      int d = abs(u->gx - g_w.cx) + abs(u->gy - g_w.cy);
+      if (d == 1) { battle_exchange(u, &g_u[e]); u->waited = 1; g_w.sel = -1; g_w.phase = WP_SELECT; }
+      return;
+    }
+    if (in_range(u, g_w.cx, g_w.cy) && wu_at(g_w.cx, g_w.cy, -1) < 0) {
+      queue_bfs_path(u, g_w.cx, g_w.cy);
+      g_w.phase = WP_ANIM;
+      LOGI("wloop: %s moves %d,%d (%d tiles)", u->pid, g_w.cx, g_w.cy, u->pathN);
+    }
+  }
+}
+static void world_cancel(void) {
+  if (g_w.phase == WP_RANGE) { g_w.sel = -1; g_w.phase = WP_SELECT; }
+  else if (g_w.phase == WP_SELECT && !any_moving()) world_end_phase(); /* B idle = end phase */
+}
+static void world_input(Act a) {
+  if (g_paused.load()) return;
+  int dx, dy;
+  switch (a) {
+    case ACT_LEFT: case ACT_RIGHT: case ACT_UP: case ACT_DOWN:
+      if (dpad_axis((int)a, &dx, &dy)) {
+        g_w.cx = clampi(g_w.cx + dx, 0, MAP_TW - 1); g_w.cy = clampi(g_w.cy + dy, 0, MAP_TH - 1);
+      }
+      break;
+    case ACT_CONFIRM: world_confirm(); break;
+    case ACT_CANCEL: world_cancel(); break;
+    default: break;
+  }
+  if (g_w.phase == WP_RANGE) { WUnit* u = &g_u[g_w.sel]; bfs_field(u); }
+}
+static void tap_to_tile(float nx, float ny, int* tx, int* ty); /* below */
+static void world_tap(float nx, float ny) {
+  int tx = -1, ty = -1;
+  tap_to_tile(nx, ny, &tx, &ty);
+  if (tx < 0) return;
+  g_w.cx = tx; g_w.cy = ty;
+  world_confirm();
+  if (g_w.phase == WP_RANGE) bfs_field(&g_u[g_w.sel >= 0 ? g_w.sel : 0]);
+}
+/* script-driven unit ops land on the table: natives call wu_find_create() directly */
 /* screen-normalized tap (y-down) -> ground tile via analytic ray (true pitched f) */
 static void tap_to_tile(float nx, float ny, int* tx, int* ty) {
   float yr = g_camYaw.load() * 0.017453292f, pit = g_camPitch.load() * 0.017453292f, dist = 55.f;
@@ -378,15 +745,6 @@ static void tap_to_tile(float nx, float ny, int* tx, int* ty) {
   int gx = (int)floorf((hx + 145.f) / TILE_W), gy = (int)floorf((hz + 120.f) / TILE_W);
   if (gx < 0) gx = 0; if (gx > MAP_TW - 1) gx = MAP_TW - 1; if (gy < 0) gy = 0; if (gy > MAP_TH - 1) gy = MAP_TH - 1;
   *tx = gx; *ty = gy;
-}
-static void queue_path(int tx, int ty) { /* x-first L-path from current tile */
-  int dx = tx - g_gx, dy = ty - g_gy, n = abs(dx) + abs(dy);
-  if (n > 18) { n = 18; } /* clamp long taps */
-  int cx = g_gx, cy = g_gy, sx = dx > 0 ? 1 : -1, sy = dy > 0 ? 1 : -1;
-  for (int i = 0; i < n; i++) {
-    if (cx != tx) cx += sx; else if (cy != ty) cy += sy; else break;
-    path_push(cx, cy);
-  }
 }
 
 static void load_asset(AAssetManager* am) {
@@ -458,6 +816,24 @@ static void load_asset(AAssetManager* am) {
       LOGI("map: texpack %d imgs img0=%dx%d fmt%d ok%d", g_maptex.count, g_maptex.imgs[0].w,
            g_maptex.imgs[0].h, g_maptex.imgs[0].fmt, g_maptex.imgs[0].ok);
     else LOGE("map: texpack decode FAIL");
+    /* [P4-M1] movement cost grid + enemy-exit pool baked from bmap01 map.bin
+     * (panelindex water panels + maplinkAt triples); see fe9-re tmp_wloop pass. */
+    { std::vector<uint8_t> cb, xb;
+      if (rd("maps/bmap01_cost.bin", cb) && (int)cb.size() >= MAP_TW * MAP_TH) {
+        memcpy(g_cost, cb.data(), MAP_TW * MAP_TH);
+        int nWater = 0; for (int i = 0; i < MAP_TW * MAP_TH; i++) if (g_cost[i] >= 99) nWater++;
+        LOGI("wloop: cost grid loaded water tiles=%d/%d", nWater, MAP_TW * MAP_TH);
+      } else LOGE("wloop: cost grid MISSING -> all-land fallback (water block disabled)");
+      if (rd("maps/bmap01_exits.bin", xb) && xb.size() >= 2) {
+        int n = (int)((xb.data()[0] | (xb.data()[1] << 8)));
+        if (n > 64) n = 64;
+        g_nExits = 0;
+        for (int i = 0; i < n && 2 + i * 2 + 1 < (int)xb.size(); i++) {
+          g_exits[g_nExits][0] = xb[2 + i * 2]; g_exits[g_nExits][1] = xb[3 + i * 2];
+          if (g_exits[g_nExits][0] < MAP_TW && g_exits[g_nExits][1] < MAP_TH) g_nExits++;
+        }
+        LOGI("wloop: exits=%d (spawn pool, TYPE 0x0f maplinkAt)", g_nExits);
+      } else LOGE("wloop: exits MISSING -> waves disabled"); }
   }
   /* P3-RES-001 prefetch demo: next-scene asset loads on the worker while the
    * engine runs; later g_res.read() must hit cache (miss stays 11). */
@@ -635,6 +1011,50 @@ static void draw_dialog(int w, int h) {
 
 /* ground grid: white 2x2 tex + line VBO reusing the mesh attribute layout */
 static GLuint g_gridVao = 0, g_gridVbo = 0, g_texWhite = 0; static int g_gridN = 0;
+
+/* [P4-M1] world HUD: turn/phase strip + enemy count + selected-unit stat card.
+ * Same ui_* batch + real FE9 font as the dialog layer (no new texture). */
+static void draw_world_hud(int w, int h) {
+  if (!g_font.ok) return;
+  static const float C_STRIP[4] = { .02f, .02f, .06f, .62f };
+  static const float C_TEXT[4] = { .92f, .90f, .80f, 1.f };
+  static const float C_ENEMY[4] = { .95f, .45f, .40f, 1.f };
+  float sc = h * 0.024f, strip = sc * 2.9f;
+  const char* ph = g_w.phase == WP_SELECT ? "PLAYER PHASE" : g_w.phase == WP_RANGE ? "SELECT DEST"
+               : g_w.phase == WP_ANIM ? "MOVING" : g_w.phase == WP_ENEMY ? "ENEMY PHASE"
+               : g_w.phase == WP_WON ? "VICTORY" : "DEFEAT";
+  char buf[128];
+  ui_batch_reset(&g_uiB);
+  ui_fill(&g_uiB, 0.f, 0.f, (float)w, strip);
+  ui_flush(g_texWhite, C_STRIP, w, h);
+  snprintf(buf, sizeof buf, "TURN %d  %s", g_w.turn, ph);
+  ui_batch_reset(&g_uiB);
+  ui_text(&g_uiB, &g_font, 8.f, 4.f, sc, buf, (float)w, 1, 1 << 30);
+  ui_flush(g_font.tex, C_TEXT, w, h);
+  snprintf(buf, sizeof buf, "ENEMIES %d", wu_player_alive(U_TEAM_ENEMY));
+  ui_batch_reset(&g_uiB);
+  ui_text(&g_uiB, &g_font, 8.f, sc * 1.35f, sc, buf, (float)w, 1, 1 << 30);
+  ui_flush(g_font.tex, C_ENEMY, w, h);
+  WUnit* u = (g_w.sel >= 0 ? &g_u[g_w.sel] : (g_cur < g_nu ? &g_u[g_cur] : nullptr));
+  if (u && !u->dead) {
+    snprintf(buf, sizeof buf, "%s HP %d/%d  P%d K%d S%d L%d D%d R%d M%d",
+             u->pid, u->hp, u->mhp, u->pow_, u->skl, u->spd, u->lck, u->def_, u->res, u->mov);
+    float tw = ui_text_w(&g_font, buf, sc);
+    ui_batch_reset(&g_uiB);
+    ui_fill(&g_uiB, w - tw - 16.f, 2.f, (float)w, sc * 1.5f + 4.f);
+    ui_flush(g_texWhite, C_STRIP, w, h);
+    ui_batch_reset(&g_uiB);
+    ui_text(&g_uiB, &g_font, w - tw - 8.f, 4.f, sc, buf, (float)w, 1, 1 << 30);
+    ui_flush(g_font.tex, C_TEXT, w, h);
+  }
+  if (g_w.phase == WP_SELECT || g_w.phase == WP_RANGE) {
+    snprintf(buf, sizeof buf, "A %s  B END PHASE",
+             g_w.phase == WP_RANGE ? "GO" : "SELECT UNIT");
+    ui_batch_reset(&g_uiB);
+    ui_text(&g_uiB, &g_font, 8.f, h - sc * 1.6f, sc, buf, (float)w, 1, 1 << 30);
+    ui_flush(g_font.tex, C_TEXT, w, h);
+  }
+}
 static void build_grid() {
   glGenTextures(1, &g_texWhite);
   glBindTexture(GL_TEXTURE_2D, g_texWhite);
@@ -797,64 +1217,125 @@ static void render(int w, int h) {
   view.m[2] = zx; view.m[6] = zy; view.m[10] = zz; view.m[14] = -(zx * ex + zy * ey + zz * ez);
   view.m[15] = 1;
   g_scrW = (float)w; g_scrH = (float)h;
-  /* unit transform: Ry(unitYaw)*translate. model front assumed +Z (flip 180 if vision says so) */
-  float yc = cosf(g_unitYaw * 0.017453292f), ys = sinf(g_unitYaw * 0.017453292f);
-  mat4 model = {};
-  model.m[0] = yc; model.m[2] = -ys; model.m[5] = 1; model.m[8] = ys; model.m[10] = yc; model.m[15] = 1;
-  model.m[12] = g_ux; model.m[13] = 0; model.m[14] = g_uz;
   mat4 vp = m4mul(proj, view);
-  mat4 mvp = m4mul(vp, model);
+  float dim = (1.f - fmaxf(g_fDim, scr_fade())) * g_sceneDim;
+
+  /* [P4-M1] every pass shares one program setup; per-draw uMVP + team tint.
+   * Unit transform: Ry(u->yaw)*translate; model front +Z (vision-verified M2). */
+  glUseProgram(g_prog);
+  GLint luDim = glGetUniformLocation(g_prog, "uDim"), luMVP = glGetUniformLocation(g_prog, "uMVP");
+  GLint luTint = glGetUniformLocation(g_prog, "uTint"), luAl = glGetUniformLocation(g_prog, "uAlpha");
+  glUniform1f(luDim, dim); glUniform3f(luTint, 1.f, 1.f, 1.f); glUniform1f(luAl, 1.f);
+  glUniform1i(glGetUniformLocation(g_prog, "uTex"), 0);
+  glActiveTexture(GL_TEXTURE0);
 
   /* M2.2 [BRV-MAP-001]: real bmap01 terrain under everything */
   if (g_mapTris && g_mapTex) {
-    glUseProgram(g_prog);
-    glUniform1f(glGetUniformLocation(g_prog, "uDim"), (1.f - fmaxf(g_fDim, scr_fade())) * g_sceneDim); /* brightness: max(scene-fade, script Fade overlay) */
-    glUniformMatrix4fv(glGetUniformLocation(g_prog, "uMVP"), 1, GL_FALSE, vp.m);
-    glUniform1i(glGetUniformLocation(g_prog, "uTex"), 0);
-    glActiveTexture(GL_TEXTURE0);
+    glUniformMatrix4fv(luMVP, 1, GL_FALSE, vp.m);
     glBindTexture(GL_TEXTURE_2D, g_mapTex);
     glBindVertexArray(g_mapVao);
     glDrawArrays(GL_TRIANGLES, 0, g_mapTris * 3);
   }
-  if (g_triCount) {
-    glUseProgram(g_prog);
-    glUniform1f(glGetUniformLocation(g_prog, "uDim"), (1.f - fmaxf(g_fDim, scr_fade())) * g_sceneDim); /* brightness: max(scene-fade, script Fade overlay) */
-    glUniformMatrix4fv(glGetUniformLocation(g_prog, "uMVP"), 1, GL_FALSE, mvp.m);
-    glUniform1i(glGetUniformLocation(g_prog, "uTex"), 0);
-    glActiveTexture(GL_TEXTURE0);
-    if (g_texId) glBindTexture(GL_TEXTURE_2D, g_texId);
+  /* unit pass: whole table (script-walked opening actors ride the same list;
+   * g_nu is engine-thread-only so no lock). dead/hide skipped. */
+  if (g_triCount && g_texId) {
+    glBindTexture(GL_TEXTURE_2D, g_texId);
     glBindVertexArray(g_vao);
-    glDrawArrays(GL_TRIANGLES, 0, g_triCount * 3);
+    for (int i = 0; i < g_nu; i++) {
+      WUnit* u = &g_u[i];
+      if (u->dead || u->hide) continue;
+      float yc = cosf(u->yaw * 0.017453292f), ys = sinf(u->yaw * 0.017453292f);
+      mat4 model = {};
+      model.m[0] = yc; model.m[2] = -ys; model.m[5] = 1; model.m[8] = ys; model.m[10] = yc; model.m[15] = 1;
+      model.m[12] = u->ux_i; model.m[14] = u->uz_i;
+      mat4 mvp = m4mul(vp, model);
+      glUniformMatrix4fv(luMVP, 1, GL_FALSE, mvp.m);
+      float tint[3] = { 1.f, 1.f, 1.f };
+      if (u->team == U_TEAM_ENEMY) { tint[0] = 1.f; tint[1] = .45f; tint[2] = .4f; }
+      if (i == g_w.sel) { tint[0] = 1.f; tint[1] = 1.f; tint[2] = .4f; }
+      else if (u->team == U_TEAM_PLAYER && u->waited) { tint[0] = .6f; tint[1] = .62f; tint[2] = .7f; }
+      glUniform3fv(luTint, 1, tint);
+      glDrawArrays(GL_TRIANGLES, 0, g_triCount * 3);
+    }
+    glUniform3f(luTint, 1.f, 1.f, 1.f);
   }
-  if (g_gridN) { /* grid + cursor ignore unit model matrix */
-    glUniformMatrix4fv(glGetUniformLocation(g_prog, "uMVP"), 1, GL_FALSE, vp.m);
+  if (g_gridN) { /* grid: line VBO, no unit matrix */
+    glUniformMatrix4fv(luMVP, 1, GL_FALSE, vp.m);
     glBindTexture(GL_TEXTURE_2D, g_texWhite);
     glBindVertexArray(g_gridVao);
     glDrawArrays(GL_LINES, 0, g_gridN);
-    /* tile cursor: bright square under unit */
-    static GLuint curVao = 0, curVbo = 0;
-    if (!curVao) {
-      glGenVertexArrays(1, &curVao); glGenBuffers(1, &curVbo);
-      glBindVertexArray(curVao); glBindBuffer(GL_ARRAY_BUFFER, curVbo);
-      glBufferData(GL_ARRAY_BUFFER, 48 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-      glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-      glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
+  }
+  /* [P4-M1] dynamic overlay: movement range + cursor + HP bars, one alpha batch.
+   * Flat ground quads; iso pitch (~24-35 deg) keeps them readable. Own tiny
+   * program: pos3+rgb3 (mesh layout has no color attribute). */
+  if (g_worldReady) {
+    static GLuint ovProg = 0, ovVao = 0, ovVbo = 0; static GLint ovMVP = -1, ovAl = -1;
+    if (!ovProg) {
+      const char* OVS = "#version 300 es\n"
+        "layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol;"
+        "uniform mat4 uMVP; out vec3 vC;"
+        "void main(){ vC=aCol; gl_Position=uMVP*vec4(aPos,1.0); }";
+      const char* OFS = "#version 300 es\n"
+        "precision mediump float; in vec3 vC; uniform float uA; out vec4 o;"
+        "void main(){ o=vec4(vC,uA); }";
+      ovProg = makeProgram(OVS, OFS);
+      ovMVP = glGetUniformLocation(ovProg, "uMVP"); ovAl = glGetUniformLocation(ovProg, "uA");
+      glGenVertexArrays(1, &ovVao); glGenBuffers(1, &ovVbo);
+      glBindVertexArray(ovVao); glBindBuffer(GL_ARRAY_BUFFER, ovVbo);
+      glBufferData(GL_ARRAY_BUFFER, 240 * 36 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+      glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+      glEnableVertexAttribArray(0); glEnableVertexAttribArray(1);
     }
-    float cx = tile_cx(g_gx), cz = tile_cx(g_gy), s = 4.6f, y0 = 0.6f;
-    float c[6][2] = { {cx-s,cz-s}, {cx+s,cz-s}, {cx+s,cz+s}, {cx-s,cz-s}, {cx+s,cz+s}, {cx-s,cz+s} };
-    float cv[48];
-    for (int i = 0; i < 6; i++) {
-      cv[i*8+0] = c[i][0]; cv[i*8+1] = y0; cv[i*8+2] = c[i][1];
-      cv[i*8+3] = 0; cv[i*8+4] = 1; cv[i*8+5] = 0; cv[i*8+6] = 0; cv[i*8+7] = 0;
+    static float ov[240 * 36]; static int nq;
+    nq = 0;
+    auto quad = [&](float x0, float z0, float x1, float z1, float y, float r, float g, float b) {
+      if (nq >= 240) return;
+      float c[6][2] = { {x0,z0}, {x1,z0}, {x1,z1}, {x0,z0}, {x1,z1}, {x0,z1} };
+      for (int i = 0; i < 6; i++) {
+        float* p = ov + nq * 36 + i * 6;
+        p[0] = c[i][0]; p[1] = y; p[2] = c[i][1]; p[3] = r; p[4] = g; p[5] = b;
+      }
+      nq++;
+    };
+    if (g_w.phase == WP_RANGE && g_w.sel >= 0) {
+      WUnit* u = &g_u[g_w.sel];
+      for (int t = 0; t < MAP_TW * MAP_TH; t++) {
+        if (g_dist[t] == 0xFF || g_dist[t] > u->mov) continue;
+        int tx = t % MAP_TW, ty = t / MAP_TW;
+        if (g_cost[t] >= 99 || wu_at(tx, ty, -1) >= 0) continue;
+        quad(tile_cx(tx) - 4.7f, tile_cz(ty) - 4.7f, tile_cx(tx) + 4.7f, tile_cz(ty) + 4.7f, 0.35f, .1f, .8f, .18f);
+      }
     }
-    glBindBuffer(GL_ARRAY_BUFFER, curVbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof cv, cv);
-    glBindVertexArray(curVao);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    if (g_w.phase != WP_WON && g_w.phase != WP_LOSE) {
+      float cx = tile_cx(g_w.cx), cz = tile_cz(g_w.cy);
+      quad(cx - 4.9f, cz - 4.9f, cx + 4.9f, cz + 4.9f, 0.55f, .95f, .9f, .3f); /* cursor */
+    }
+    for (int i = 0; i < g_nu; i++) { /* HP bars over wounded units */
+      WUnit* u = &g_u[i];
+      if (u->dead || u->hide || u->hp >= u->mhp || u->mhp <= 0) continue;
+      float x = u->ux_i, z = u->uz_i + 5.2f;
+      quad(x - 4.4f, z - .8f, x + 4.4f, z + .8f, 2.6f, .12f, .03f, .03f);
+      float r = (float)clampi(u->hp, 0, u->mhp) / (float)u->mhp;
+      quad(x - 4.2f, z - .5f, x - 4.2f + 8.4f * r, z + .5f, 2.7f, u->team == U_TEAM_PLAYER ? .15f : .85f,
+           u->team == U_TEAM_PLAYER ? .8f : .2f, .2f);
+    }
+    if (nq) {
+      glUseProgram(ovProg);
+      glUniformMatrix4fv(ovMVP, 1, GL_FALSE, vp.m);
+      glUniform1f(ovAl, .45f * (1.f - fmaxf(g_fDim, scr_fade())));
+      glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      glDisable(GL_DEPTH_TEST);
+      glBindBuffer(GL_ARRAY_BUFFER, ovVbo);
+      glBufferSubData(GL_ARRAY_BUFFER, 0, nq * 36 * sizeof(float), ov);
+      glBindVertexArray(ovVao);
+      glDrawArrays(GL_TRIANGLES, 0, nq * 6);
+      glDisable(GL_BLEND);
+      glEnable(GL_DEPTH_TEST);
+    }
   }
   if (g_sm.top() == SC_DIALOG && g_font.ok) draw_dialog(w, h); /* [P3-UI-001] */
+  if (g_worldReady) draw_world_hud(w, h); /* [P4-M1] turn / team / phase strip */
   draw_buttons(w, h);
   eglSwapBuffers(dpy, surf);
 }
@@ -1109,21 +1590,30 @@ static void scr_dir_delta(uint32_t d, int& dx, int& dz) {
   dx = ((d & 4) ? 1 : 0) - ((d & 2) ? 1 : 0);
   dz = ((d & 1) ? 1 : 0) - ((d & 8) ? 1 : 0);
 }
+/* [P4-M1] unit natives -> world table: handle = 0x1000|idx; RAM-address args
+ * are pid strings (sarg). All script moves land on the owning unit now. */
+static int scr_unit_h(uint32_t h) { int i = (int)(h & 0xFFFu); return i < g_nu ? i : g_cur; }
 static int scrSetPos(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   (void)c; (void)o;
   char b[256]; int gx = (int)a[1], gy = (int)a[2];
   if (gx < 0) gx = 0; if (gx > MAP_TW - 1) gx = MAP_TW - 1;
   if (gy < 0) gy = 0; if (gy > MAP_TH - 1) gy = MAP_TH - 1;
-  g_pathN = 0; g_gx = gx; g_gy = gy; g_ux = tile_cx(gx); g_uz = tile_cx(gy);
+  char pb[64]; const char* pid = sarg(V, a[0], pb);
+  int i = wu_find_create(pid && *pid ? pid : "PID_UNKNOWN");
+  WUnit* u = &g_u[i];
+  u->pathN = 0; u->gx = gx; u->gy = gy; u->ux_i = tile_cx(gx); u->uz_i = tile_cz(gy);
+  u->hide = 0; u->dead = 0; /* SetPos = (re)appearance [FE9 UnitSetPosDirByPID] */
   int dx, dz; scr_dir_delta(a[3], dx, dz);
-  if (dx || dz) g_unitYawT = atan2f((float)dx, (float)dz) * 57.29578f;
-  LOGI("scr UnitSetPosDir(\"%s\",%d,%d,dir=%x)", sarg(V, a[0], b), gx, gy, a[3]);
+  if (dx || dz) u->yawT = atan2f((float)dx, (float)dz) * 57.29578f;
+  g_cur = i;
+  LOGI("scr UnitSetPosDir(\"%s\",%d,%d,dir=%x) -> unit %d", sarg(V, a[0], b), gx, gy, a[3], i);
   return 0;
 }
 static int scrRotate(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   (void)c; (void)o;
   char b[256]; int dx, dz; scr_dir_delta(a[1], dx, dz);
-  if (dx || dz) g_unitYawT = atan2f((float)dx, (float)dz) * 57.29578f;
+  int i = scr_unit_h(a[0]);
+  if (dx || dz) g_u[i].yawT = atan2f((float)dx, (float)dz) * 57.29578f;
   LOGI("scr UnitRotate(\"%s\",dir=%x,t=%x)", sarg(V, a[0], b), a[1], c > 2 ? a[2] : 0);
   return 0;
 }
@@ -1131,6 +1621,8 @@ static int scrMovePath(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   (void)c; (void)o;
   char b[256]; const char* s = sarg(V, a[1], b);
   char pb[64]; const char* pid = sarg(V, a[0], pb);
+  int i = wu_find_create(pid && *pid ? pid : "PID_UNKNOWN");
+  WUnit* u = &g_u[i];
   int n = 0;
   for (const char* p = s; *p; p++) { /* numpad path digits -> tile steps */
     int dx = 0, dz = 0;
@@ -1141,29 +1633,44 @@ static int scrMovePath(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
       case '1': dx = -1; dz = 1; break; case '3': dx = 1; dz = 1; break;
       default: continue;
     }
-    step_tile(dx, dz); n++;
+    step_tile_u(u, dx, dz); n++;
   }
+  g_cur = i;
   LOGI("scr UnitMovePath(\"%s\",\"%s\") steps=%d slow=%d", pid, s, n, g_scr.walkSlow);
   return 0;
 }
 static int scrWalkDir(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   (void)V; (void)c; (void)o;
   int dx, dz; scr_dir_delta(a[0], dx, dz);
-  if (dx || dz) step_tile(dx, dz);
+  if (dx || dz) step_tile_u(&g_u[g_cur], dx, dz);
   return 0;
 }
 static int scrMoveWait(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   (void)V; (void)a; (void)c; (void)o;
-  return g_pathN > 0;
+  return any_moving();
 }
 static int scrGetPid(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
-  (void)V; (void)a; (void)c; *o = 0x1001u; return 0; /* stable non-zero handle [M0] */
+  (void)c;
+  char b[256]; const char* pid = sarg(V, a[0], b);
+  int i = wu_find_create(pid && *pid ? pid : "PID_UNKNOWN");
+  *o = 0x1000u | (uint32_t)i; /* stable handle [M0] -> table idx [P4-M1] */
+  return 0;
 }
 static int scrGetPos(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
-  (void)V; (void)a; (void)c; *o = (uint32_t)g_gy; return 0; /* X variant handled in table */
+  (void)V; (void)c; *o = (uint32_t)g_u[scr_unit_h(a[0])].gy; return 0;
 }
 static int scrGetPosX(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
-  (void)V; (void)a; (void)c; *o = (uint32_t)g_gx; return 0;
+  (void)V; (void)c; *o = (uint32_t)g_u[scr_unit_h(a[0])].gx; return 0;
+}
+static int scrHide(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)V; (void)c; (void)o;
+  g_u[scr_unit_h(a[0])].hide = 1;
+  return 0;
+}
+static int scrShow(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)V; (void)c; (void)o;
+  g_u[scr_unit_h(a[0])].hide = 0;
+  return 0;
 }
 static int scrSfx(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   (void)c; (void)o;
@@ -1206,7 +1713,7 @@ static const ScrOv SCR_OVS[] = {
   {"UnitGetByPID", scrGetPid}, {"UnitGetXByPID", scrGetPosX}, {"UnitGetYByPID", scrGetPos},
   {"UnitPosXByPID", scrGetPosX}, {"UnitPosYByPID", scrGetPos},
   {"UnitAnimByPID", scrPass}, {"UnitSetAnimByPID", scrPass}, {"UnitFadeIn", scrPass}, {"UnitFadeOff", scrPass},
-  {"UnitSetEquip", scrPass}, {"UnitSetWeaponAway", scrPass}, {"UnitHideByPID", scrPass}, {"UnitShowByPID", scrPass},
+  {"UnitSetEquip", scrPass}, {"UnitSetWeaponAway", scrPass}, {"UnitHideByPID", scrHide}, {"UnitShowByPID", scrShow},
   {"SallySetByGroup", scrPass}, {"InstantDisposFirst", scrPass}, {"InstantDispos", scrPass},
   {"DisposFirst", scrPass}, {"Dispos", scrPass}, {"DisposSetMode", scrPass}, {"InstantSetFirstMode", scrPass},
   {"SetGrid", scrPass}, {"SetCircle", scrPass}, {"SetOutLink", scrPass},
@@ -1250,6 +1757,7 @@ static void script_begin(void) {
   if (!g_scr.loaded) { scene_req(1, SC_WORLD); return; }
   if (g_scr.vt) return; /* resume from dialog child: coroutine still live, do NOT restart [P4-M0] */
   g_scr.fade = 1.f; g_scr.fadeTo = 1.f; g_scr.fadeSpd = 0.f; g_scr.dlgSeq = 0; /* open on black */
+  g_scrDlgN.clear(); g_scrDlgT.clear(); /* replay: fresh page list [P4-M1] */
   g_scr.waitUntil = 0; g_scr.ringDumped = false; /* fresh deadline slot + re-arm wedge probe */
   delete g_scr.vt;
   g_scr.vt = vm::start(g_scr.vm, "Opening0", nullptr, 0);
@@ -1300,8 +1808,13 @@ static void doSave(int slot) {
 static bool doLoad(int slot) {
   SaveV1 s;
   if (!g_saves.load(slot, &s)) { LOGI("save: slot%d absent/corrupt — refused", slot); return false; }
-  g_gx = s.gx; g_gy = s.gy; g_ux = tile_cx(g_gx); g_uz = tile_cx(g_gy);
-  g_pathN = 0; g_camYaw.store(s.camYaw);
+  g_gx = s.gx; g_gy = s.gy; g_ux = tile_cx(g_gx); g_uz = tile_cz(s.gy);
+  g_camYaw.store(s.camYaw);
+  /* [P4-M1] world resumes from saved tile: fresh table, IKE re-placed there */
+  g_nu = 0; g_worldReady = 0; world_init(0);
+  g_u[g_cur].gx = s.gx; g_u[g_cur].gy = s.gy;
+  g_u[g_cur].ux_i = tile_cx(s.gx); g_u[g_cur].uz_i = tile_cz(s.gy);
+  g_w.cx = s.gx; g_w.cy = s.gy;
   g_gaSel = s.gaSel & 3; if (g_gas[g_gaSel].endF > 0) { memcpy(&g_ga, &g_gas[g_gaSel], sizeof(g_ga)); g_frame = g_ga.startF; }
   g_mixB.store(s.mixB ? 1 : 0); g_mixer.bgmMix(g_mixB.load());
   g_playFrames = s.playFrames;
@@ -1311,7 +1824,8 @@ static bool doLoad(int slot) {
 }
 static void doNew(int slot) {
   bool had = g_saves.removeSlot(slot);
-  g_gx = 14; g_gy = 14; g_ux = tile_cx(14); g_uz = tile_cx(14); g_pathN = 0;
+  g_gx = 14; g_gy = 14; g_ux = tile_cx(14); g_uz = tile_cz(14);
+  g_nu = 0; g_worldReady = 0; /* next WORLD entry spins a fresh table [P4-M1] */
   g_camYaw.store(45.f); g_playFrames = 0; g_rng = 0xC0FFEEu;
   LOGI("save: NEW GAME slot%d (%s)", slot, had ? "old save deleted" : "no prior save");
 }
@@ -1337,17 +1851,8 @@ static void on_input(Act action) {
     LOGI("tex pick: src=%d #%d %dx%d ok=%d (pick %d/%d)", siPick, iPick, s->w, s->h, s->ok, g_texPickSel + 1, total);
     return;
   }
-  switch (action) {
-    case ACT_LEFT: case ACT_RIGHT: case ACT_UP: case ACT_DOWN:
-      dpad_step((int)action); break; /* screen-direction -> world axis */
-    case ACT_CONFIRM: g_mixB.store(1.f - g_mixB.load()); g_mixer.bgmMix(g_mixB.load()); break; // A = mix B on/off
-    case ACT_CANCEL: { /* B = cycle anim set */
-      g_gaSel = (g_gaSel + 1) & 3;
-      if (g_gas[g_gaSel].endF > 0) { memcpy(&g_ga, &g_gas[g_gaSel], sizeof(g_ga)); g_frame = g_ga.startF; }
-      LOGI("anim -> %s frames %d..%d", GA_LABEL[g_gaSel], g_ga.startF, g_ga.endF);
-      break;
-    }
-  }
+  (void)action; /* [P4-M1] gameplay keys live in world_input; on_input is the
+                 * not-ready/world debug fallback: only T (tex cycle) above. */
 }
 
 /* ---------- gamepad consumer (runs on engine thread every frame) ----------
@@ -1555,7 +2060,9 @@ static void engine_main(AAssetManager* am) {
         if (a == ACT_LOAD) { doLoad(0); continue; }
         if (a == ACT_DIALOG) scene_req(2, SC_DIALOG);
         else if (a == ACT_BATTLE) scene_req(2, SC_BATTLE);
-        else on_input(a);
+        else if (a == ACT_DEBUG_TEX) on_input(a);   /* T stays live everywhere */
+        else if (g_worldReady) world_input(a); /* [P4-M1] one input path: dpad/A/B all live */
+        else on_input(a);                      /* world not yet spun up: debug fallback */
       } else {                             /* dialog/battle/script overlay layer */
         if (top == SC_DIALOG && a == ACT_CONFIRM) dialog_advance();
         else if (top == SC_SCRIPT) { /* the opening owns the world: input ignored [P4-M0] */ }
@@ -1563,40 +2070,27 @@ static void engine_main(AAssetManager* am) {
       }
     }
     scene_tick();
+    if (g_sm.top() == SC_WORLD && !g_worldReady) world_init(0); /* [P4-M1] spin up on entry */
     g_playFrames++;
     if (g_scr.vt) script_tick();           /* VM pump: coroutine advances one slice/frame [P4-M0] */
     if (g_sm.top() == SC_WORLD && in.touch.tapReq) {
-      int tx = -1, ty = -1;
-      tap_to_tile(in.touch.tapNX, in.touch.tapNY, &tx, &ty);
-      if (tx >= 0 && !g_paused.load()) { LOGI("tap->tile %d,%d (unit %d,%d)", tx, ty, g_gx, g_gy); queue_path(tx, ty); }
+      if (g_worldReady && !g_paused.load()) world_tap(in.touch.tapNX, in.touch.tapNY);
+      else { int tx = -1, ty = -1; tap_to_tile(in.touch.tapNX, in.touch.tapNY, &tx, &ty);
+             LOGI("tap->tile %d,%d (world off)", tx, ty); }
     }
-    /* step along queued path: 1.4 world-units/frame ~ 0.35 s/tile @20fps.
-     * Runs under SCRIPT/DIALOG too: script-driven moves (UnitMovePath) must
-     * drain or UnitMoveWait yields forever; FE9 animates units under dialogs. */
-    if (g_pathN > 0 && !g_paused.load()) {
-      int tgx = g_path[0], tgy = g_path[1];
-      float tx = tile_cx(tgx), tz = tile_cx(tgy);
-      float dx = tx - g_ux, dz = tz - g_uz;
-      float dl = sqrtf(dx * dx + dz * dz);
-      if (dl < 1.45f) {
-        g_ux = tx; g_uz = tz; g_gx = tgx; g_gy = tgy;
-        for (int i = 1; i < g_pathN; i++) { g_path[2*i-2] = g_path[2*i]; g_path[2*i-1] = g_path[2*i+1]; }
-        g_pathN--;
-      } else { g_ux += dx / dl * 0.85f; g_uz += dz / dl * 0.85f; } /* ~0.4s/tile: matches stride cadence */
-    }
+    /* [P4-M1] per-frame stepper for the WHOLE table (script moves included) +
+     * world machine + camera/save mirror. Drains under DIALOG/SCRIPT exactly
+     * like FE9 animating units during talk (UnitMoveWait must not hang). */
+    if (!g_paused.load() || any_moving()) world_step();
+    world_tick();
+    if (g_nu > 0) world_mirror();
     /* follow camera: FE9-style FIXED isometric yaw (no auto-rotate: keeps dpad
        directions world-stable); only focus position trails the unit */
     g_camFx += (g_ux - g_camFx) * 0.06f;
     g_camFz += (g_uz - g_camFz) * 0.06f;
-    { /* FE9-style turn easing */
-      float d = g_unitYawT - g_unitYaw;
-      while (d > 180.f) d -= 360.f;
-      while (d < -180.f) d += 360.f;
-      g_unitYaw += d * 0.25f;
-    }
-    { /* [M2.2] anim state machine: move clip while walking, wait clip when idle
-       * (B remains debug clip cycle; next walk/stop edge re-asserts). */
-      bool moving = g_pathN > 0 && !g_paused.load();
+    { /* [M2.2] anim state machine: move clip while the CAMERA unit walks,
+       * wait clip when idle (yaw easing moved per-unit into world_step). */
+      bool moving = g_cur < g_nu && g_u[g_cur].pathN > 0 && !g_paused.load();
       static int mvPrev = -1;
       int want = moving ? 0 : 2; /* 0 move_n, 2 wait_n in GA_ENTRY order */
       if (mvPrev != (moving ? 1 : 0) && g_gas[want].endF > 0) {
@@ -1635,7 +2129,7 @@ static void engine_main(AAssetManager* am) {
       }
       size_t rused, rhits, rmiss, rfails; g_res.stats(&rused, &rhits, &rmiss, &rfails);
       LOGI("fps=%d taps2s=%d tile=%d,%d path=%d camYaw=%.0f tapLatMax=%lldus tapLatN=%d th=%dC res=%zuK h=%zu m=%zu f=%zu",
-           frames * 500000000LL / (now - fpsT0), tapr, g_gx, g_gy, g_pathN, g_camYaw.load(),
+           frames * 500000000LL / (now - fpsT0), tapr, g_gx, g_gy, (int)any_moving(), g_camYaw.load(),
            g_latMax / 1000, g_latN, millic < 0 ? -1 : millic / 1000,
            rused >> 10, rhits, rmiss, rfails);
       frames = 0; fpsT0 = now; g_latMax = 0; g_latN = 0;
