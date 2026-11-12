@@ -1145,6 +1145,48 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   tanpa device: `VMGOLD=... VMSTR=1 vmtest dir Cxx.cmb`); wave schedule engine
   diberi label data-gap yang sama. [AM-053]
 
+### BRV-SCT-005p — SEMANTIK NATIVE BATCH-9: UNIT-SNAPSHOT-STACK + RANK-SUFFIX DIFFICULTY + RECT-OFFSET — DECODED
+- **UNIT SNAPSHOT-STACK CLOSED**: `UnitsPop()` `FUN_800b7410` = **capture**:
+  flush unit (`FUN_800162b8`) → duplikasi buffer snapshot global
+  **(r13-0x7560) = 0x80367840** → PUSH ke stack-manager `DAT_803206EC`
+  (`FUN_800c2930`) → refresh unit/terrain → free;
+  `UnitsPush_Uninitialize()` `FUN_800b74ac` = **restore**: alloc **0xA000**
+  (40KiB, allocator-tag `DAT_8026F64E`="units") → set 0x80367840 →
+  `FUN_80016a3c(&buf)` = LOAD unit-list dari buffer → `FUN_800c2980` POP-stack
+  → refresh. ⇒ **rollback-state unit** untuk preview/tutorial/percobaan event;
+  40KiB < 160×0x280 ⇒ snapshot = subset field (bukan dump penuh) [INFERENCE].
+  Engine: stack-of-g_u-snapshots (g_u 160×record sudah kompatibel) — TODO kecil.
+- **`InstantDisposRank(name)` `FUN_801a1884`**: intern → **CONCAT suffix
+  difficulty** atas byte `0x803307AE`: v==1→**"_h"**, v==0→**"_n"**, v<4→**"_m"**
+  (string pool 0x8027B35E/61/64 ter-verifikasi-bytes) → spawn
+  `FUN_80105f0c(name',0,0)` ⇒ **variant-pack per difficulty `_n/_h/_m`** —
+  SELARAS dgn pack shop `shopitem_h/m/n` (AM-049!) — engine: dispos pack
+  per-difficulty + suffix lookup.
+- **ENCODING DIFF-BYTE 0x803307AE = PARTIAL** (kontradiksi antar-bukti, DICATAT
+  jujur): suffix ⇒ 0=N,1=H,2/3=M; predikat asm ⇒ Hard()=TRUE hanya v0,
+  Maniac()=TRUE v∈{0,1}, Normal()=TRUE v∈{0,3}; AchieveSet ⇒ v2 ÷2, v3 ×1.5.
+  Salah satu keluarga memakai byte utk peran LAIN (mode E3/demo?) ATAU
+  predikat dipakai ter-inversi script. Engine SUDAH implement literal-asm;
+  resolusi butuh capture menu-difficulty (T-RE-CAP backlog).
+- **`RectMoveOffset(...)` `FUN_800b9c14`** = tail-call `FUN_800b9cd4(f32
+  GOT-0x6e5c)` — geser jendela rect dgn offset-global (UI minor; 5 argc di
+  registrar vs 0 terpakai = dead-args).
+- Registrasi ter-verifikasi ulang via grep registrar (UnitsPop/
+  UnitsPush_Uninitialize/InstantDisposRank/RectMoveOffset + Hard/GCST nama
+  DAT_ pool — pasangan nama↔impl catalog 100% benar).
+- **Sisa misc freq-tinggi CLOSED**: `BMGetPhase()`/`BMGetTurn()` = getter
+  byte BMAP+0x1C/+0x20 (LAB, selaras SCT-005g); `RectSet(win,x,y)`
+  `FUN_800ba38c` = guard ptr-window [0x80000000,0x817fffff] →
+  `FUN_801090c0` lookup → layout rect (UI pass); `BGMQuietOn()`
+  `FUN_800b7c28`→`FUN_80145828` (routine ber-POSIX-eh dgn arg string pool
+  0x80292558/6C = quiet-track fade; family-slot sudah SCT-005f);
+  `NetuzoInit()` `LAB_800b8534` = INIT sound-subsystem: zero global
+  `0x802FFDB8` (+hdr slot-BGM region) + flag +0x60/61 + clear 2 word →0.
+- **GAP-ANALYSIS TUTUP**: seluruh native freq≥8 kini terekstraksi
+  (kecuali keluarga TUTORIAL + GMapPoint = fitur P2 yang memang di-defer;
+  &LAB sisa = freq rendah, recipe dump-asm SCT-005n tersedia).
+  Cakupan semantik corpus (spec+scoreboard+engine) = **127/390 named**.
+
 ### BRV-SCT-005o — SEMANTIK NATIVE BATCH-8: KAMERA-SAVE, BANGUNAN=AKSI-TILE, RECT-UI, DEATH-TALK — DECODED
 - **`CopyMapCamera()` `FUN_8019ff68`**: snapshot kamera aktif
   (`FUN_80018adc`=slot aktif, +4/+8/+0xc = x,y,z f32) → global
