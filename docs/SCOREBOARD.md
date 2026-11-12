@@ -38,3 +38,16 @@
   9.251 fungsi / 17.554 symbols terdeteksi otomatis; CW runtime ternama (`__start` dkk) auto-named.
 - Diagnosis disc: **NKit-relaxed repack** (bukti lengkap di `docs/FE9_DTK_SESSION_NOTES.md`);
   `main.dol` md5 identik lintas toolchain (JS RVZ reader vs NKit 3.2).
+
+## Capture manusia masuk (2026-11-12, `fe9-captures/`)
+- `agent/ch3|ch4|ch5.png` (Nov11 18:28-29): frame SAMA bmap stage-boss (Turn 3, "Clear / Defeat Boss"),
+  panel terrain **Tree: Avo 0 / Def 0 / MDf 0** + move-range oranye + kursor gerak = dukung BRV-BTL-008
+  (terrain default nol utk Tree; UI panel = oracle bonus). T-RE-CAP1 [gebang] → TERIMA parsial.
+- `poc_gm_grid|final.png` (05:06-18): device PoC — archer + bow/quiver, yaw orbit, sword+bow equip view,
+  tile cursor + overlay; fullscreen gesture-bar (immersive OK).
+- `override/base|hit|hit2|hit3|restored.png` (07:46-08:07, uji AM-075 di HP):
+  base=archer normal ✓; hit/hit2=dialog ANR **"Settings isn't responding"** di atas app redup =
+  NOISE SISTEM (app hidup, overlay tampil) — bukan bug app; hit3=override KENA ke unit jenderal
+  (model+sebagian tex terganti, area MAGENTA = slot tekstur tak dicakup file override = limitasi by-design);
+  restored=normal ✓ → **OVR device QA PASS dgn catatan coverage**.
+- `poc_emu13.png`, `agent/` 557 artefak lama tetap arsip.
