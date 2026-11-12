@@ -1039,7 +1039,12 @@ static void draw_world_hud(int w, int h) {
   static const float C_STRIP[4] = { .02f, .02f, .06f, .62f };
   static const float C_TEXT[4] = { .92f, .90f, .80f, 1.f };
   static const float C_ENEMY[4] = { .95f, .45f, .40f, 1.f };
-  float sc = h * 0.024f, strip = sc * 2.9f;
+  /* sc = font-native multiplier (glyphs ~19px); h*0.024 (=26) here rendered
+   * glyphs ~17x too big so TURN/ENEMIES ballooned and overlapped mid-screen.
+   * Dialog uses h/540 (=2.0); HUD uses h/720 (=1.5) for a slightly smaller strip. */
+  float sc = h / 720.f;
+  float lineH = (float)(g_font.lineH ? g_font.lineH : 20) * sc;
+  float strip = 4.f + 2.f * lineH + 6.f; /* two full line boxes + pad */
   const char* ph = g_w.phase == WP_SELECT ? "PLAYER PHASE" : g_w.phase == WP_RANGE ? "SELECT DEST"
                : g_w.phase == WP_ANIM ? "MOVING" : g_w.phase == WP_ENEMY ? "ENEMY PHASE"
                : g_w.phase == WP_WON ? "VICTORY" : "DEFEAT";
@@ -1053,7 +1058,7 @@ static void draw_world_hud(int w, int h) {
   ui_flush(g_font.tex, C_TEXT, w, h);
   snprintf(buf, sizeof buf, "ENEMIES %d", wu_player_alive(U_TEAM_ENEMY));
   ui_batch_reset(&g_uiB);
-  ui_text(&g_uiB, &g_font, 8.f, sc * 1.35f, sc, buf, (float)w, 1, 1 << 30);
+  ui_text(&g_uiB, &g_font, 8.f, 4.f + lineH, sc, buf, (float)w, 1, 1 << 30);
   ui_flush(g_font.tex, C_ENEMY, w, h);
   WUnit* u = (g_w.sel >= 0 ? &g_u[g_w.sel] : (g_cur < g_nu ? &g_u[g_cur] : nullptr));
   if (u && !u->dead) {
@@ -1061,7 +1066,7 @@ static void draw_world_hud(int w, int h) {
              u->pid, u->hp, u->mhp, u->pow_, u->skl, u->spd, u->lck, u->def_, u->res, u->mov);
     float tw = ui_text_w(&g_font, buf, sc);
     ui_batch_reset(&g_uiB);
-    ui_fill(&g_uiB, w - tw - 16.f, 2.f, (float)w, sc * 1.5f + 4.f);
+    ui_fill(&g_uiB, w - tw - 16.f, 2.f, (float)w, lineH + 10.f);
     ui_flush(g_texWhite, C_STRIP, w, h);
     ui_batch_reset(&g_uiB);
     ui_text(&g_uiB, &g_font, w - tw - 8.f, 4.f, sc, buf, (float)w, 1, 1 << 30);
@@ -1071,7 +1076,7 @@ static void draw_world_hud(int w, int h) {
     snprintf(buf, sizeof buf, "A %s  B END PHASE",
              g_w.phase == WP_RANGE ? "GO" : "SELECT UNIT");
     ui_batch_reset(&g_uiB);
-    ui_text(&g_uiB, &g_font, 8.f, h - sc * 1.6f, sc, buf, (float)w, 1, 1 << 30);
+    ui_text(&g_uiB, &g_font, 8.f, h - lineH - 6.f, sc, buf, (float)w, 1, 1 << 30);
     ui_flush(g_font.tex, C_TEXT, w, h);
   }
 }
@@ -1324,7 +1329,7 @@ static void render(int w, int h) {
         if (g_dist[t] == 0xFF || g_dist[t] > u->mov) continue;
         int tx = t % MAP_TW, ty = t / MAP_TW;
         if (g_cost[t] >= 99 || wu_at(tx, ty, -1) >= 0) continue;
-        quad(tile_cx(tx) - 4.7f, tile_cz(ty) - 4.7f, tile_cx(tx) + 4.7f, tile_cz(ty) + 4.7f, 0.35f, .1f, .8f, .18f);
+        quad(tile_cx(tx) - 4.7f, tile_cz(ty) - 4.7f, tile_cx(tx) + 4.7f, tile_cz(ty) + 4.7f, 0.35f, .24f, .36f, .86f);
       }
     }
     if (g_w.phase != WP_WON && g_w.phase != WP_LOSE) {
