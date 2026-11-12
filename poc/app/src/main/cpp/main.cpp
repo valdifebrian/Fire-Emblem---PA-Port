@@ -39,6 +39,7 @@
 #include "gsload.h"
 #include "gaanim.h"
 #include "texfile.h"
+#include "ui.h"
 #include "stmdec.h"
 #include "resmgr.h"
 #include "input.h"
@@ -157,6 +158,14 @@ void main(){ vH=uHeld[int(aIdx)]; gl_Position=vec4(aPos.x/uScr.x*2.0-1.0, 1.0-aP
 static const char* FS2 = R"(#version 300 es
 precision mediump float; in float vH; out vec4 o;
 void main(){ o=mix(vec4(0.45,0.55,0.65,0.30),vec4(0.95,0.75,0.30,0.60),vH); })";
+/* UI quad batch [P3-UI-001]: screen px y-down -> clip; tex.a * uColor */
+static const char* VS3 = R"(#version 300 es
+layout(location=0) in vec2 aPos; layout(location=1) in vec2 aUV;
+uniform vec2 uScr; out vec2 vUV;
+void main(){ vUV=aUV; gl_Position=vec4(aPos.x/uScr.x*2.0-1.0, 1.0-aPos.y/uScr.y*2.0, 0.0, 1.0); })";
+static const char* FS3 = R"(#version 300 es
+precision mediump float; in vec2 vUV; uniform sampler2D uTex; uniform vec4 uColor; out vec4 o;
+void main(){ o=texture(uTex,vUV)*uColor; })";
 
 static GLuint makeProgram(const char* vs, const char* fs) {
   GLuint p = glCreateProgram();
@@ -277,7 +286,15 @@ static ga_anim g_gas[4]; static int g_gaSel = 0;
 static const char* const GA_LABEL[4] = {"move_n", "move_bw", "wait_n", "wait_bw"};
 static tpl_file g_tex; static tpl_file g_texA; static uint32_t g_texId = 0;
 static GLuint g_vao = 0, g_vbo = 0; static int g_triCount = 0;
-static GLuint g_prog = 0, g_prog2 = 0;
+static GLuint g_prog = 0, g_prog2 = 0, g_prog3 = 0;
+/* ---------- UI engine [P3-UI-001] ---------- */
+static UiFont g_font;                       /* talk.gcf atlas: real FE9 dialog font */
+static tpl_file g_fuki, g_arrow;            /* real window chrome: bubble + cursor anim */
+static GLuint g_fukiTex = 0, g_arrowTex = 0, g_whiteTex = 0;
+static GLuint g_uiVao = 0, g_uiVbo = 0;
+static UiBatch g_uiB;
+static int g_dlgPage = 0; static long long g_dlgT0 = 0; static int g_dlgAll = 0;
+static std::vector<uint8_t> g_gcf;
 static std::vector<uint8_t> g_stmA, g_stmB;
 static stm_file g_sA, g_sB;
 static std::atomic<float> g_camYaw{45.f}; /* deg; FIXED isometric default, pad-orbit writable */
@@ -409,6 +426,13 @@ static void load_asset(AAssetManager* am) {
       LOGI("tex[%d] %dx%d fmt=%d ok=%d", i, g_tex.imgs[i].w, g_tex.imgs[i].h, g_tex.imgs[i].fmt, g_tex.imgs[i].ok);
   }
   rd("bgm/boss1.stm", g_stmA); rd("bgm/boss2.stm", g_stmB);
+  /* UI engine assets [P3-UI-001]: real .gcf font + window chrome tpls */
+  rd("ui/talk.gcf", g_gcf);
+  { std::vector<uint8_t> tb;
+    if (rd("ui/fukidasi.tpl", tb) && texfile_decode(tb.data(), (int)tb.size(), &g_fuki) == 0)
+      LOGI("ui: fukidasi.tpl %d imgs (%dx%d)", g_fuki.count, g_fuki.imgs[0].w, g_fuki.imgs[0].h);
+    if (rd("ui/arrow.tpl", tb) && texfile_decode(tb.data(), (int)tb.size(), &g_arrow) == 0)
+      LOGI("ui: arrow.tpl %d imgs (%dx%d)", g_arrow.count, g_arrow.imgs[0].w, g_arrow.imgs[0].h); }
   /* P3-RES-001 prefetch demo: next-scene asset loads on the worker while the
    * engine runs; later g_res.read() must hit cache (miss stays 11). */
   g_res.prefetch("archer/tex_5.tpl");
@@ -429,6 +453,128 @@ static void upload_texture() {
         LOGI("texture uploaded src=%d #%d %dx%d", si, i, srcs[si]->imgs[i].w, srcs[si]->imgs[i].h);
         return;
       }
+}
+
+/* ---------- UI engine impl [P3-UI-001] ---------- */
+static void ui_upload_tpl(tpl_file* t, GLuint* dst, int pick) {
+  for (int i = 0; i < t->count; i++)
+    if (t->imgs[i].ok && t->imgs[i].rgba) {
+      if (pick > 0) { if (i < pick) continue; if (i > pick) break; }
+      glGenTextures(1, dst);
+      glBindTexture(GL_TEXTURE_2D, *dst);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, t->imgs[i].w, t->imgs[i].h, 0,
+                   GL_RGBA, GL_UNSIGNED_BYTE, t->imgs[i].rgba);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      return;
+    }
+}
+static void ui_init(void) {
+  const uint8_t white[4] = {255, 255, 255, 255};
+  glGenTextures(1, &g_whiteTex);
+  glBindTexture(GL_TEXTURE_2D, g_whiteTex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, white);
+  if (!g_gcf.empty() && ui_font_build(&g_font, g_gcf.data(), (int)g_gcf.size())) {
+    int ng = 0;
+    for (int i = 0; i < UI_CPN; i++) ng += g_font.has[i];
+    LOGI("ui: talk.gcf atlas built (glyphs=%d lineH=%d ascent=%d)", ng, g_font.lineH, g_font.ascent);
+  } else {
+    LOGE("ui: FONT BUILD FAILED (gcf=%zu B) — dialog renders chrome only", g_gcf.size());
+  }
+  ui_upload_tpl(&g_fuki, &g_fukiTex, 1);   /* img1 = 160x24 name banner */
+  ui_upload_tpl(&g_arrow, &g_arrowTex, 0); /* img0 = 12-frame cursor strip */
+  glGenVertexArrays(1, &g_uiVao);
+  glGenBuffers(1, &g_uiVbo);
+  glBindVertexArray(g_uiVao);
+  glBindBuffer(GL_ARRAY_BUFFER, g_uiVbo);
+  glBufferData(GL_ARRAY_BUFFER, UI_MAXQ * 24 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+  glEnableVertexAttribArray(0);
+  glEnableVertexAttribArray(1);
+  glBindVertexArray(0);
+}
+static void ui_flush(GLuint tex, const float rgba[4], int w, int h) {
+  if (!g_uiB.n || !tex) { g_uiB.n = 0; return; }
+  glUseProgram(g_prog3);
+  glDisable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glUniform2f(glGetUniformLocation(g_prog3, "uScr"), (float)w, (float)h);
+  glUniform4fv(glGetUniformLocation(g_prog3, "uColor"), 1, rgba);
+  glUniform1i(glGetUniformLocation(g_prog3, "uTex"), 0);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glBindVertexArray(g_uiVao);
+  glBindBuffer(GL_ARRAY_BUFFER, g_uiVbo);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, g_uiB.n * sizeof(float), g_uiB.v);
+  glDrawArrays(GL_TRIANGLES, 0, g_uiB.n / 4);
+  glBindVertexArray(0);
+  glDisable(GL_BLEND);
+  glEnable(GL_DEPTH_TEST);
+  g_uiB.n = 0;
+}
+
+/* dialog sample copy: LATIN placeholder text is acceptable until SJIS talk
+ * tables are wired (M2.3 real strings); FONT + metrics are the real font. */
+static void scene_req(int op, SceneId id);
+static const char* const DLG_NAME[3] = {"ANNA", "IAN", "ANNA"};
+static const char* const DLG_TEXT[3] = {
+  "THE BANDIT PICKET IS CLOSING ON THE VILLAGE, CAPTAIN. SHALL WE FORM A LINE AND HOLD THEM OFF?",
+  "FROM THE WESTERN CAMP I COUNT TWELVE LANCES. THREE OF THEM MAY BE ARCHERS.",
+  "GIVE THE ORDERS WHEN YOU ARE READY. THE DEMON BLOOD WILL NOT WAIT FOR US.",
+};
+static void dialog_advance(void) {
+  int shown = (int)((g_playFrames - g_dlgT0) / 2);
+  int len = (int)strlen(DLG_TEXT[g_dlgPage]);
+  if (!g_dlgAll && shown < len) { g_dlgAll = 1; return; } /* A = reveal all first */
+  if (g_dlgPage < 2) { g_dlgPage++; g_dlgT0 = g_playFrames; g_dlgAll = 0; }
+  else scene_req(3, SC_ATTRACT);                          /* end of page stack: pop */
+}
+static void draw_dialog(int w, int h) {
+  static const float C_FRM[4] = {0.13f, 0.15f, 0.22f, 0.96f};
+  static const float C_PALE[4] = {0.92f, 0.91f, 0.87f, 0.96f};
+  static const float C_BODY[4] = {0.09f, 0.08f, 0.07f, 1.f};
+  static const float C_WHITE[4] = {1.f, 1.f, 1.f, 1.f};
+  float bx = w * 0.055f, by = h * 0.66f, bw = w * 0.89f, bh = h * 0.27f;
+  float pad = bw * 0.012f;
+  float sc = h / 540.f; /* glyph units are GC-native ~19px lines: 2x at 1080p */
+  ui_batch_reset(&g_uiB);
+  /* FE9-style pale plate with dark frame (procedural until rectdesc in M2.3) */
+  ui_fill(&g_uiB, bx, by, bx + bw, by + bh);
+  ui_flush(g_whiteTex, C_FRM, w, h);
+  ui_batch_reset(&g_uiB);
+  ui_fill(&g_uiB, bx + pad, by + pad, bx + bw - pad, by + bh - pad);
+  ui_flush(g_whiteTex, C_PALE, w, h);
+  /* nameplate: real fukidasi banner image above the box, real font name */
+  if (g_fukiTex && g_fuki.count > 1 && g_fuki.imgs[1].ok) {
+    float pw = bw * 0.22f, ph = pw * g_fuki.imgs[1].h / g_fuki.imgs[1].w;
+    float px = bx + bw * 0.015f, py = by - ph * 0.5f;
+    ui_batch_reset(&g_uiB);
+    ui_quad(&g_uiB, px, py, px + pw, py + ph, 0, 0, 1, 1);
+    ui_flush(g_fukiTex, C_WHITE, w, h);
+    float ns = sc * 1.05f;
+    float tw = ui_text_w(&g_font, DLG_NAME[g_dlgPage], ns);
+    ui_batch_reset(&g_uiB);
+    ui_text(&g_uiB, &g_font, px + (pw - tw) * 0.5f, py + ph * 0.22f, ns,
+            DLG_NAME[g_dlgPage], pw, 1, 1 << 30);
+    ui_flush(g_font.tex, C_BODY, w, h);
+  }
+  /* body: word-wrap + typewriter (2 chars/frame, A to reveal) */
+  int visible = g_dlgAll ? (1 << 30) : (int)((g_playFrames - g_dlgT0) / 2);
+  ui_batch_reset(&g_uiB);
+  ui_text(&g_uiB, &g_font, bx + bw * 0.025f, by + bh * 0.14f, sc,
+          DLG_TEXT[g_dlgPage], bw * 0.9f, 4, visible);
+  ui_flush(g_font.tex, C_BODY, w, h);
+  /* next-page cursor: real arrow.tpl 12-frame anim at 8fps */
+  if (g_arrowTex && g_arrow.imgs[0].ok) {
+    int fr = (int)(g_playFrames / 8) % 12;
+    float aw = h * 0.014f, ah = aw * g_arrow.imgs[0].h * 12.f / g_arrow.imgs[0].w;
+    float ax = bx + bw - aw * 2.2f, ay = by + bh - ah * 1.8f;
+    ui_batch_reset(&g_uiB);
+    ui_quad(&g_uiB, ax, ay, ax + aw, ay + ah, fr / 12.f, 0, (fr + 1) / 12.f, 1);
+    ui_flush(g_arrowTex, C_WHITE, w, h);
+  }
 }
 
 /* ground grid: white 2x2 tex + line VBO reusing the mesh attribute layout */
@@ -593,6 +739,7 @@ static void render(int w, int h) {
     glBindVertexArray(curVao);
     glDrawArrays(GL_TRIANGLES, 0, 6);
   }
+  if (g_sm.top() == SC_DIALOG && g_font.ok) draw_dialog(w, h); /* [P3-UI-001] */
   draw_buttons(w, h);
   eglSwapBuffers(dpy, surf);
 }
@@ -683,6 +830,7 @@ static void scene_req(int op, SceneId id) {
   if (g_fd == FD_NONE) { g_fd = FD_OUT; g_fdOp = op; g_fdId = id; }
 }
 static void scene_enter(SceneId s) {
+  if (s == SC_DIALOG) { g_dlgPage = 0; g_dlgT0 = g_playFrames; g_dlgAll = 0; }
   g_sceneDim = (s == SC_ATTRACT || s == SC_WORLD) ? 1.f : 0.5f;
   g_mixer.bgmMix(s == SC_BATTLE ? 1.f : 0.f);          /* battle = boss theme crossfade */
   g_mixer.setDuck(s == SC_DIALOG ? 0.35f : 1.f);       /* dialog ducks BGM for voice clarity [P3-AUD-001] */
@@ -944,8 +1092,9 @@ static void engine_main(AAssetManager* am) {
   }
   int w = 0, h = 0;
   if (!egl_create(win, &w, &h)) { LOGI("FATAL egl"); return; }
-  g_prog = makeProgram(VS, FS); g_prog2 = makeProgram(VS2, FS2);
+  g_prog = makeProgram(VS, FS); g_prog2 = makeProgram(VS2, FS2); g_prog3 = makeProgram(VS3, FS3);
   upload_texture();
+  ui_init();
   upload_mesh();
   build_grid();
   audio_start();
@@ -979,7 +1128,8 @@ static void engine_main(AAssetManager* am) {
         else if (a == ACT_BATTLE) scene_req(2, SC_BATTLE);
         else on_input(a);
       } else {                             /* dialog/battle overlay any scene */
-        if (a == ACT_CONFIRM || a == ACT_CANCEL || a == ACT_BACK) scene_req(3, SC_ATTRACT);
+        if (top == SC_DIALOG && a == ACT_CONFIRM) dialog_advance();
+        else if (a == ACT_CONFIRM || a == ACT_CANCEL || a == ACT_BACK) scene_req(3, SC_ATTRACT);
       }
     }
     scene_tick();

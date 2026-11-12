@@ -66,3 +66,11 @@
   + build **b57** = instrumentasi gate: `tapLatMax/tapLatN` (ACTION_DOWN→render), `th=..C` thermal_zone0,
   tombol overlay **T** = cycle semua gambar tpl+`face/system.cms` ke slot unit (`tex pick:`). BUILD SUCCESSFUL;
   install+capture = aksi human berikutnya; keputusan (i)/(ii) per D-P2-A/B/C mengunci gate.
+
+## P3-M1 progress (2026-11-12 malam)
+- **M1.6 UI Engine CLOSED** — `poc/.../ui.h`: atlas talk.gcf runtime (95 glyph RGBA, atlas 512²), krom TPL asli
+  (fukidasi img1 = name banner, arrow img0 = 12-frame cursor), dialog scene di stack SceneMgr:
+  word-wrap width-aware, typewriter 2 char/frame, A=reveal-all→A=halaman berikutnya→pop otomatis.
+  Device proof: attract→world(ESC)→dialog(T)→3 halaman ANNA/IAN/ANNA (SPACE=CONFIRM)→pop, log
+  `scene: dialog -> world`; capture ui_dlg4..8. Font/metrik 100% dari disc (ascent=22 lineH=19).
+- Papan-1 tak berubah (UI = kerja P3); gate T-RE-CAP1 tetap menunggu laporan human.
