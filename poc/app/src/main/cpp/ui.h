@@ -150,8 +150,10 @@ static int ui_text(UiBatch* B, const UiFont* F, float x, float y, float sc,
       if (c < 0 || c >= UI_CPN) continue;
       if (F->has[c] && F->g[c].w > 0) {
         const UiGlyph* G = &F->g[c];
-        ui_quad(B, px + G->dx * sc, penY + G->dy * sc,
-                px + (G->dx + G->w) * sc, penY + (G->dy + G->h) * sc,
+        /* dy = glyph-top distance ABOVE the baseline (verified against talk.gcf
+         * metrics: A=17/h17 cap sits on baseline, '.'=3/h3, '''=16/h6 high) */
+        ui_quad(B, px + G->dx * sc, penY + (F->ascent - G->dy) * sc,
+                px + (G->dx + G->w) * sc, penY + (F->ascent - G->dy + G->h) * sc,
                 G->u0, G->v0, G->u1, G->v1);
       }
       px += F->g[c].adv * sc;

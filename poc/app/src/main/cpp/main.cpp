@@ -294,7 +294,7 @@ static GLuint g_prog = 0, g_prog2 = 0, g_prog3 = 0;
 /* ---------- UI engine [P3-UI-001] ---------- */
 static UiFont g_font;                       /* talk.gcf atlas: real FE9 dialog font */
 static tpl_file g_fuki, g_arrow;            /* real window chrome: bubble + cursor anim */
-static GLuint g_fukiTex = 0, g_arrowTex = 0, g_whiteTex = 0;
+static GLuint g_fukiTex = 0, g_arrowTex = 0, g_whiteTex = 0, g_annaTex = 0;
 static GLuint g_uiVao = 0, g_uiVbo = 0;
 static UiBatch g_uiB;
 static int g_dlgPage = 0; static long long g_dlgT0 = 0; static int g_dlgAll = 0;
@@ -504,6 +504,7 @@ static void ui_init(void) {
   }
   ui_upload_tpl(&g_fuki, &g_fukiTex, 1);   /* img1 = 160x24 name banner */
   ui_upload_tpl(&g_arrow, &g_arrowTex, 0); /* img0 = 12-frame cursor strip */
+  if (g_tex.count > 0) ui_upload_tpl(&g_tex, &g_annaTex, 0); /* [M2.3] anna.cms portrait */
   glGenVertexArrays(1, &g_uiVao);
   glGenBuffers(1, &g_uiVbo);
   glBindVertexArray(g_uiVao);
@@ -553,40 +554,63 @@ static void dialog_advance(void) {
   else scene_req(3, SC_ATTRACT);                          /* end of page stack: pop */
 }
 static void draw_dialog(int w, int h) {
-  static const float C_FRM[4] = {0.13f, 0.15f, 0.22f, 0.96f};
-  static const float C_PALE[4] = {0.92f, 0.91f, 0.87f, 0.96f};
-  static const float C_BODY[4] = {0.09f, 0.08f, 0.07f, 1.f};
+  /* [M2.3] FE9-accurate layout (GC 480x272 ratios): translucent dark box
+   * y .713.. .96, cream nameplate fukidasi[1] straddling top-left, 192x128
+   * portrait (face/anna.cms img0) anchored on box top edge, white text. */
+  static const float C_BODY[4] = {0.02f, 0.02f, 0.05f, 0.82f};   /* dark glass */
+  static const float C_BORD[4] = {0.55f, 0.55f, 0.62f, 0.95f};   /* grey frame */
+  static const float C_NAME[4] = {0.16f, 0.15f, 0.09f, 1.f};     /* olive on cream */
   static const float C_WHITE[4] = {1.f, 1.f, 1.f, 1.f};
-  float bx = w * 0.055f, by = h * 0.66f, bw = w * 0.89f, bh = h * 0.27f;
-  float pad = bw * 0.012f;
+  float bx = w * 0.033f, by = h * 0.713f, bw = w * 0.934f, bh = h * 0.247f;
   float sc = h / 540.f; /* glyph units are GC-native ~19px lines: 2x at 1080p */
+  /* box: fill then 1.5%-inset double frame (FE9 double-line edge) */
   ui_batch_reset(&g_uiB);
-  /* FE9-style pale plate with dark frame (procedural until rectdesc in M2.3) */
   ui_fill(&g_uiB, bx, by, bx + bw, by + bh);
-  ui_flush(g_whiteTex, C_FRM, w, h);
+  ui_flush(g_whiteTex, C_BODY, w, h);
   ui_batch_reset(&g_uiB);
-  ui_fill(&g_uiB, bx + pad, by + pad, bx + bw - pad, by + bh - pad);
-  ui_flush(g_whiteTex, C_PALE, w, h);
-  /* nameplate: real fukidasi banner image above the box, real font name */
+  float t = h * 0.0035f;
+  ui_fill(&g_uiB, bx, by, bx + bw, by + t); ui_fill(&g_uiB, bx, by + bh - t, bx + bw, by + bh);
+  ui_fill(&g_uiB, bx, by, bx + t, by + bh); ui_fill(&g_uiB, bx + bw - t, by, bx + bw, by + bh);
+  ui_flush(g_whiteTex, C_BORD, w, h);
+  /* portrait FIRST: face/anna.cms img0 (192x128) anchored on box top-left,
+   * half above the window; nameplate (next) then overlaps its top edge = FE9 */
+  float txtx = bx + bw * 0.025f, txtw = bw * 0.93f;
+  float plateX = bx + bw * 0.018f;
+  float plateH = bw * 0.19f * 24.f / 160.f;
+  float plateY = by - plateH * 0.55f;
+  bool anna = g_annaTex != 0 && strstr(DLG_NAME[g_dlgPage], "ANNA") != nullptr;
+  if (anna) {
+    float ph = bh * 0.92f, pw = ph * 192.f / 128.f;
+    float px = bx + bw * 0.012f, py = by - ph * 0.52f;
+    ui_batch_reset(&g_uiB);
+    ui_fill(&g_uiB, px - t, py - t, px + pw + t, py + ph + t);
+    ui_flush(g_whiteTex, C_BORD, w, h);
+    ui_batch_reset(&g_uiB);
+    ui_quad(&g_uiB, px, py, px + pw, py + ph, 0, 0, 1, 1);
+    ui_flush(g_annaTex, C_WHITE, w, h);
+    txtx = px + pw + bw * 0.018f; txtw = bx + bw - bw * 0.02f - txtx;
+    plateX = px; plateY = py + t; /* name sits at portrait's top edge, face clear */
+  }
+  /* nameplate LAST-chrome: REAL fukidasi[1] 160x24 cream banner, centered name */
   if (g_fukiTex && g_fuki.count > 1 && g_fuki.imgs[1].ok) {
-    float pw = bw * 0.22f, ph = pw * g_fuki.imgs[1].h / g_fuki.imgs[1].w;
-    float px = bx + bw * 0.015f, py = by - ph * 0.5f;
+    float pw = bw * 0.19f, ph = plateH;
+    float px = plateX, py = plateY;
     ui_batch_reset(&g_uiB);
     ui_quad(&g_uiB, px, py, px + pw, py + ph, 0, 0, 1, 1);
     ui_flush(g_fukiTex, C_WHITE, w, h);
-    float ns = sc * 1.05f;
+    float ns = sc * 1.1f;
     float tw = ui_text_w(&g_font, DLG_NAME[g_dlgPage], ns);
     ui_batch_reset(&g_uiB);
-    ui_text(&g_uiB, &g_font, px + (pw - tw) * 0.5f, py + ph * 0.22f, ns,
+    ui_text(&g_uiB, &g_font, px + (pw - tw) * 0.5f, py + ph * 0.32f, ns,
             DLG_NAME[g_dlgPage], pw, 1, 1 << 30);
-    ui_flush(g_font.tex, C_BODY, w, h);
+    ui_flush(g_font.tex, C_NAME, w, h);
   }
-  /* body: word-wrap + typewriter (2 chars/frame, A to reveal) */
+  /* body: word-wrap + typewriter (2 chars/frame, A to reveal); FE9 = light text */
   int visible = g_dlgAll ? (1 << 30) : (int)((g_playFrames - g_dlgT0) / 2);
   ui_batch_reset(&g_uiB);
-  ui_text(&g_uiB, &g_font, bx + bw * 0.025f, by + bh * 0.14f, sc,
-          DLG_TEXT[g_dlgPage], bw * 0.9f, 4, visible);
-  ui_flush(g_font.tex, C_BODY, w, h);
+  ui_text(&g_uiB, &g_font, txtx, by + bh * 0.14f, sc,
+          DLG_TEXT[g_dlgPage], txtw, 4, visible);
+  ui_flush(g_font.tex, C_WHITE, w, h);
   /* next-page cursor: real arrow.tpl 12-frame anim at 8fps */
   if (g_arrowTex && g_arrow.imgs[0].ok) {
     int fr = (int)(g_playFrames / 8) % 12;
