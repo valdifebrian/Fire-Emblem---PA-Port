@@ -39,12 +39,24 @@ profiling hook = baris telemetri 2-detik ini (fps/lat/thermal/pose/cam) = hook P
 2. Laporan chat "captured" → isi angka `tapLatMax` rata2/maks ke tabel di bawah → item (1)(5) jadi LULUS.
 3. Keputusan D-P2-A/B/C di bawah.
 
-## Keputusan yang diminta (gerbang)
-- **D-P2-A — item (4) SFX**:
-  - (i) **RECOMMENDED**: terima 2-stream `.stm` mixing sebagai bukti kelas-mixing; gate tidak ditahan; `.samp` = P2-followup ber-tag blocked (hanya RAM trace, kapan pun ada waktu Dolphin).
-  - (ii) tahan gate sampai SFX asli (menahan P3 di blocker yang aksesibilitasnya rendah).
-- **D-P2-B — angka latency**: (i) **RECOMMENDED**: angka `tapLatMax` logcat b57 = bukti resmi (<50 ms diuji vs klaim §8); ATAU (ii) proxy `taps2s` saja (lebih lemah dari teks §8).
-- **D-P2-C — harness keyboard**: (i) **RECOMMENDED**: potong dari P2; keyboard jadi kontrak P3 (T suite §3 menguji action enum dari 3 sumber; device = target resmi produk, sesuai "Android-primary"); ATAU (ii) tetap sesuai teks §8: harness desktop dibangun sebelum gate closed (tambah kerja, nilai bukti kecil karena P3 akan membuatnya ulang sebagai modul resmi).
+## Keputusan yang diminta (gerbang) — **TERISI 2026-11-12, delegasi manusia ("kamu aja cek sendiri")**
+- **D-P2-A — item (4) SFX**: ✅ **(i) Diambil.** 2-stream `.stm` mixing = bukti kelas-mixing diterima;
+  gate TIDAK ditahan. `.samp` payload tetap tercatat blocked (BRV-AUD-003; satu jalur = Dolphin AX-ucode
+  RAM trace) — dieksekusi saat sesi Dolphin berikutnya, TIDAK memblokir jalur lain.
+- **D-P2-B — angka latency**: ✅ **(i) Diambil.** `tapLatMax` logcat (8 jendela, worst 16,5 ms) = bukti
+  resmi REQ-TIME; prosedurnya (logcat + field stabil) direplikasi di T suite P3/P7.
+- **D-P2-C — harness keyboard**: ✅ **(i) Diambil.** Keyboard bukan artefak P2; jadi kontrak P3
+  (action enum 3 sumber: touch/gamepad/keyboard, diuji T suite §3). Device = target resmi produk.
+- **Bar visual (permintaan user 2026-11-12 "jelek banget")**: ✅ **DISETUJUI & ditulis ke master plan**:
+  target = paritas FE9 GC (bukan gaya mobile modern), diuji A/B screenshot vs Dolphin; build
+  internal pertama P3 WAJIB sudah asset asli (map + UI icons + font), placeholder debug DILARANG
+  lewat dari gerbang P4.
+- Sisa tabel: item (4) PARTIAL-by-design (lihat D-P2-A) — BUKAN penahan gate.
+
+## HASIL: **P2 GATE CLOSED** (2026-11-12, keputusan a.i/b.i/c.i + bar visual disepakati)
+Arsitektur D1 (C++20 + Kotlin + GLES3 + Oboe + NativeActivity + FPK/override) TERKUNCI.
+P3 Core Engine Foundation MULAI. Artefak bukti: `fe9-captures/b57_log.txt`, `b58_boot.png`,
+`b58_texpick.png`, log device 11:23 (`tex pick src=1`), build b58 terpasang di 10DD14023D0007T.
 
 ## Rekomendasi satu baris
 Install b57 + 1 logcat + 1 screenshot + 1 video → terima (i)(i)(i) → gate CLOSED; arsitektur D1 terkunci; P3 mulai.

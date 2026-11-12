@@ -273,6 +273,11 @@ event codes ter-baca); (4) 1 BGM `.stm` + 1 SFX dengan mixing; (5) touch overlay
 Plus: fpk loader, profiling hook, meteran fps/thermal — REQ-TIME/PERF sudah aktif di PoC.
 - **Gate:** kelima bukti terekam (screenshot/log/video oleh human + angka latency). **Jika gagal
   → berhenti; arsitektur dievaluasi ulang SEBELUM modul lain ditulis** (D1 bisa dibuka kembali).
+- ✅ **CLOSED 2026-11-12** (bukti + keputusan D-P2-A/B/C di `docs/FE9_P2_GATE.md`; item (4)
+  PARTIAL-by-design — `.samp` followup; keyboard → kontrak P3). D1 TERKUNCI.
+- **Bar visual (user, 2026-11-12):** target = **paritas FE9 GC** (bukan gaya game mobile modern),
+  diukur **A/B screenshot vs Dolphin** (TEST_MATRIX); build internal pertama P3 wajib memakai
+  aset ASLI (map + ikon UI + font); placeholder debug tidak boleh melewati gerbang P4.
 
 ### P3 — Core Engine Foundation
 Modul §3 penuh di atas PoC: GSM, SceneMgr, ResMgr (cache/async/evict), Input (satu action enum
