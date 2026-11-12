@@ -808,13 +808,24 @@ Dari decompil impl (decAll) + katalog:
 - `dispos.cmp` = 4 varian: dispos_c/h/m/n.bin (c = campaign normal s.d. sudah
   didekode SCT-009; h/m/n = sulit/medium/new-comer, FORMAT SAMA).
 - `map.bin` header = keluarga universal [u32 size][u32 tableOff=0x1760][u32
-  cnt=0xAA][u32 sub=12]. Slot table 12 entri u32-pas (dataOff, nameOff pool-rel)
-  tepat berakhir di string pool 0x1a88; nama slot: mapbuilddesc, mapbuildinst,
-  mapcapacity, mapextra, mapfog, mapgrid, maplight, maplinkAt, panelindex,
-  panelindexBase, uniquepanel, uniquepanelBase (arena bf_map = varian akhiran B).
-- Data block kandidat: 0x0b74, 0x0d34, 0x113c, 0x12fc; stream byte-triples
-  `03 0f 04 / 03 0f 0a ...` @~0x16e0 = terrain/grid tiles [GEOMETRI PRESISI
-  = P1-map, perlu Ghidra mapbuild consumer].
+  cnt=0xAA][u32 sub=12]. **Tabel slot 12 pas u32 (dataOff, nameOff) TERKUNCI
+  @0x1a28** = 0x60 byte TEPAT sebelum string pool 0x1a88; nameOff = pool-rel +1
+  (quirk skip-karakter; konvensi FE8Data). Slot + dataOff: mapbuilddesc=0xC,
+  mapbuildinst=0xAC (0xAC8 B), mapcapacity=0, mapextra=0x16C8, mapfog=0x16BC,
+  mapgrid=0x16C4, maplight=0x16B0, maplinkAt=0x16D4, panelindex=0xB74,
+  panelindexBase=0x113C, uniquepanel=0xD34, uniquepanelBase=0x12FC (arena
+  bf_map = varian akhiran B).
+- **`mapbuilddesc` = blok kamera f32** (0xC..0xAC): pola sama dengan kamera
+  arena bf_map (2000.0 orbit dst) — BUKAN definisi terrain.
+- **`panelindex/uniquepanel` = panel visual tileset kamera** (u16 id panel +
+  sentinel 0x1757/0x175C), BUKAN jendela terrain. Nama "panel" menyesatkan.
+- Stream byte-triples `03 0f 04 / 03 0f 0a ...` @~0x16e0 = terrain/grid tiles
+  [GEOMETRI PRESISI = P1-map, perlu Ghidra mapbuild consumer].
+- **Tabel terrain TIDAK ada di map.bin / DOL (dicek 2×)**: string
+  `E_MapWeatherBridge` = KEY CUACA (E_MapWeather*), jebakan — BUKAN terrain.
+  Nilai terrain (Avo/Def/MDf) tervalidasi VIA VIDEO (BRV-BTL-008: "Bridge
+  Avo 0 Def 0 MDf 0"). Sumber struktural terrain masih open (kandidat:
+  konsumer `mapbuildinst` atau blok .data tanpa string).
 - Loader chain: MapLoad native (FUN_801a0400) -> baca cmp + map.bin slot.
 ### BRV-SCT-005e — NATIVE SKENARIO CH1 + FLAG TABLE + COMMAND QUEUE — DECODED
 - **Arg koordinat kamera = INTEGER BIASI (TERBUKTI)**: pseudocode f64-magic
@@ -941,3 +952,49 @@ UI. Handler terikat contoh: FUN_8002e780/8002e648/8002df54/8002df8c/80018af4/801
 801f649c. String "TRK_CMD_*" berdekatan = distractor (opcode TRK byte, bukan u16).
 Bukti: `bin/pxref.mjs 8002e0d0` + dump word region. Prioritas: P1-map (saat event/
 scene runner diimplementasi; parser-nya = target investigasi berikutnya).
+
+### BRV-BTL-008 — TAMBANG VIDEO LONGPLAY (pipeline hdframe) — PARTIAL (berjalan)
+- Pipeline: `bin/hdframe.mjs scan|shot|sheet` — video longplay USA full (21,9 jam,
+  `fe9-captures/playthrough.mp4`) → coarse 1 frame/60s (1315 thumb 320px) → sheet
+  10×9 (concat+tile ffmpeg) → triage visual → `shot` res 1280×720 di timestamp.
+- **JENDELA TERRAIN TERKONFIRMASI DI UI** (1:15:00, peta Ch6): panel judul
+  `Bridge` + kolom **`Avo 0 Def 0 MDf`** = kolom yang dibutuhkan engine (bônus
+  tile). Panel nempel saat cursor di tile dgn menu peta terbuka → harvest per-sheet.
+- **LAYAR PENGALAMAN pascapertempuran** (6:50-6:54): `Bonus Experience 1244P`
+  (kado stage), aturan UI `Add up to 100 experience points at a time` (manual
+  distribusi s.d. 100/aksi), panel unit menampilkan Lv + Exp 0-99/level
+  (Wyvern Rider Lv9 Exp3 → +19 → Exp22) = kurva EXP flat 100/level TERVERIFIKASI UI.
+- **DURABILITAS ground-truth** (inventaris 1:09:00; unit window 6:33): Wind 40/40,
+  Vulnerary 3/3, Steel Lance 33-35/35, Javelin 25/25, Laguz Stone 2/2; ikon badge
+  rank E/S di kiri nama item (konfirmasi BTL-006).
+- **Panel forecast satuan** (Brom Lv9, Javelin): `Atk 17 Hit 82 Avo 20 Crit 4
+  Ddg 4 Rng 1-2` + kolom `Effect` = format baris forecast (konfirmasi BTL-007).
+- Unit abu-abu di layar pilih-unit = tidak tersedia (cedera/penugasan) [inference].
+- Status domain: **Partial** — terrain CSV, AI pola, EXP pertempuran-per-kemenangan
+  masih di-mine (scan 66% saat entri ditulis).
+
+### BRV-SVT-001 — SAVE GC MEMORY-CARD (.gci GFEE01) — PARTIAL
+- `fire-emblem-path-of-radiance.28559.gci` 155712 B = kartu GC: 8 slot save
+  stride 0x4000 mulai 0x2080; tiap slot = header banner (judul + tanggal "%d/%02d/%02d
+  %02d:%02d", satu format ISO eksplisit) lalu blok bertanda ASCII 4CC berurutan:
+  `FE8J` (meta), `SYSF`, `BMST` (state peta; nama peta ASCII @slot+0x240, mis.
+  `bmap18`/`bmap05`/`bmap02`), `MDST`, `UNIP`, `SOKO`, `FWEP` (palette ikon banner
+  `808080ff`). Slot kosong = shell banner saja.
+- `UNIP` = record stride **0x8F** (auto-korelasi 78,5%): byte+0 = kelompok
+  (00/05/07), +2 = id template/slot, +0x09 = **EXP** (delta +0x14 konsisten antar
+  save pasca-pertempuran s.d. byte identik lain), +0x13.. blok stat (3c 5x 0d ...),
+  ekor 3-pas item/ID; record group-01 = musuh. Interpretasi PENUH masih open
+  (statis antar-peta untuk beberapa record → kandidat template vs instance).
+- Save I/O DOL: klaster `FUN_801dfb4c..FUN_801e32c4` (debug `MemoryCard::Open()`
+  string region 0x8025AB00an; tag blob `.BMST.MDST.UNIP.SOKO.FWEP.` di DOL data
+  tanpa xref pointer — dibangun via PC-rel).
+- Guna untuk engine: validator ground-truth stat/EXP/inventori PER SAVE (8 titik
+  waktu bmap02/05/18 tersedia). Status: Partial.
+
+### UNKNOWN-U013 — Record UNIP save: semantik field stat — Unknown
+Record stride 0x8F (SVT-001) punya blok +0x13..0x36 berisi byte kecil (3c 5x 0d
+2x ...) yang IDENTIK antar-savelain-peta padahal byte +0x09 EXP berubah —
+pertanyaan terbuka: blok tsb = base-class (template) atau stat live yang kebetulan
+belum berubah; butuh save dengan unit jelas berbeda level utk memisahkan.
+Payload item (ekor record: 910300008d0200008e020000940500) belum dipetakan ke
+IID_*. Prioritas: P1-map/P2 (validator).
