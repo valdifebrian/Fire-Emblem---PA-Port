@@ -1,5 +1,7 @@
 // assetmatrix.mjs — FE9_ASSET_MATRIX.csv generator (evidence-based).
-// node bin/assetmatrix.mjs [inventory.csv] > docs/FE9_ASSET_MATRIX.csv
+// Jalankan dari root fe9-re (output ditulis ke CWD), lalu cp ke fe9-port/docs/:
+//   cd fe9-re && node bin/assetmatrix.mjs [inventory.csv] && cp FE9_ASSET_MATRIX.csv ../fe9-port/docs/
+// Kolom CSV (12): id,source_scope,ext,count,format,decoder,output,status,verification,dependencies,engine_consumer,notes
 // Status: Discovered < Investigating < Partial < Decoded < Verified ; Deferred terpisah.
 // Verified HANYA bila output dipakai engine & cocok dengan game asli.
 // Format column = hasil probe magic (FE9_MAGIC_PROBE.csv, 2026-11-10) — BUKAN asumsi.
@@ -37,8 +39,8 @@ const MAP = {
   "/Fonts|.cms": S("LZ77 raw stream@4 [probe]", "Decoded", "gcf.mjs+cmp.mjs", ".gcf stream", "system.cms = LZ77(no tag)→.gcf 20sh 3988g", "lz77,gcf", "UI text", "variant system font"),
   "/Fonts|.gcf": S("GCF u32 magic 0x20 [probe]", "Decoded", "gcf.mjs", "PGM atlas+metrics CSV", "BRV-FNT-001: I4 GX sheets, 6/6 fonts render", "gcf,i4,gx", "UI text", "fe/talk/alpha/biggana/system(.gcf+.cms) — AM-024 done"),
   "/Mess|.m": S("M [.len,.tlen,0,.cnt] [probe✓spec]", "Decoded", "bin/m.mjs", "JSON UTF-8 (target)", "c09 dialog + kontrol $.. ; header cocok probe", "cmp,lz77", "Dialogue UI", "konverter SJIS/escape pending"),
-  "/Scripts|.cmb": S("CMB 'cmb\\0'+selfname [probe✓VM]", "Decoded", "bin/cmb.mjs + natcatalog.mjs", "script JSON + listing bytecode + native catalog", "43/43 script: 2075/2075 fns disasm bersih; VM 65 opcode penuh; NATIVE CATALOG 390/390 (name→impl→argc, 312 dipanggil; top WaitM/InstantDispos/MapLoad/UnitGetByPID)", "Ghidra oracle FUN_80013ae8 407-site", "Script VM", "BRV-SCT-004; Verified menunggu engine replay"),
-  "/zdbx.cmp|.dbx": S("TEXT SJIS key-val, rec '¥'", "Decoded", "bin/dbx.mjs", "JSON UTF-8 ✓", "437/437→708 rec: Param209 Model163 Weapon91 GUI(Button43/Combo27…) JobList/SkillList/TerrainList", "cmp", "lookup job→model/kamera", "JobList=JID_*→modeldir+PID; Param scene=roomFlag/footSound"),
+  "/Scripts|.cmb": S("CMB 'cmb\\0'+selfname [probe✓VM]", "Decoded", "bin/cmb.mjs + natcatalog.mjs + cmbflow.mjs", "script JSON + bytecode + native catalog + FLOWS.csv", "43/43 script: 2075/2075 fns disasm bersih; VM 65 opcode; NATIVE CATALOG 406/406 (16 &DAT_ names via DOL strings; 326 dipanggil); +154 script-func bernama (startup=custaka ByPID); FLOWS: 145 skenario MapLoad utuh (CH1 verbatim); semua CALL target resolved", "Ghidra oracle FUN_80013ae8 407-site + DOL", "Script VM", "BRV-SCT-004/005d/005e; Verified menunggu engine replay"),
+  "/zdbx.cmp|.dbx": S("TEXT SJIS key-val, rec '¥'", "Decoded", "bin/dbx.mjs", "JSON UTF-8 ✓", "449/449 (437 loose + 11 inti zdbx/zdbx): battle-param 99key timing/fisika + skill/class/job/weapon/effect nama→ID (BRV-BTL-002)", "cmp", "lookup job→model/kamera", "JobList=JID_*→modeldir+PID; Param scene=roomFlag/footSound; param.dbx=Wait/quake/gauge/proyektil(kapak bumerang)"),
   "/xcam|.dbx": S("TEXT SJIS key-val, rec '¥'", "Decoded", "bin/dbx.mjs", "JSON UTF-8 ✓", "CameraAnime rec: class/name/caption/camera/pos[]/rot[]/dist/time", "cmp", "Battle camera", "satu file per (job,anim,wpn) — BRV-ANM-003 data ready"),
   "/xcam|.cmp": PACK("Battle camera", "cam.cmp per job"),
   "/xwp|.cmp": PACK("Weapon model", "per senjata"),
@@ -47,7 +49,6 @@ const MAP = {
   "/ymu|.ga": S("GA [probe✓spec]", "Decoded", "bin/ga.mjs", "anim bin (target)", "keyframe=[u16 frame][i16 value] FIXED; wait_N 15bone/34curv loop1..60; atk1 events 13=>SE,41=>DAMAGE; posing via meshview verified visually", "spec tellius v2.0.1", "Animation System", ""),
   "/ymu|.gs": S("GS=body [probe pack✓parser]", "Decoded", "bin/gs.mjs", "mesh JSON", "archer 303v/293n/199uv/590tri, 3 submesh palette-skin flags 0x3002/300e/3802; DL entry [skin][pos][nrm][uv] stride7; fb pos10/nrm6/uv14; render proof out/render/archer_*.png", "spec tellius body + empiris", "Model System", "blend-vertex path stub (butuh pack zu); img↔tpl binding lihat note tpl"),
   "/ymu|.tpl": S("TPL FE9 [0x20AF30 entry-tbl]", "Decoded", "bin/tpl2png.mjs", "PNG", "BRV-GFX-001: C4 BE+idx3-opaque TERKUNCI (bug off-by-1 c1 diperbaiki); binding tex_<charIdx> ✓ (archer2/tex_195=LOFA); Lofa atlas terbaca", "BRV-GFX-001", "Model tex", "pack tex_4/5 = slot base (aturan relatif minor open)"),
-  "/ymu|.bin": S("?", "Discovered", "-", "?", "belum di-probe per file", "-", "?", "cek P1"),
   "/ymu|.pak": S("PACK raw [✓same fmt]", "Partial", "bin/cmp.mjs (raw passthrough)", "isi pack", "magic 'pack' ✓; varian raw tanpa LZ77; sama /zu", "cmp", "Model System", ""),
   "/zu|.pak": S("PACK raw [✓same fmt /ymu]", "Partial", "bin/cmp.mjs (raw passthrough)", "isi pack (model+anim battle)", "amr1_ja.pak 9/9 entry: amr1.gs(body 134KB)+amr1.g+6 anim .ga (poi/lda/ldc/dam/ded/dog); entries @0x08 [zero,nameOff,dataOff,len] identik cmp-pack; varian _ja/_no/_sp/_sw", "cmp", "Battle Model", "gs parser jalan; img↔tpl binding ✓ BRV-GFX-001; blend-skinning = gap AM-009 tersisa"),
   "/zu|.ga": S("GA [probe✓spec]", "Decoded", "bin/ga.mjs", "anim bin", "sama /ymu", "spec", "Animation/battle", ""),
@@ -58,7 +59,7 @@ const MAP = {
   "/s|.none": S("TPL FE9 (198/198✓)", "Decoded", "bin/tpl2png.mjs", "PNG (319 img)", "semua magic 0x20AF30; 608x448/296 full-screen sky/scene (0xw cloudscape vision-ok); map scene bg", "BRV-GFX-001", "Map Engine", ""),
   "/s|.bin": S("TBL hdr ✓", "Partial", "-", "rect tables (map)", "rect.bin = dlm system.cmp identik; hdr [28869/20840/827/195] keluarga [size/tableOff/cnt/sub] ✓; +rectdesc (11036/8524/369/51) dlm window/ — parse semantik P4", "-", "Map Engine", ""),
   "/zbg|.cmp": S("LZ77(pack) ✓", "Partial", "bin/cmp.mjs", "map.bin+g+gs+tpl+ga per arena", "bf.cmp: map.bin 253B = [hdr u32×6][f32 kamera/terrain (2000,-49.9..)][nama 'map06_fort'=g/gs][slot str: mapbuilddescB,mapbuildinstB,mapcapacityB,mapextraB,mapfogB,maplightB]+rect; map06_fort.g/gs(7mat)+texpack.tpl(7img) parse ✓", "cmp,lz77,g,gs,tpl,ga", "Battle scene bg", "BRV-BAT arena cfg P4"),
-  "/zmap|.cmp": S("CMP pack ✓", "Partial", "cmp.mjs", "stream scripting", "dispos_c.bin = [hdr u32 size/tableOff][u32 stream][pool 136 str PID_/SEQ_/IID_/MTYPE_ + ts build '2005-05-26'] — record variable-length: PID_<nama> spawn + SEQ_<kondisi AI> (NOMOVE/ATTACK100/BEARHEAL..) + param u32 + pool B event (ID_TEMP_ON_DIE,always_T_*). Grammar penuh = P1-map (Ghidra)", "cmp,lz77", "World map", "BRV-MAP"),
+  "/zmap|.cmp": S("CMP pack ✓", "Partial", "cmp.mjs", "peta 3D + grid + dispos", "dispos_c.bin GRAMMAR CLOSED (BRV-SCT-009): hdrBE[size,rel,R=639,N=36] + offset-table 639 @0x3138 + record var-len (word1=ptr di-absolutkan pass-1) + pool suffix-dedup (PID_/JID_/IID_/SEQ_/EQ_/MTYPE_) + GRUP AI [EQ_,SEQ_,EQ_,MTYPE_+5param] + pass-2 intern 36 event (always_T_*). bmap01 map.cmp=13 entri: bmap01.g/.gs (model) + water/flower/tree props + map.bin + texpack.tpl 865KB. map.bin=HDR universal [size,0x1760,cnt=0xAA,sub=12] + slot table 12 (mapbuilddesc/buildinst/capacity/extra/fog/GRID/light/linkAt/panelindex(+Base)/uniquepanel(+Base)) (u32 dataOff,nameOff pool-rel; grid stream kandidat @0x16e0 byte-triples). dispos.cmp=4 varian h/m/n+c.", "cmp,lz77", "World map", "BRV-MAP-002 slot-geometry presisi = P1-map; BRV-SCT-009"),
   "/gmap|.cms": S("LZ77(TPL) [probe]", "Decoded", "tpl2png", "PNG", "probe ✓ (gmap_zentai)", "lz77,tpl", "World map", ""),
   "/gmap|.tpl": S("TPL FE9 7/7✓", "Decoded", "bin/tpl2png.mjs", "PNG (27 img)", "gmap.tpl atlas render", "BRV-GFX-001", "World map", ""),
   "/gmap|.thp": S("THP?", "Deferred", "-", "-", "cek di P6", "-", "Presentasi", "kemungkinan video gmap"),
@@ -107,11 +108,12 @@ function lookup(top, extD) {
 
 const rows = [...fams.entries()].sort((a, b) => b[1] - a[1]);
 let n = 0;
-const out = ["id,source_scope,format,count,decoder,output,status,verification,dependencies,engine_consumer,notes"];
+const out = ["id,source_scope,ext,count,format,decoder,output,status,verification,dependencies,engine_consumer,notes"];
+const q = (s) => `"${String(s).replaceAll('"', '""')}"`;
 for (const [k, cnt] of rows) {
   const [top, ext] = k.split("|");
   const r = lookup(top, ext);
-  out.push(`AM-${String(++n).padStart(3, "0")},"${top}",${ext},${cnt},${r.fmt},"${r.decoder}","${r.output}",${r.status},"${r.verification}","${r.deps}",${r.consumer},"${r.notes}"`);
+  out.push([`AM-${String(++n).padStart(3, "0")}`, top, ext, cnt, r.fmt, r.decoder, r.output, r.status, r.verification, r.deps, r.consumer, r.notes].map(q).join(","));
 }
 writeFileSync("FE9_ASSET_MATRIX.csv", out.join("\n") + "\n");
 const sc = {};

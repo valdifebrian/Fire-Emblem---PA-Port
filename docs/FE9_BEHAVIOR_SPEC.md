@@ -758,6 +758,21 @@ Dari decompil impl (decAll) + katalog:
   memuat varian n/h/m sesuai flag difficulty (pola sama shopitem_h/m/n).
 - Definisi sukses PoC P2 �8 kini punya skrip referensi nyata per chapter. [AM-063]
 
+### BRV-MAP-002  PETA bmap01 (Ch1): KONTEN + SLOT GEOMETRY  Partial
+- `//zmap/bmap01/map.cmp` unpack = 13 entri: `bmap01.g/.gs` (peta 3D),
+  `bmap01_water0.g/.ga/.gs`, `flower_01.g/.gs`, `tree_01/02.g/.gs` (props),
+  `map.bin` 6927B (config), `texpack.tpl` 865KB (128 image pool).
+- `dispos.cmp` = 4 varian: dispos_c/h/m/n.bin (c = campaign normal s.d. sudah
+  didekode SCT-009; h/m/n = sulit/medium/new-comer, FORMAT SAMA).
+- `map.bin` header = keluarga universal [u32 size][u32 tableOff=0x1760][u32
+  cnt=0xAA][u32 sub=12]. Slot table 12 entri u32-pas (dataOff, nameOff pool-rel)
+  tepat berakhir di string pool 0x1a88; nama slot: mapbuilddesc, mapbuildinst,
+  mapcapacity, mapextra, mapfog, mapgrid, maplight, maplinkAt, panelindex,
+  panelindexBase, uniquepanel, uniquepanelBase (arena bf_map = varian akhiran B).
+- Data block kandidat: 0x0b74, 0x0d34, 0x113c, 0x12fc; stream byte-triples
+  `03 0f 04 / 03 0f 0a ...` @~0x16e0 = terrain/grid tiles [GEOMETRI PRESISI
+  = P1-map, perlu Ghidra mapbuild consumer].
+- Loader chain: MapLoad native (FUN_801a0400) -> baca cmp + map.bin slot.
 ### BRV-SCT-005e — NATIVE SKENARIO CH1 + FLAG TABLE + COMMAND QUEUE — DECODED
 - **Arg koordinat kamera = INTEGER BIASI (TERBUKTI)**: pseudocode f64-magic
   `bits{0x43300000,p^0x80000000} - bias` = identitas (uji numerik: p=4,7,-55,55,18
