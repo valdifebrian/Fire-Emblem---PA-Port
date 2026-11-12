@@ -1,13 +1,18 @@
 // assetmatrix.mjs — FE9_ASSET_MATRIX.csv generator (evidence-based).
-// Jalankan dari root fe9-re (output ditulis ke CWD), lalu cp ke fe9-port/docs/:
-//   cd fe9-re && node bin/assetmatrix.mjs [inventory.csv] && cp FE9_ASSET_MATRIX.csv ../fe9-port/docs/
-// Kolom CSV (12): id,source_scope,ext,count,format,decoder,output,status,verification,dependencies,engine_consumer,notes
+// Output DEFAULT = <dir script>/../docs/FE9_ASSET_MATRIX.csv (bebas CWD).
+// Override: node bin/assetmatrix.mjs [inventory.csv] [--out <path>]
+// Schema 11 kolom (header = sumber tunggal): id,source_scope,format,count,
+//   decoder,output,status,verification,dependencies,engine_consumer,notes
+//   source_scope = family key "dir|.ext". Semua field lolos csvCell (RFC4180).
+// Pasca-generate: validasi parser state-machine + ringkasan status; exit!=0 jika gagal.
 // Status: Discovered < Investigating < Partial < Decoded < Verified ; Deferred terpisah.
 // Verified HANYA bila output dipakai engine & cocok dengan game asli.
 // Format column = hasil probe magic (FE9_MAGIC_PROBE.csv, 2026-11-10) — BUKAN asumsi.
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync } from "fs";
+import { dirname } from "path";
 
-const invPath = process.argv[2] || "inventory/files.csv";
+const invArg = process.argv[2] && process.argv[2] !== "--out" ? process.argv[2] : null;
+const invPath = invArg || new URL("../inventory/files.csv", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const inv = readFileSync(invPath, "utf8").trim().split(/\r?\n/).slice(1);
 const fams = new Map();
 for (const line of inv) {
@@ -57,7 +62,7 @@ const MAP = {
   "/xwp|.ga": S("GA", "Decoded", "bin/ga.mjs", "anim bin", "sampling belum", "spec", "Animation", ""),
   "/xwp|.gs": S("GS ✓", "Decoded", "bin/gs.mjs", "mesh JSON", "alondite.gs parse OK 3 mat (+g 5bone+tpl f14 dalam pack)", "spec body", "Weapon model", ""),
   "/s|.none": S("TPL FE9 (198/198✓)", "Decoded", "bin/tpl2png.mjs", "PNG (319 img)", "semua magic 0x20AF30; 608x448/296 full-screen sky/scene (0xw cloudscape vision-ok); map scene bg", "BRV-GFX-001", "Map Engine", ""),
-  "/s|.bin": S("TBL hdr ✓", "Partial", "-", "rect tables (map)", "rect.bin = dlm system.cmp identik; hdr [28869/20840/827/195] keluarga [size/tableOff/cnt/sub] ✓; +rectdesc (11036/8524/369/51) dlm window/ — parse semantik P4", "-", "Map Engine", ""),
+  "/s|.bin": S("TBL hdr ✓", "Partial", "-", "rect tables (map) + cp_data", "hdr [28869/20840/827/195] keluarga [size/tableOff/cnt/sub] ✓; +rectdesc (11036/8524/369/51); cp_data.bin (26024/0x5124/396/134) = AI campaign DB: pool SEQ_*x150 AI-cond + IID_*x68 + MTYPE_*x65 + PID_*x19 + tag 'ATK'/'CP' + ts 2005-02-23 + tail tabel u32 @~0x514c — semantik record = P1-gameplay", "-", "Map Engine", "BRV-MAP row keluarga; parse semantik P4"),
   "/zbg|.cmp": S("LZ77(pack) ✓", "Partial", "bin/cmp.mjs", "map.bin+g+gs+tpl+ga per arena", "bf.cmp: map.bin 253B = [hdr u32×6][f32 kamera/terrain (2000,-49.9..)][nama 'map06_fort'=g/gs][slot str: mapbuilddescB,mapbuildinstB,mapcapacityB,mapextraB,mapfogB,maplightB]+rect; map06_fort.g/gs(7mat)+texpack.tpl(7img) parse ✓", "cmp,lz77,g,gs,tpl,ga", "Battle scene bg", "BRV-BAT arena cfg P4"),
   "/zmap|.cmp": S("CMP pack ✓", "Partial", "cmp.mjs", "peta 3D + grid + dispos", "dispos_c.bin GRAMMAR CLOSED (BRV-SCT-009): hdrBE[size,rel,R=639,N=36] + offset-table 639 @0x3138 + record var-len (word1=ptr di-absolutkan pass-1) + pool suffix-dedup (PID_/JID_/IID_/SEQ_/EQ_/MTYPE_) + GRUP AI [EQ_,SEQ_,EQ_,MTYPE_+5param] + pass-2 intern 36 event (always_T_*). bmap01 map.cmp=13 entri: bmap01.g/.gs (model) + water/flower/tree props + map.bin + texpack.tpl 865KB. map.bin=HDR universal [size,0x1760,cnt=0xAA,sub=12] + slot table 12 (mapbuilddesc/buildinst/capacity/extra/fog/GRID/light/linkAt/panelindex(+Base)/uniquepanel(+Base)) (u32 dataOff,nameOff pool-rel; grid stream kandidat @0x16e0 byte-triples). dispos.cmp=4 varian h/m/n+c.", "cmp,lz77", "World map", "BRV-MAP-002 slot-geometry presisi = P1-map; BRV-SCT-009"),
   "/gmap|.cms": S("LZ77(TPL) [probe]", "Decoded", "tpl2png", "PNG", "probe ✓ (gmap_zentai)", "lz77,tpl", "World map", ""),
@@ -107,15 +112,58 @@ function lookup(top, extD) {
 }
 
 const rows = [...fams.entries()].sort((a, b) => b[1] - a[1]);
+// 11 kolom kanonik (header = satu-satunya sumber schema): source_scope = family key
+// "dir|.ext" (bentuk kunci MAP; kolom ext terpisah tidak pernah ada di header).
+const HEADER = ["id", "source_scope", "format", "count", "decoder", "output", "status", "verification", "dependencies", "engine_consumer", "notes"];
+const csvCell = (v) => {
+  const s = String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
+};
+// --out <path> opsional; default relatif thd file script: <script>/../docs/FE9_ASSET_MATRIX.csv
+let outPath = new URL("../docs/FE9_ASSET_MATRIX.csv", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+const ai = process.argv.indexOf("--out");
+if (ai > 0 && process.argv[ai + 1]) outPath = process.argv[ai + 1];
+const out = [HEADER.map(csvCell).join(",")];
 let n = 0;
-const out = ["id,source_scope,ext,count,format,decoder,output,status,verification,dependencies,engine_consumer,notes"];
-const q = (s) => `"${String(s).replaceAll('"', '""')}"`;
 for (const [k, cnt] of rows) {
   const [top, ext] = k.split("|");
   const r = lookup(top, ext);
-  out.push([`AM-${String(++n).padStart(3, "0")}`, top, ext, cnt, r.fmt, r.decoder, r.output, r.status, r.verification, r.deps, r.consumer, r.notes].map(q).join(","));
+  out.push([`AM-${String(++n).padStart(3, "0")}`, k, r.fmt, cnt, r.decoder, r.output, r.status, r.verification, r.deps, r.consumer, r.notes].map(csvCell).join(","));
 }
-writeFileSync("FE9_ASSET_MATRIX.csv", out.join("\n") + "\n");
+mkdirSync(dirname(outPath), { recursive: true });
+writeFileSync(outPath, out.join("\n") + "\n");
+
+// --- validasi pasca-generate: parse RFC4180, semua baris = tepat HEADER.length kolom
+function parseCsv(t) {
+  const R = [];
+  let row = [], f = "", q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n") { row.push(f); R.push(row); row = []; f = ""; }
+    else if (c !== "\r") f += c;
+  }
+  if (f !== "" || row.length) { row.push(f); R.push(row); }
+  return R;
+}
+const txt = readFileSync(outPath, "latin1");
+if (!txt.endsWith("\n")) { console.error("FATAL: file tidak diakhiri newline"); process.exit(1); }
+const rec = parseCsv(txt);
+const W = HEADER.length;
+let bad = 0;
+for (let i = 1; i < rec.length; i++) {
+  if (rec[i].length !== W) { bad++; console.error(`FATAL baris ${i} (${rec[i][0]}): ${rec[i].length} kolom != ${W}`); }
+}
+if (rec[0].length !== W) { console.error(`FATAL header: ${rec[0].length} kolom != ${W}`); bad++; }
+if (bad) process.exit(1);
+const si = HEADER.indexOf("status");
 const sc = {};
-for (const [k] of rows) { const [t, e] = k.split("|"); sc[lookup(t, e).status] = (sc[lookup(t, e).status] || 0) + 1; }
-console.log(`families=${n}`, JSON.stringify(sc));
+for (let i = 1; i < rec.length; i++) {
+  const st = rec[i][si];
+  if (!["Verified", "Decoded", "Partial", "Investigating", "Discovered", "Deferred"].includes(st)) { console.error(`FATAL baris ${i}: status tak dikenal "${st}"`); bad++; }
+  sc[st] = (sc[st] || 0) + 1;
+}
+if (bad) process.exit(1);
+console.log(`OK ${outPath}: ${rec.length - 1} baris x ${W} kolom`, JSON.stringify(sc));
