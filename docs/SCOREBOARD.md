@@ -8,8 +8,8 @@
 | Status | Keluarga | Catatan |
 |---|---|---|
 | Verified | **0** | belum ada aset masuk engine |
-| Decoded | **29** | +**/zu pak + /xwp cmp + /xcam cmp ISI CLOSED (probe 374/374 pack: matriks kelas×senjata + kosakata aksi BRV-ANM-005)**; +**staffroll KREDIT TERBACA**; +`Face|.bin`≡facedata CLOSED; **+NATIVE CATALOG 390/390** (BRV-SCT-004); +facedata 358×3-slot; +`/s` 198/198; sweep `.tpl/.cms` 0-fail; C4+binding+potret; `.gcf`, STM, VM, 3D |
-| Partial | 15 | **keluarga tabel rekuren `[size/tableOff/cnt/sub]`** terpetakan di rect×3/RectBases/shopitem×3/staffroll/RectFinale/tut_data/soundroom; +`dispos_c` AI-stream; SE bank; dsb. |
+| Decoded | **31** | +**/zbg cmp + /zmap cmp CLOSED (probe 241/241; bug truncate LZ77 u24-hint bohong DI-FIX cmp.mjs — 21 file peta utk-ekstraksi)**; +**/zu pak + /xwp cmp + /xcam cmp ISI CLOSED (probe 374/374 pack: matriks kelas×senjata + kosakata aksi BRV-ANM-005)**; +**staffroll KREDIT TERBACA**; +`Face|.bin`≡facedata CLOSED; **+NATIVE CATALOG 390/390** (BRV-SCT-004); +facedata 358×3-slot; +`/s` 198/198; sweep `.tpl/.cms` 0-fail; C4+binding+potret; `.gcf`, STM, VM, 3D |
+| Partial | 13 | **keluarga tabel rekuren `[size/tableOff/cnt/sub]`** terpetakan di rect×3/RectBases/shopitem×3/staffroll/RectFinale/tut_data/soundroom; +`dispos_c` AI-stream; SE bank; dsb. |
 | Investigating | **1** | **HANYA `.samp` payload** (≠ DSP standar, bukti LSQ+ZCR — butuh trace ucode AX, P2) |
 | Discovered | 10 | hanya magic/eksistensi |
 | Deferred | 2+ | THP/ending/JP-dup dst., dengan fase penerima |

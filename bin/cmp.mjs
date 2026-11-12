@@ -59,22 +59,25 @@ export function unpackCmp(buf) {
     return parsePack(buf, buf.length);
   }
   if (buf[0] !== 0x10) throw new Error("not a 0x10 container (type=0x" + buf[0].toString(16) + ")");
-  const total = buf.readUInt32BE(0) & 0xffffff;
-  const data = Buffer.alloc(total);
-  let filled = 0, p = 4, streams = 0;
-  while (filled < total && p < buf.length) {
+  // FE9 .cmp = SATU stream LZ77; u24 header = HINT total tapi BOHONG pada sebagian
+  // file (mis. /zbg/map02_royal: hint 48145 vs blob actual 1162242) — decode natural,
+  // kumpulkan output penuh, JANGAN cap pada hint (bug truncate 21/241 file zmap/zbg).
+  const hint = buf.readUInt32BE(0) & 0xffffff;
+  const parts = [];
+  let p = 4, filled = 0, streams = 0;
+  while (p < buf.length) {
     const r = lzStream(buf, p);
     if (r.produced === 0) {
-      if (buf[p] === 0x10 && p + 4 <= buf.length && (buf.readUInt32BE(p) & 0xffffff) <= total) { p += 4; continue; }
+      if (buf[p] === 0x10 && p + 4 <= buf.length) { p += 4; continue; }
       break;
     }
     streams++;
-    const n = Math.min(r.produced, total - filled);
-    r.out.copy(data, filled, 0, n);
-    filled += n;
+    parts.push(r.out);
+    filled += r.produced;
     if (p === r.consumed) break; // no progress guard
     p = r.consumed;
   }
+  const data = Buffer.concat(parts);
   if (data.subarray(0, 4).toString("latin1") !== "pack") throw new Error("blob is not a pack");
   return parsePack(data, filled, streams);
 }
