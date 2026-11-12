@@ -1169,6 +1169,24 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   .cms baris 1 (baris stride 0x20, count di hdr-0) — SATU lagi konfirmasi
   REG-001 utk file keluarga [size/tabOff/cnt/sub].
 
+### BRV-CHR-003 — TABEL SUPPORT/RELIANCE/DIVINE FE8Data — DECODED (struct)
+- **`KiznaData@0x14674` = 36×[PID_A][PID_B][u32-flag] triples (12B)** —
+  **DAFTAR PASANGAN SUPPORT** dari disc (`HIBUCCHI×MAP21_DKN_3`,
+  `LETHE×CEPHERAN_FAKE`, `GASIRAMA×MIST_EV`… flag 0x105xxxx/0x10axxxx =
+  tier/kondisi) ⇒ prasyarat data sistem support engine (P5) TERTUTUP.
+- **`RelianceData@0x12dc4` = [u32 41] + 41 rec (var-stride, region 6192B)**
+  stream `[PID][u32-bonus][PID][u32-bonus]...` = efek support per pasangan
+  (0x8-style bonus codes) — role presisi byte = P4-gameplay.
+- **`DivineData@0xf4ac` = [u32 9] + triples [scene/fx-name][u32]**:
+  `map30_castle02 eqB | sky_01 trialmap_03 | trialmap_02 breath infinity
+  flutter shootonly` = sekuens FX ritual pedang pengikat (bab 30).
+- `GroupData@0x145f4` = 31×[MG_/MCT group id] (grup dialog/menu) — kecil.
+- `GameData@0xf51c` = **28B** blok numerik murni (global balance) — field
+  map = P4; `BattleSkyData@0x12d78` = 76B [name][bmap29 refs] modifier.
+- **SWEEP FE8Data SELESAI: 12/12 chunk named-chunk terkarakterisasi**
+  (PersonData/JobData/ItemData/SkillData/BattleTerr/Terrain/Chapter/Sky/
+  Divine/Game/Group/Kizna/Reliance + 100 SID_*).
+
 ### BRV-BTL-010 — ChapterData = TABEL SCENE TEMPUR PER-PETA CLOSED — DECODED
 - `ChapterData@0x13570` = **[u16 n=44] + 44 rec × 96B** (region 4224B presisi).
 - **kolom +0x04 = nama scene-tempur**: rec6.. = `bmap01 bmap02 bmap03 bmap04
