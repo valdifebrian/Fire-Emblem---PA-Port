@@ -1169,6 +1169,20 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   .cms baris 1 (baris stride 0x20, count di hdr-0) — SATU lagi konfirmasi
   REG-001 utk file keluarga [size/tabOff/cnt/sub].
 
+### BRV-BTL-010 — ChapterData = TABEL SCENE TEMPUR PER-PETA CLOSED — DECODED
+- `ChapterData@0x13570` = **[u16 n=44] + 44 rec × 96B** (region 4224B presisi).
+- **kolom +0x04 = nama scene-tempur**: rec6.. = `bmap01 bmap02 bmap03 bmap04
+  bmap06...bmap26` (+ varian `_2` = chapter replay/part2) ⇒ **lookup
+  battle-background 3D per peta** (bmap01 = Ch1 ✓); rec0-5 scene non-bmap
+  (beastsamul/begnion_room/bird/blackonly = tutorial & special);
+  rec35-43 = ekor region SID_/help (final-only/arena?).
+- **kolom +0x48/+0x4c = modifier langit/cuaca**: `cloudy_01 sandstorm_01
+  fire armor finalonly blackonly beast` + cross-ref `bmap29/bmap30`
+  (link BattleSkyData) ⇒ engine: scene = (background bmapNN, sky-modifier).
+- Satu-satunya tabel bab struktural di FE8Data — JUDUL bab TIDAK ada di sini
+  (tetap via video SYS-003); `bmap05` tak muncul sbg rec (disk punya —
+  dicatat, minor).
+
 ### BRV-REG-002 — FE8DATA SUB-TABEL: SkillData/JobData STRUCT CLOSED — DECODED
 - **`SkillData@0xe374` = [u32 n=98] + 98 rec × 40B**, kolom (u32):
   +0 ptr **SID_*** (nama skill), +4 ptr (alias/MSID pool), +8 ptr
