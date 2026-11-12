@@ -24,14 +24,14 @@ pada baris log 2-detik; (b) `th=..C` (thermal_zone0; -1 = zona tak terbaca); (c)
 
 | # | Kemampuan (§8) | Bukti | Status |
 |---|---|---|---|
-| 1 | Load+render tekstur FE9 (atlas ikon+portrait) | tpl unit `archer/tex_4.tpl` render di device (override AM-075 QA PASS); `face/system.cms` sudah DI-DECODE di device (`tex[i] WxH fmt ok` di log) — upload-nya baru via cycle T (b57, belum di-capture) | **SUBSTANSIAL** — tutup = 1 logcat + screenshot `tex pick src=1` di b57 |
+| 1 | Load+render tekstur FE9 (atlas ikon+portrait) | tpl unit `archer/tex_4.tpl` render di device (override AM-075 QA PASS); **b58: `/Face/ANNA.cms` 14 gambar `tex[0..13] ok=1` ter-upload+render native via cycle T — log `tex pick: src=1 #9 16x16 ok=1 (pick 11/15)` (capture device 2026-11-12 11:23, `fe9-captures/b58_texpick.png`)** | **LULUS** |
 | 2 | 1 model 3D asli + kamera | Archer asli FE9 di device: `poc_gm_grid.png`, `poc_final.png`; orbit yaw + lookAt + pitch clamp 8–75° (bug "quad raksasa" CLOSED); equip view sword+bow | **LULUS** (ganti-Ike = kosmetik, bukan kelas beda) |
 | 3 | 1 `.ga` benar (frame timing + event codes) | `.ga` jalan di device ~12 anim-fps; event slot-0 footer DIPARSE (`gaanim.h`) + di-log saat load (`event f=.. codes=..`) DAN saat loop fire (`evt f=.. c0=..`) — 4 set anim selectable via B | **LULUS** (bukti = baris `evt f=` di logcat capture lama; kelas = baca + timing) |
 | 4 | 1 BGM `.stm` + 1 SFX mixing | `boss1.stm` loop + `boss2.stm` mixed via Oboe, gain toggle live (tombol A); decode sr/frames/loopStart di-log | **PARTIAL oleh blocker eksternal** — SFX asli = payload `.samp` (satu-satunya jalur tersisa = Dolphin AX-ucode RAM trace; semua jalur statis dibuktikan negatif). Lihat D-P2-A |
-| 5 | Touch overlay responsif (<50 ms, rapid, 4-arah) + keyboard di harness desktop | Touch LIVE di device: state-based (bukan event) → rapid-fire capable; `taps2s` counter live; 4-arah ✓ (dpad→sumbu-dunia terbaik di yaw iso-45, regresi CLOSED); gamepad penuh ✓; **b57: `tapLatMax` per-window kini ter-log** — angka belum pernah direkam | **PARTIAL**: butuh 1 logcat b57 dengan tap cepat. Keyboard desktop = lihat D-P2-C |
+| 5 | Touch overlay responsif (<50 ms, rapid, 4-arah) + keyboard di harness desktop | Touch LIVE di device: state-based (bukan event) → rapid-fire capable; 4-arah ✓ (dpad→sumbu-dunia terbaik di yaw iso-45, regresi CLOSED); gamepad penuh ✓; **b57+capture user: 8 jendela `tapLatMax` — terburuk 16,5 ms, tipikal ~11 ms, `taps2s` s/d 6 (rapid) — `fe9-captures/b57_log.txt`**; thermal `th=35-37C` ter-log ✓ | **LULUS** utk device (<50 ms terbukti 3× margin). Keyboard desktop = lihat D-P2-C |
 
-Plus §8: fpk loader ✓; fps meter ✓; **thermal meter: b57 (belum di-capture)**; profiling hook = baris
-telemetri 2-detik ini (fps/lat/thermal/pose/cam) = hook P3 tinggal naik kelas.
+Plus §8: fpk loader ✓; fps meter ✓; thermal meter ✓ (`th=35-37C` ter-capture di log b57/b58);
+profiling hook = baris telemetri 2-detik ini (fps/lat/thermal/pose/cam) = hook P3 tinggal naik kelas.
 
 ## Sisa aksi menuju CLOSED
 1. Human: install b57 (`app/build/outputs/apk/debug/app-debug.apk`) → logcat `fe9poc` 30-60 dtk sambil:
