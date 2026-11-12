@@ -1145,6 +1145,22 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   tanpa device: `VMGOLD=... VMSTR=1 vmtest dir Cxx.cmb`); wave schedule engine
   diberi label data-gap yang sama. [AM-053]
 
+### BRV-GFX-002 — Facedata SLOT-GRID EKSPRESI WAJAH CLOSED — DECODED
+- **Tail facedata.bin (u32 stream @0x572C, 358×3)** = index pool gambar
+  global; terukur 358/358: **slot2 = slot1+4, slot3 = slot1+28** (konstan —
+  koreksi interpretasi "layer idx" awal). Base sequence = **0, 12, 44, 76,
+  108, 140 … 11404** ⇒ alokasi pool: ANNA=12 slot, **32 slot per face**
+  sisanya (urutan roster = urutan FST /Face/*.cms; TPL-count riel 14/img
+  umumnya, maksimum observed 11436).
+- Interpretasi: tiap face punya 3 SET ekspresi = {base+0, +4, +28} — 4-img
+  per set konsisten dgn struktur file (BRV-GFX-001d: img0 base + lapisan
+  16×32); ANNA pakai {0,4,8}. Pemetaan sub-in-file utk set +28 valid saat
+  runtime-load (registry nama global), dikonfirmasi ulang saat capture.
+- **Loader facedata = anggota keluarga pointer-patch**: `FUN_8007c408` =
+  `FUN_8003fccc(s_face_facedata_bin)` + loop `FUN_8000d3ec` intern nama
+  .cms baris 1 (baris stride 0x20, count di hdr-0) — SATU lagi konfirmasi
+  REG-001 utk file keluarga [size/tabOff/cnt/sub].
+
 ### BRV-REG-001 — KELUARGA POINTER-PATCH-REGISTRY CLOSED (FE8Anim/FE8Effect/cp_data) — DECODED
 - **Semantik loader universal DEFINITIF** (`FUN_8003fccc`→`FUN_8003f87c`,
   dibaca penuh 174 baris): payload base = block+**0x20**; **tabel pointer-patch
