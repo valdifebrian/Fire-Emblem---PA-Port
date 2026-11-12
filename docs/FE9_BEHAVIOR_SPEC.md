@@ -901,3 +901,32 @@ KOREKSI kesalahan label di 005c, sisanya konfirmasi + detail layout baru:
   InstantSetMapCamera duplikasi +0x10/+0x14 = replika), FocusHardWait 2-fase +
   wait-table `DAT_8028d19c` + focus global 0x80320060, AllUnitEscape = filter
   kelas (`FUN_80015320(3,buf)` + kelas ptr@+0x190 byte+8) → escape semua lolos. [AM-076]
+
+**Path digit CLOSED** (005c Partial → COMPLETE, impl `FUN_801a1198`):
+`UnitMoveDir(h,"…")` parse char-per-char: `'4'`→X−1 (dir **1**), `'6'`→X+1 (dir **2**),
+`'2'`→Y+1 (dir **4**), `'8'`→Y−1 (dir **8**) — X=unit+0x19E, Y=+0x19F; huruf
+`'D'/'L'/'R'/'U'` = OR bit arah (4/1/2/8) ke flag word TANPA gerak = **ubah facing di
+tempat**; list byte diakhiri **0x10 = END**; flag dasar 0x80/0xc0/0x10/0x20/0x200 dari
+state antrean (byte 0x30/0x31/0x32 pool). Navigasi akhir → `FUN_8003816c(unit,X,Y)`;
+jalur normal = push cmd animasi ke pool `DAT_80296fa8` (`FUN_80184264`), jalur
+skip-flag = TELEPORT instan (`FUN_8004fe98/80184750/80050c90`). Engine: kode arah
+internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
+
+### BRV-SCT-005g — LIST RUNTIME UNIT (LINKED-LIST PIHAK) + LAYAR BUTAI + PHASE 0x1C — DECODED
+- **LINKED-LIST PER-PIHAK (di atas array 160-slot)**: head sekutu =
+  `DAT_802CA264 + factionSlot*0xC` (stride 0x0C = 3 ptr), head musuh = `DAT_802CA2A0`;
+  rantai via **`unit+0x184` = NEXT** (0 = habis). Engine WAJIB mirror dua indeks:
+  array-slot (handle) + rantai list (UI/AI iterasi per-pihak).
+- **Bit state `unit+0x1A0` (presisi baru)**: `0x400000` = afiliasi MUSUH; `&8||&0x10`
+  = tereliminasi (tidak dihitung daftar); `bit1 (0x2)` = hidup (005b); `0x100000` =
+  kebal despawn-phase; `0x4000`+`0x10000` = antrian-fade-out (005b sweep).
+- **LAYAR BUTAI (formasi)** = `FUN_8012dfa8`: UI `butai.en.cmp/.tpl` + template baris
+  `RectUnitList.en.bin` (loader rect universal `FUN_8003fccc`; 39 baris = layout
+  baris daftar, BUKAN data unit) + RID_UNITLIST; mode byte: 0=per-faksi (pakai slot
+  list), 1=semua sekutu, 2=musuh, 3=gabungan, >3=per-faksi global; rekaman daftar
+  0x24B/entri `{unitPtr,...}`; count=0 → tutup jendela.
+- **BMAP PHASE 0x1C** = SWEEP-ELIMINASI: filter kelas (`FUN_80015320(4,buf)` +
+  byte kelas ptr@+0x190 idx+8) ∧ hidup ∧ !0x100000 → `FUN_8003ea24(unit,x,y)` buang
+  dari peta + mask state `&=0xFF88C7FE` + reset substate (+0x1A4 dsb) → lalu
+  `FUN_8014da88(0x80330ACC,1)`, flag 0x8033071A=1, phase++ → 0x1D, 0x8033075C=4.
+  Konfirmasi mesin fase BMAP (MAP-002) dgn handler eksplisit fase 0x1C. [AM-078]
