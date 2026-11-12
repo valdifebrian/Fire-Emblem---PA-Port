@@ -1196,3 +1196,63 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
 - Status: Unknown → **Partial→Decoded-struktur**. Sisa P2: penamaan 7-byte + blok 4/8/16B
   via diff 8 slot save (validator engine saat implementasi). Ground truth:
   `fire-emblem-path-of-radiance.28559.gci` (Downloads; 8 slot; tag UNIP @0x2334+0x4000×n).
+
+
+### BRV-BTL-009 — FORMULA TEMPUR + RNG LFSR DARI KODE (resolver netuzo/animasi) — DECODED (inti numerik terverifikasi; penamaan sebagian bit = Partial)
+- Orak: seluruh 92 call-site API RNG terpetakan per-cluster (sweep byte ELF + grep 8110 pseudocode +
+  dump disassembly Ghidra per-range via `bin/ghidra/DisRange.java`).
+- **RNG (BRV-RNG-010 CLOSED)**: state 3×u16 @ r13−0x7C50/−0x7C4E/−0x7C4C (= 0x8032F3B0):
+  `w2=(w2<<1|(w1>>15))&0xFFFF; u=((w1<<11|(w0>>5))&0xFFFF)^w2; (w2,w1,w0):=(w1,w0,u)` (LFSR Fibonacci).
+  `FUN_8000cee4(n) = (n·u)>>16` ∈ [0,n−1]. `FUN_8000ce68(p)`: satu roll, v=(u·100)>>16, TRUE ⟺ v<p.
+  `FUN_8000cd88(p)`: DUA roll, v = rata-rata dua v — dipakai HIT (anti-untaian ekstrim). Predikat
+  `((p^v)>>1 − (p&(p^v)))>>31` diverifikasi numerik node == (v<p) ∀ p∈0..100,v∈0..99 ✓.
+  Debug: `_DAT_80331B58 & 0x4000` = RNG dimatikan (mode deterministik — cocok utk harness engine).
+- Resolver: native `NetuzoBattle(3)`=FUN_800b841c → rec unit=(pid−1)·0x280+0x802B14E4 →
+  init FUN_801a7794(ctx 0x80330EAC, atk, def) → FUN_801a5268(ctx,0xf) → satu exchange FUN_801a4c8c
+  (serang→counter; cek mati via HP +0x1A8==0). Pertarungan animasi memakai resolver yang SAMA —
+  tampilan membaca log event (FUN_80033E90/80034068 kode 0x55–0x66).
+- **Battle record (ctx; defender = blok ctx+0x2E0)**: +0x296 flag-efektif-dobel · +0x298 ATK ·
+  +0x29A DEF · +0x29C AS · +0x29E HIT · +0x2A0 AVO · **+0x2A2 hit%-final** · +0x2A4 CRT ·
+  +0x2A6 CRT-avo · **+0x2A8 crit%-final** · +0x2AA DMG · +0x2B4/+0x2B5 DEF-base · +0x2BA..0x2C0
+  mirror display · +0x2C2 stat ATK · +0x2C4 stat SKL · +0x2CA forced-crit · +0x2CB/+0x5AB
+  counter-flag · +0x2D6 pernah-membalas · unit: +0x1A8 HP(char), +0x1A5&7=asleep/stone→hit=100,
+  +0x1BC status bitmap (ID: 0x10,0x2b,0x2e,0x30–0x3f,0x41,0x4c,0x51–0x53,0x5a,0x5f,0x60,0x61).
+- **Rantai nilai per-strike (FUN_801a601c per strike →)**:
+  `801a8f80`: ATK = MT senjata (FUN_8001d500&0xFF) + stat(+0x2C2) + bouns terrain/status
+  (FUN_8003b258 / FUN_8003afa0); +0x296≠0 → ATK<<1 (efektif; cocok terrain via FUN_80092dc4(rec+0x2AE)).
+  DEF = (char)(+0x2B4|+0x2B5 efektif) + FUN_8003aa40/8003a778.
+  HIT(+0x29E) = Hit senjata(FUN_8001d47c&0xFF) + 2×status(FUN_8003af28) + SKL(+0x2C4) + luck/2 +
+  luck-byte(FUN_800378cc byte1) + support(FUN_801a80d8) + (status 0x51 → +20); clamp ≥0.
+  AVO(+0x2A0) = 2×(+0x29C: FUN_8003aeb0 − max(0, BV senjata(FUN_8001d37c&0xFF) − status)) + luck/2 +
+  (char)(+0x2B6) + luck-byte + support + (status 0x52 → +20); ≥0; (unit+0x1A4>>7&7)≠0 → 0.
+  CRT(+0x2A4) = Crit senjata(FUN_8001d3fc&0xFF) + luck/2 + luck-byte + class-bonus(FUN_801b8674 pid) +
+  skill61(FUN_801f19a0); flag senjata 0x2000 → 0.  CRTA(+0x2A6) = luck/2.
+  `801a8da4`: support tetangga (faksi sama, jarak<4): keenam field += ringkasan FUN_8003b8d4.
+  `801a8f14`: **hit% = HIT(atk) − AVO(def); crit% = CRT(atk) − CRTA(def)**; kelas anti-crit
+  (FUN_801b8550) → CRT=0.
+  `801a8b48`: status 0x35 → hit%×2; status 0x3f → hit%/2 & crit%×2; def +0x1A5&7 → hit%=100;
+  senjata(def) flag 0x4000 → crit%=0; status 0x5f(def) + flag senjata 0x20 → ATK=0.
+  `801a8af4`: clamp hit%,crit% ke [0,100]. Debug &0x100 → hit=100,crit=0.
+- **Roll hasil (FUN_801a8a28)** per strike: register `(&DAT_802EFDB8)[DAT_802EFE18]` bit0 paksa-normal,
+  bit1 paksa-crit, bit2 paksa-miss; rec+0x2CA → paksa-crit. else: hit = cd88(+0x2A2);
+  miss → kode 0x52 (dmg=0); roll crit = ce68(+0x2A8) → 0x51; normal 0x50.
+  **CRIT = DMG×3** (801a64f8: 0x50<st<0x52 → ×3). Netuzo TIDAK roll hit lain selain ini (path sama animasi).
+- **DMG = max(0, ATK−DEF)** lalu modifier FUN_801a55d4 (terrain u16 @DAT_802EFDD8[tile*2],
+  tile=DAT_802EFE18): bit0 dmg=(dmg+1)/2; bit3 → dmg=127; bit4 → null-efektif (roll ce68 50%:
+  dmg = ATK − DEF·3/2 clamp0 = koreksi efektif); bit5 → +AS/4; bit13(0x2000) → extra-strike
+  `((lvl−1)/5+1)`× FUN_801a8010; bit15(0x8000) → set status 8 (poison-ish) di def+0x1A4;
+  status: 0x2b HP≤½ → crit%+50(cap100); 0x38 → brave-ish +AS>>2 dmg; 0x39 → bisa-racun (roll/2);
+  0x37 → lawan +0x2CC=1; 0x2e → guaranteed-kill dmg=HP/2; 0x53 → dmg=0+state0x50; senjata-armor
+  (ctx+0xCAC&0x100) & flag → dmg/2. HP(def)=max(0,HP−dmg); HEAL-healer: recovery via +0x2CE/2.
+- **Jumlah strike**: base 1; flag senjata 0x20 (brave, FUN_8001cb64+4) → 2; counter: flag +0x2CB/+0x5AB
+  (senjata counter + jarak); **double AS**: `def.AS + 4 ≤ atk.AS` → pertukaran ekstra (801a4c8c:
+  ctx+0x57C+4 ≤ ctx+0x29C) ✓ aturan AS+4 FE9; inisiatif: float AS FUN_8004e670(unit,1) fcmp →
+  ctx+0xCAC bit 0x2000.
+- **EXP (FUN_8003d710)**: rank=clamp(1..20, dari FUN_801661cc+rec+0x19A); 8 slot EXP senjata
+  (rec+0x54..0x5B); per slot: exp += (rank·val)·(90+cee4(20)+10)/10000 → pengali 91..100%.
+- AI: probabilitas menyerang = ce68(FUN_8003cff0(atk,def)%); "weighted selection" keluarga
+  0x800FA0E8 (14× roll100 vs rec+0x4) = pemilih aksi AI (BUKAN damage) — salah tebak awal, dikoreksi.
+- Validasi silang: BRV-BTL-005 Mt=kerusakan final ✓ (dmg=ATK−DEF); sampel Ch1 (Ike Lv3 Mt24 dkk)
+  = seed test harness saat implementasi. Sisa: penamaan definitif tiap bit status 0x10..0x61 &
+  bit terrain = tabel FE8Data/window (P1-fitur, bukan blocker formula); verifikasi device = T-CAP.
+- Status: **DECODED** (formula+RNG numerik; konversi ke engine = C++ mirror, golden test LFSR wajib).
