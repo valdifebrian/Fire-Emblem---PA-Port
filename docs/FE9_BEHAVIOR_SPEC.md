@@ -970,8 +970,37 @@ scene runner diimplementasi; parser-nya = target investigasi berikutnya).
 - **Panel forecast satuan** (Brom Lv9, Javelin): `Atk 17 Hit 82 Avo 20 Crit 4
   Ddg 4 Rng 1-2` + kolom `Effect` = format baris forecast (konfirmasi BTL-007).
 - Unit abu-abu di layar pilih-unit = tidak tersedia (cedera/penugasan) [inference].
-- Status domain: **Partial** — terrain CSV, AI pola, EXP pertempuran-per-kemenangan
-  masih di-mine (scan 66% saat entri ditulis).
+- **HUD Exp di peta** (16:06 video): frame emas `Exp` + bar 0-100 + angka EXP
+  saat itu (16) muncul atas unit setelah dapat EXP = widget level-progress.
+- **Ring faksi terpetakan**: merah = musuh, biru = unit pemain (bisa gerak),
+  ungu = NPC/ally (tidak dikontrol) — re-konfirmasi skema BTL-007.
+- **RANGE STYLE**: move-range = petak SOLID (ungu/biru), attack-range = petak
+  CHECKER oranye, zone gabungan = OUTLINE oranye kontinu (panah merah keluar
+  layar saat zoom); pegasus/flyer = pola diamond besar (ignore地形). Badge
+  ikon-orang kecil di unit = SEDANG MEMBAWA (rescue mount) [frame 68520].
+- **UNIT WINDOW FINAL** (18:05 & 18:45): header nama + kelas + `Lv N EXnn`
+  (EX = total EXP-level counter) + HP hijau cur/max; daftar senjata dengan
+  **rank-badge (E/S) kiri nama** + `dur/now / max` (Brave Bow 25/30; yang
+  dipegang = teks HIJAU); blok stat `Atk Hit Avo Crit Ddg Rng` + baris
+  `Effect` = efek khusus senjata (ikon bulu + "Flying"). **Hit unit-window
+  MENTAH (162/140) > cap-100 forecast tempur** — dua angka beda sistem.
+- Widget terrain HUD SELALU tampil saat memilih unit (kiri-atas): `[Terrain]
+  Avo n Def n MDf n` + objektif `Clear <Seize|Defeat Boss|Escape>` + `Turn n`.
+  Sampel terrain: Bridge(0,0,0), Floor(0,0,0), Snow field(0,0,0), Thicket(Def1).
+- **LAYAR SIMPAN/LOAD**: entri = `Ch.NN: <Judul Bab>` + tag **`Adv` (advance
+  save) vs `Base`** + sticky `PLAY TIME hh:mm:ss`. Judul bab tervalidasi:
+  Ch.4 Roadside Battle, Ch.8 Despair and Hope, Ch.21 Without a King,
+  Ch.25 Strange Lands, Ch.26 Clash! (5 titik; korelasi slot=5 quicksave).
+- Layar SUPPORT (1084-1090 sheet): panel support dua kolom + baris nilai
+  bertingkat per-Lv (`My Lv 21 HP/Mt/Def/Avo/Hit`) — tabel support per-tier.
+- Status domain: **Partial** — terrain CSV masih sampel (4), AI = observasi
+  konvergensi + guard harta (54000-54090), EXP per-kill belum numerik.
+
+### BRV-SYS-003 — JUDUL BAB RESMI (dari layar Save) — PARTIAL (5/30)
+- `Ch.4: Roadside Battle` · `Ch.8: Despair and Hope` · `Ch.21: Without a King`
+  · `Ch.25: Strange Lands` · `Ch.26: Clash!` — teks UI, siap jadi tabel
+  nama-bab engine; sisanya harvest dari layar save/sheet video serupa.
+
 
 ### BRV-SVT-001 — SAVE GC MEMORY-CARD (.gci GFEE01) — PARTIAL
 - `fire-emblem-path-of-radiance.28559.gci` 155712 B = kartu GC: 8 slot save

@@ -19,7 +19,8 @@ if (mode === "scan") {
   fs.mkdirSync(dir, { recursive: true });
   let n = 0;
   for (let t = start; t <= end; t += step) {
-    const outP = path.join(dir, `f${String(n).padStart(4, "0")}.jpg`);
+    const gi = Math.round(t / step);
+    const outP = path.join(dir, `f${String(gi).padStart(4, "0")}.jpg`);
     if (!fs.existsSync(outP)) {
       try {
         execFileSync("ffmpeg", ["-v", "error", "-ss", String(t), "-i", VID, "-frames:v","1", "-q:v", "6", "-vf", `scale=${w}:-1`, "-y", outP], { stdio: ["ignore", "ignore", "pipe"] });
@@ -44,5 +45,23 @@ if (mode === "scan") {
   execFileSync("ffmpeg", ["-v", "error", "-f", "concat", "-safe", "0", "-i", listP, "-vf", `tile=${cols}x${rows}`, "-fps_mode", "passthrough", "-q:v", "5", "-y", path.join(outDir, "s%02d.jpg")], { stdio: ["ignore", "ignore", "pipe"] });
   const sheets = fs.readdirSync(outDir).filter((f) => f.endsWith(".jpg")).length;
   console.log("sheets", sheets, outDir, `per-sheet=${cols * rows}`);
+} else if (mode === "crop") {
+  // crop T1,T2,... OUT.png --rect WxH+X+Y --scale 3 : strip crop HUD tiap ts
+  const tss = argv[1].split(",").map(Number);
+  const outP = argv[2];
+  const r = opt("--rect", "380x110+168+50").match(/(\d+)x(\d+)\+(\d+)\+(\d+)/);
+  const rect = `${r[1]}:${r[2]}:${r[3]}:${r[4]}`, sc = parseInt(opt("--scale", "3"));
+  const tmps = [];
+  for (let i = 0; i < tss.length; i++) {
+    const tp = `out/vid/_crop${i}.png`;
+    execFileSync("ffmpeg", ["-v", "error", "-ss", String(tss[i]), "-i", VID, "-frames:v", "1",
+      "-vf", `crop=${rect},scale=iw*${sc}:ih*${sc}:flags=lanczos`, "-y", tp], { stdio: ["ignore", "ignore", "pipe"] });
+    tmps.push(tp);
+  }
+  const inputs = tmps.map(t => ["-i", t]).flat();
+  execFileSync("ffmpeg", ["-v", "error", ...inputs, "-filter_complex",
+    tmps.map((_, i) => `[${i}:v]`).join("") + `vstack=inputs=${tmps.length}`, "-y", outP], { stdio: "inherit" });
+  for (const t of tmps) fs.unlinkSync(t);
+  console.log("crop strip", tss.length, outP);
 } else console.log("mode? scan|shot|sheet");
 process.exit(0);
