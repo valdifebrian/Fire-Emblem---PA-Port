@@ -1065,10 +1065,32 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
 - Guna untuk engine: validator ground-truth stat/EXP/inventori PER SAVE (8 titik
   waktu bmap02/05/18 tersedia). Status: Partial.
 
-### UNKNOWN-U013 — Record UNIP save: semantik field stat — Unknown
-Record stride 0x8F (SVT-001) punya blok +0x13..0x36 berisi byte kecil (3c 5x 0d
-2x ...) yang IDENTIK antar-savelain-peta padahal byte +0x09 EXP berubah —
-pertanyaan terbuka: blok tsb = base-class (template) atau stat live yang kebetulan
-belum berubah; butuh save dengan unit jelas berbeda level utk memisahkan.
-Payload item (ekor record: 910300008d0200008e020000940500) belum dipetakan ke
-IID_*. Prioritas: P1-map/P2 (validator).
+### BRV-SVT-002 — UNIP GRAMMAR DARI KODE (loader unit) — DECODED (struktur stream CLOSED; penamaan byte-per-byte = P2-validator)  [menutup UNKNOWN-U013]
+- Rantai save-game DOL (semua bukti pseudocode decAll):
+  `FUN_801e3654` = **urutan blok save**: set-nama `FUN_8017a6c4(obj,"BMST")→FUN_8014c1b8(0x80330708=BMAP global)`,
+  `MDST→FUN_80048a90`, **`UNIP→FUN_80016628`**, `SOKO→FUN_800c3364(&803200AC)`,
+  `FWEP→FUN_800c2930(&803206EC)`, +2 blok lagi (`&8032BB58`, `&802EF4C8`).
+  Validasi kartu `FUN_801e047c`: header `FE8J`@slot+0x40 + **versi `0x20050201`** +
+  magic `0x12345678` + checksum (loop baca FUN_800ec0a4); **2 slot cadangan @+0x1A000/+0x20000**
+  (stride cluster 0x6000) — auto-pick slot checksum-valid terbaru.
+- `FUN_80016628` (UNIP): 8 list grup `0x802CA264+8*c`; pass1 push semua 0x9F unit;
+  pass2 per-unit `FUN_8003c830(unit,obj)`; grup dari byte `[unit+0x190→+8]`; unit mati
+  (+0x180/0x184==0) masuk list grupnya; tulis semua grup (skip 4 saat pass1).
+- **API stream**: u8 `FUN_8017a9dc`, u16-BE `FUN_8017a9b0`, blok-n `FUN_8017a810`
+  (memcpy cursor→dst, cursor+=n); lookup template: item `base+(id−1)*0x48`
+  (r13−0x7BBC), dua tabel stride-100 (karakter/class) via r13−0x7BC4/−0x7BCC.
+- **GRAMMAR record UNIP (urutan stream loader — = layout kartu), runtime target**:
+  `[u16 tmplID→ptr unit+0x18C]` (tabel 100B; tmplID 0x141=321 contoh ≤340 roster ✓) →
+  `[u8 h+u8 h+u8 h → unit+0x180/0x184/0x194 pointer-unit ((h−1)*0x280+0x802B14E4 ✓ SCT-005c)]` →
+  **`[u8×7 → unit+0x199..0x19F]`** (b9 record = EXP ✓ delta SVT-001 = offset ke-4 blok ini =
+  runtime +0x19D) → `[4B→+0x1A0][4B→+0x1A4][u8×3→+0x1A8][8B→+0x1AB][8B→+0x1B4][16B→+0x1BC]` →
+  **8 slot item** (`FUN_8001c15c`: u16 flag=0 ⇒ kosong; else ptr item-template + u16) →
+  `[8B→+0x20C][6×u16+u8×n→+0x228][10B→+0x214]` + ekor `FUN_8003c21c`(+0x238..) `FUN_8004bc48`.
+- **JAWAB U013**: blok +0x13..0x36 = **LIVE mirror** (bukan template) — writer nyalin field
+  runtime apa adanya; identik antar-save karena field BELUM dipakai (rank senjata/akumulasi),
+  EXP bergerak ✓ bukti. Ekor item TERPETAKAN (`.gci` ground-truth slot0): 8×`[id u8][dur u8]`,
+  sentinel `0xFB`=empty: contoh unit = id 7/d15, 5/d25, **0x91=145/d3, 0x8D=141/d2, 0x8E=142(KNIGHTKILLER)/d2, 0x94=148/d5** — id = indeks persis `items.csv`
+  (byte self-ID `01 01 <id>` dlm raw template mengunci pemetaan ✓).
+- Status: Unknown → **Partial→Decoded-struktur**. Sisa P2: penamaan 7-byte + blok 4/8/16B
+  via diff 8 slot save (validator engine saat implementasi). Ground truth:
+  `fire-emblem-path-of-radiance.28559.gci` (Downloads; 8 slot; tag UNIP @0x2334+0x4000×n).
