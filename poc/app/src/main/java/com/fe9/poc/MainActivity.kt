@@ -2,6 +2,8 @@ package com.fe9.poc
 
 import android.app.Activity
 import android.os.Bundle
+import android.view.InputDevice
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.Surface
 import android.view.SurfaceHolder
@@ -20,9 +22,19 @@ class MainActivity : Activity(), SurfaceHolder.Callback {
       try { System.loadLibrary("fe9poc") }
       catch (e: Throwable) { android.util.Log.e("fe9poc", "loadLibrary failed", e) }
     }
+    /* Mirror of PadButton/PadAxis in app/src/main/cpp/main.cpp — ABI order, NEVER reorder. */
+    const val PADB_A = 0; const val PADB_B = 1; const val PADB_X = 2; const val PADB_Y = 3
+    const val PADB_L1 = 4; const val PADB_R1 = 5; const val PADB_L2 = 6; const val PADB_R2 = 7
+    const val PADB_SELECT = 8; const val PADB_START = 9; const val PADB_L3 = 10; const val PADB_R3 = 11
+    const val PADB_GUIDE = 12; const val PADB_DPUP = 13; const val PADB_DPDOWN = 14
+    const val PADB_DPLEFT = 15; const val PADB_DPRIGHT = 16
+    const val PADAX_LX = 0; const val PADAX_LY = 1; const val PADAX_RX = 2; const val PADAX_RY = 3
+    const val PADAX_LT = 4; const val PADAX_RT = 5; const val PADAX_HATX = 6; const val PADAX_HATY = 7
   }
   external fun nativeStart(assetManager: android.content.res.AssetManager)
   external fun nativeTouch(nx: Float, ny: Float, action: Int, pointerId: Int)
+  external fun nativePadButton(button: Int, pressed: Boolean)
+  external fun nativePadAxis(axis: Int, value: Float)
   external fun nativeSetSurface(surface: Surface?)
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,4 +78,97 @@ class MainActivity : Activity(), SurfaceHolder.Callback {
   override fun surfaceCreated(h: SurfaceHolder) { nativeSetSurface(h.surface) }
   override fun surfaceChanged(h: SurfaceHolder, f: Int, w: Int, ht: Int) {}
   override fun surfaceDestroyed(h: SurfaceHolder) { nativeSetSurface(null) }
+
+  /* ---------- physical gamepad (gamepad-only builds fall back to touch 100%:
+   * none of these fire when no pad sends events; SurfaceView consumes nothing
+   * so dispatchGenericMotionEvent on the Activity sees the pad first). ---- */
+
+  /* actionButton int -> our PADB_* index; -1 = unmapped */
+  private fun buttonToPad(btn: Int): Int = when (btn) {
+    KeyEvent.KEYCODE_BUTTON_A -> PADB_A
+    KeyEvent.KEYCODE_BUTTON_B -> PADB_B
+    KeyEvent.KEYCODE_BUTTON_X -> PADB_X
+    KeyEvent.KEYCODE_BUTTON_Y -> PADB_Y
+    KeyEvent.KEYCODE_BUTTON_L1 -> PADB_L1
+    KeyEvent.KEYCODE_BUTTON_R1 -> PADB_R1
+    KeyEvent.KEYCODE_BUTTON_L2 -> PADB_L2
+    KeyEvent.KEYCODE_BUTTON_R2 -> PADB_R2
+    KeyEvent.KEYCODE_BUTTON_SELECT -> PADB_SELECT
+    KeyEvent.KEYCODE_BUTTON_START -> PADB_START
+    KeyEvent.KEYCODE_BUTTON_THUMBL -> PADB_L3
+    KeyEvent.KEYCODE_BUTTON_THUMBR -> PADB_R3
+    KeyEvent.KEYCODE_BUTTON_MODE -> PADB_GUIDE
+    else -> -1
+  }
+
+  private fun sendPadAxes(ev: MotionEvent) {
+    nativePadAxis(PADAX_LX, ev.getAxisValue(MotionEvent.AXIS_X))
+    nativePadAxis(PADAX_LY, ev.getAxisValue(MotionEvent.AXIS_Y))
+    nativePadAxis(PADAX_RX, ev.getAxisValue(MotionEvent.AXIS_Z))
+    nativePadAxis(PADAX_RY, ev.getAxisValue(MotionEvent.AXIS_RZ))
+    /* triggers: devices report rest at -1 (Xbox-style) or 0; map raw -1..1 -> 0..1 */
+    nativePadAxis(PADAX_LT, ((ev.getAxisValue(MotionEvent.AXIS_LTRIGGER) + 1f) * 0.5f).coerceIn(0f, 1f))
+    nativePadAxis(PADAX_RT, ((ev.getAxisValue(MotionEvent.AXIS_RTRIGGER) + 1f) * 0.5f).coerceIn(0f, 1f))
+    nativePadAxis(PADAX_HATX, ev.getAxisValue(MotionEvent.AXIS_HAT_X))
+    nativePadAxis(PADAX_HATY, ev.getAxisValue(MotionEvent.AXIS_HAT_Y))
+  }
+
+  override fun dispatchGenericMotionEvent(ev: MotionEvent): Boolean {
+    val src = ev.source
+    if (src and (InputDevice.SOURCE_GAMEPAD or InputDevice.SOURCE_JOYSTICK) == 0)
+      return super.dispatchGenericMotionEvent(ev)
+    when (ev.actionMasked) {
+      MotionEvent.ACTION_BUTTON_PRESS, MotionEvent.ACTION_BUTTON_RELEASE -> {
+        val b = buttonToPad(ev.actionButton)
+        if (b >= 0) {
+          nativePadButton(b, ev.actionMasked == MotionEvent.ACTION_BUTTON_PRESS)
+          return true
+        }
+      }
+      MotionEvent.ACTION_MOVE -> { sendPadAxes(ev); return true }
+    }
+    return super.dispatchGenericMotionEvent(ev)
+  }
+
+  /* safety net: also handle generic motion if it arrives via the focused-view
+   * chain instead of the dispatch intercept */
+  override fun onGenericMotionEvent(ev: MotionEvent): Boolean = dispatchGenericMotionEvent(ev)
+
+  /* legacy path: dpad + old-style gamepad keys surface as key events
+   * (also covers the only keyboard-adjacent route; KEY repeat spam is safe —
+   * C++ ignores press-while-held for edges and repeats dpad on its own timer) */
+  private fun keyToPad(code: Int): Int = when (code) {
+    KeyEvent.KEYCODE_DPAD_UP -> PADB_DPUP
+    KeyEvent.KEYCODE_DPAD_DOWN -> PADB_DPDOWN
+    KeyEvent.KEYCODE_DPAD_LEFT -> PADB_DPLEFT
+    KeyEvent.KEYCODE_DPAD_RIGHT -> PADB_DPRIGHT
+    KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_SPACE -> PADB_A
+    KeyEvent.KEYCODE_BUTTON_B, KeyEvent.KEYCODE_ESCAPE -> PADB_B
+    KeyEvent.KEYCODE_BUTTON_X -> PADB_X
+    KeyEvent.KEYCODE_BUTTON_Y -> PADB_Y
+    KeyEvent.KEYCODE_BUTTON_L1 -> PADB_L1
+    KeyEvent.KEYCODE_BUTTON_R1 -> PADB_R1
+    KeyEvent.KEYCODE_BUTTON_L2 -> PADB_L2
+    KeyEvent.KEYCODE_BUTTON_R2 -> PADB_R2
+    KeyEvent.KEYCODE_BUTTON_SELECT -> PADB_SELECT
+    KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_ENTER -> PADB_START
+    KeyEvent.KEYCODE_BUTTON_THUMBL -> PADB_L3
+    KeyEvent.KEYCODE_BUTTON_THUMBR -> PADB_R3
+    else -> -1
+  }
+
+  override fun onKeyDown(code: Int, ev: KeyEvent): Boolean {
+    val b = keyToPad(code)
+    if (b >= 0) {
+      if (ev.repeatCount == 0) nativePadButton(b, true)
+      return true
+    }
+    return super.onKeyDown(code, ev)
+  }
+
+  override fun onKeyUp(code: Int, ev: KeyEvent): Boolean {
+    val b = keyToPad(code)
+    if (b >= 0) { nativePadButton(b, false); return true }
+    return super.onKeyUp(code, ev)
+  }
 }

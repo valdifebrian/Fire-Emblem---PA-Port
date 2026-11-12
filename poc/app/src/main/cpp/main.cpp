@@ -4,7 +4,10 @@
 //  (2) native model: archer skeleton.g + body.gs skinned render + orbit camera
 //  (3) native anim: move_n.ga frames/events evaluated each vsync; event codes logged
 //  (4) audio: boss1.stm looped + boss2.stm mixed (gain toggle) via Oboe
-//  (5) input: touch overlay events from Kotlin via JNI + keyboard path (desktop TODO)
+//  (5) input: touch overlay events from Kotlin via JNI + PHYSICAL GAMEPAD
+//      (MotionEvent generic-motion + key events -> nativePadButton/nativePadAxis;
+//      when no pad is present the pad path is inert = touch behavior identical)
+//      + keyboard path (desktop TODO)
 // Plus fps log + thermal read = REQ-TIME/PERF hooks.
 #include <android/native_window_jni.h>
 #include <android/asset_manager.h>
@@ -43,6 +46,28 @@ static std::atomic<int> g_action{0};      // 0 none, 1..8 dpad/a/b edge
 static std::atomic<float> g_touchYaw{0.f};
 static std::atomic<int> g_tapsIn100ms{0};
 static std::atomic<float> g_mixB{0.f};    // gain of stream B 0..1
+
+/* ---------- physical gamepad state (Kotlin dispatchGenericMotionEvent /
+ * onKeyDown|Up -> nativePadButton/nativePadAxis). Enum ints are ABI with the
+ * Kotlin PADB/PADAX constants in MainActivity.kt — NEVER reorder. ---------- */
+enum PadButton : int {
+  PADB_A = 0, PADB_B, PADB_X, PADB_Y, PADB_L1, PADB_R1, PADB_L2, PADB_R2,
+  PADB_SELECT, PADB_START, PADB_L3, PADB_R3, PADB_GUIDE,
+  PADB_DPUP, PADB_DPDOWN, PADB_DPLEFT, PADB_DPRIGHT, PADB_COUNT
+};
+enum PadAxis : int {
+  PADAX_LX = 0, PADAX_LY, PADAX_RX, PADAX_RY, PADAX_LT, PADAX_RT,
+  PADAX_HATX, PADAX_HATY, PADAX_COUNT
+};
+static std::atomic<int> g_padBtn[PADB_COUNT];
+static std::atomic<float> g_padAxis[PADAX_COUNT];   // normalized -1..1 (LT/RT 0..1)
+static std::atomic<int> g_padConnected{0};           // sticky once any pad input seen
+static std::atomic<unsigned> g_padEdge{0};           // bit i = fresh press of PADB_i
+static std::atomic<int> g_paused{0};                 // START overlay toggle (P3 menu stub)
+
+struct TouchState { int action; float tapNX, tapNY; bool tapReq; int taps100ms; };
+struct PadState    { bool btn[PADB_COUNT]; float ax[PADAX_COUNT]; bool connected; };
+struct InputState  { TouchState touch; PadState pad; };
 
 // ---------- audio mixer ----------
 struct Mixer : oboe::AudioStreamDataCallback, oboe::AudioStreamErrorCallback {
@@ -153,7 +178,9 @@ static GLuint g_vao = 0, g_vbo = 0; static int g_triCount = 0;
 static GLuint g_prog = 0, g_prog2 = 0;
 static std::vector<uint8_t> g_stmA, g_stmB;
 static stm_file g_sA, g_sB;
-static float g_camYaw = 45.f, g_unitYaw = 45.f; /* deg; cam yaw FIXED isometric (FE9-style) */
+static std::atomic<float> g_camYaw{45.f}; /* deg; FIXED isometric default, pad-orbit writable */
+static float g_unitYaw = 45.f;
+static std::atomic<float> g_camPitch{24.f}; /* deg; RIGHT_STICK look, L3/R3 refit resets it */
 static int g_gx = 4, g_gy = 4;        /* unit tile coords 0..9 */
 static float g_ux = -5.f, g_uz = -5.f; /* unit world pos (tile centers: -45+10*g) */
 static float g_camFx = 0.f, g_camFz = 0.f; /* smoothed camera focus */
@@ -184,7 +211,7 @@ static void step_tile(int dgx, int dgy) { /* enqueue 1 tile step from queue tail
 /* dpad button (1 L,2 R,3 U,4 D) -> best world axis so that motion matches the
    screen direction under the current camera yaw (any yaw works, iso 45 too) */
 static void dpad_step(int code) {
-  float yr = g_camYaw * 0.017453292f;
+  float yr = g_camYaw.load() * 0.017453292f;
   float rx = cosf(yr), rz = -sinf(yr);            /* screen right in world xz */
   float ux = -sinf(yr), uz = -cosf(yr);           /* screen up (view dir, xz) */
   float s[4][2] = { {-rx, -rz}, {rx, rz}, {ux, uz}, {-ux, -uz} }; /* L R U D */
@@ -199,7 +226,7 @@ static void dpad_step(int code) {
 }
 /* screen-normalized tap (y-down) -> ground tile via analytic ray (true pitched f) */
 static void tap_to_tile(float nx, float ny, int* tx, int* ty) {
-  float yr = g_camYaw * 0.017453292f, pit = 24.f * 0.017453292f, dist = 55.f;
+  float yr = g_camYaw.load() * 0.017453292f, pit = g_camPitch.load() * 0.017453292f, dist = 55.f;
   float eye[3] = { g_camFx + sinf(yr) * cosf(pit) * dist, sinf(pit) * dist,
                    g_camFz + cosf(yr) * cosf(pit) * dist };
   float tgt[3] = { g_camFx, 8.f, g_camFz };
@@ -398,7 +425,7 @@ static void render(int w, int h) {
   mat4 proj = {};
   proj.m[0] = f / aspect; proj.m[5] = f; proj.m[10] = (far + near) / (near - far);
   proj.m[11] = -1; proj.m[14] = 2 * far * near / (near - far);
-  float yaw = g_camYaw * 3.14159265f / 180.f, pit = 24.f * 3.14159265f / 180.f, dist = 55.f;
+  float yaw = g_camYaw.load() * 3.14159265f / 180.f, pit = g_camPitch.load() * 3.14159265f / 180.f, dist = 55.f;
   float ex = g_camFx + sinf(yaw) * cosf(pit) * dist, ey = sinf(pit) * dist, ez = g_camFz + cosf(yaw) * cosf(pit) * dist;
   float fx = g_camFx, fy = 8, fz = g_camFz;
   // view = lookAt (column-major, GL)
@@ -542,6 +569,7 @@ static void draw_buttons(int w, int h) {
 }
 
 static void on_input(int action) {
+  if (g_paused.load() && action <= 4) return; /* paused: grid nav frozen */
   switch (action) {
     case 1: case 2: case 3: case 4: dpad_step(action); break; /* screen-direction -> world axis */
     case 5: g_mixB.store(1.f - g_mixB.load()); g_mixer.targetB.store(g_mixB.load()); break; // A = mix B on/off
@@ -552,6 +580,70 @@ static void on_input(int action) {
       break;
     }
   }
+}
+
+/* ---------- gamepad consumer (runs on engine thread every frame) ----------
+ * Mapping (PoC harness semantics; P3 menu/cursor layer will consume InputState):
+ *   LEFT_STICK X   = camera orbit (yaw, continuous)  [paralel dgn tap: tap tetap path-move]
+ *   RIGHT_STICK X  = look yaw fine | Y = pitch look (8..75 deg clamp)
+ *   DPAD / HAT     = grid cursor nav (edge + auto-repeat 12 frames ~0.6s @20fps)
+ *   BUTTON_A       = confirm  (harness tap-equivalent = overlay A action)
+ *   BUTTON_B       = back     (harness = overlay B action)
+ *   START          = pause/menu overlay toggle (P3 stub: freezes anim+path+nav)
+ *   L3 / R3        = camera fit (yaw/pitch/focus reset)
+ * No pad ever connected => this function returns immediately: touch path 100%
+ * untouched (fallback guarantee). */
+static void pad_update(const PadState& p) {
+  if (!p.connected) return;
+  unsigned e = g_padEdge.exchange(0);
+  if (e & (1u << PADB_START)) {
+    int on = !g_paused.load();
+    g_paused.store(on);
+    LOGI("pad: START -> %s", on ? "PAUSE (P3 menu stub)" : "resume");
+  }
+  if (e & ((1u << PADB_L3) | (1u << PADB_R3))) {
+    g_camYaw.store(45.f); g_camPitch.store(24.f);
+    g_camFx = g_ux; g_camFz = g_uz;   /* instant fit */
+    LOGI("pad: camera fit");
+  }
+  if (e & (1u << PADB_A)) on_input(5);  /* confirm == overlay A semantics */
+  if (e & (1u << PADB_B)) on_input(6);  /* back    == overlay B semantics */
+  /* dpad + hat -> grid nav with auto-repeat */
+  int dcode = 0;
+  if (p.btn[PADB_DPLEFT]) dcode = 1; else if (p.btn[PADB_DPRIGHT]) dcode = 2;
+  else if (p.btn[PADB_DPUP]) dcode = 3; else if (p.btn[PADB_DPDOWN]) dcode = 4;
+  if (!dcode) { /* hat: -1 up/left side */
+    if (p.ax[PADAX_HATX] < -0.5f) dcode = 1; else if (p.ax[PADAX_HATX] > 0.5f) dcode = 2;
+    else if (p.ax[PADAX_HATY] < -0.5f) dcode = 3; else if (p.ax[PADAX_HATY] > 0.5f) dcode = 4;
+  }
+  static int repCnt = 0, repLast = 0;
+  if (dcode) {
+    if (dcode != repLast || ++repCnt >= 12) { on_input(dcode); repLast = dcode; repCnt = 0; }
+  } else { repCnt = 0; repLast = 0; }
+  /* sticks: deadzone 0.25 */
+  auto dz = [](float v) { return (v > -0.25f && v < 0.25f) ? 0.f : v; };
+  float lxp = dz(p.ax[PADAX_LX]), rxp = dz(p.ax[PADAX_RX]), ryp = dz(p.ax[PADAX_RY]);
+  if (lxp) g_camYaw.store(g_camYaw.load() + lxp * 2.2f);            /* orbit */
+  if (rxp) g_camYaw.store(g_camYaw.load() + rxp * 1.1f);            /* look fine */
+  if (ryp) {
+    float np = g_camPitch.load() - ryp * 1.1f;
+    if (np < 8.f) np = 8.f; if (np > 75.f) np = 75.f;
+    g_camPitch.store(np);
+  }
+}
+
+/* one snapshot per frame: engine layers consume ONE object from here on */
+static InputState input_poll() {
+  InputState in{};
+  in.touch.action = g_action.exchange(0);
+  in.touch.tapNX = g_tapNX.load();
+  in.touch.tapNY = g_tapNY.load();
+  in.touch.tapReq = g_tapReq.exchange(0) != 0;
+  in.touch.taps100ms = g_tapsIn100ms.exchange(0);
+  in.pad.connected = g_padConnected.load() != 0;
+  for (int i = 0; i < PADB_COUNT; i++) in.pad.btn[i] = g_padBtn[i].load() != 0;
+  for (int i = 0; i < PADAX_COUNT; i++) in.pad.ax[i] = g_padAxis[i].load();
+  return in;
 }
 
 // ---------- JNI bridge ----------
@@ -596,6 +688,23 @@ JNIEXPORT void JNICALL Java_com_fe9_poc_MainActivity_nativeTouch(JNIEnv*, jobjec
     jfloat nx, jfloat ny, jint action, jint pointerId) {
   touch_event(nx, ny, (int)action, (int)pointerId & 15);
 }
+JNIEXPORT void JNICALL Java_com_fe9_poc_MainActivity_nativePadButton(JNIEnv*, jobject,
+    jint button, jboolean pressed) {
+  int i = (int)button;
+  if (i < 0 || i >= PADB_COUNT) return;
+  int v = pressed ? 1 : 0;
+  int prev = g_padBtn[i].exchange(v);
+  if (v && !prev) g_padEdge.fetch_or(1u << (unsigned)i); /* press edge for edge-consumers */
+  if (v) { if (!g_padConnected.exchange(1)) LOGI("pad: connected (source=gamepad)"); }
+}
+JNIEXPORT void JNICALL Java_com_fe9_poc_MainActivity_nativePadAxis(JNIEnv*, jobject,
+    jint axis, jfloat value) {
+  int i = (int)axis;
+  if (i < 0 || i >= PADAX_COUNT) return;
+  g_padAxis[i].store((float)value);
+  /* triggers sit >0 for half their range; only |stick|>0.6 latches connection */
+  if (i <= PADAX_RY && value > 0.6f && !g_padConnected.exchange(1)) LOGI("pad: connected (axis)");
+}
 JNIEXPORT void JNICALL Java_com_fe9_poc_MainActivity_nativeSetSurface(JNIEnv* env, jobject, jobject surface) {
   std::lock_guard<std::mutex> lk(g_windowMx);
   if (surface) g_window = ANativeWindow_fromSurface(env, surface);
@@ -622,16 +731,18 @@ static void engine_main(AAssetManager* am) {
   audio_start();
   long long last = 0; int frames = 0; long long fpsT0 = 0;
   while (true) {
-    int a = g_action.exchange(0);
+    InputState in = input_poll();          /* ONE object for all layers */
+    pad_update(in.pad);                    /* inert until a pad is seen */
+    int a = in.touch.action;
     if (a) on_input(a);
     /* ground tap -> path queue (consume request set by UI thread) */
-    if (g_tapReq.exchange(0)) {
+    if (in.touch.tapReq) {
       int tx = -1, ty = -1;
-      tap_to_tile(g_tapNX.load(), g_tapNY.load(), &tx, &ty);
-      if (tx >= 0) { LOGI("tap->tile %d,%d (unit %d,%d)", tx, ty, g_gx, g_gy); queue_path(tx, ty); }
+      tap_to_tile(in.touch.tapNX, in.touch.tapNY, &tx, &ty);
+      if (tx >= 0 && !g_paused.load()) { LOGI("tap->tile %d,%d (unit %d,%d)", tx, ty, g_gx, g_gy); queue_path(tx, ty); }
     }
     /* step along queued path: 1.4 world-units/frame ~ 0.35 s/tile @20fps */
-    if (g_pathN > 0) {
+    if (g_pathN > 0 && !g_paused.load()) {
       int tgx = g_path[0], tgy = g_path[1];
       float tx = tile_cx(tgx), tz = tile_cx(tgy);
       float dx = tx - g_ux, dz = tz - g_uz;
@@ -646,8 +757,8 @@ static void engine_main(AAssetManager* am) {
        directions world-stable); only focus position trails the unit */
     g_camFx += (g_ux - g_camFx) * 0.06f;
     g_camFz += (g_uz - g_camFz) * 0.06f;
-    // advance ga: ~12 anim fps
-    g_frameMs++;
+    // advance ga: ~12 anim fps (frozen while paused = P3 overlay stub)
+    if (!g_paused.load()) g_frameMs++;
     if (g_frameMs >= 3) {
       g_frameMs = 0;
       g_frame++;
@@ -658,14 +769,14 @@ static void engine_main(AAssetManager* am) {
         }
       }
     }
-    int tapr = g_tapsIn100ms.exchange(0);
+    int tapr = in.touch.taps100ms; /* same last-frame-delta semantics as pre-pad build */
     render(w, h);
     frames++;
     struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
     long long now = ts.tv_sec * 1000000000LL + ts.tv_nsec;
     if (!fpsT0) fpsT0 = now;
     if (now - fpsT0 >= 2000000000LL) {
-      LOGI("fps=%d taps2s=%d tile=%d,%d path=%d camYaw=%.0f", frames * 500000000LL / (now - fpsT0), tapr, g_gx, g_gy, g_pathN, g_camYaw);
+      LOGI("fps=%d taps2s=%d tile=%d,%d path=%d camYaw=%.0f", frames * 500000000LL / (now - fpsT0), tapr, g_gx, g_gy, g_pathN, g_camYaw.load());
       frames = 0; fpsT0 = now;
     }
     (void)last;

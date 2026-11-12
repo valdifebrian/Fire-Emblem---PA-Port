@@ -361,6 +361,25 @@ tombol aksi = edge `g_action` (consumed) + `g_tapsIn100ms` untuk rapid-fire. Mul
 (`g_slotCode`), hit-test radius 0.09×1.26. Bukti perangkat: `input swipe` panah → `yaw 35→64→112`,
 `z 0→3`, `taps2s=1`; panah B & tombol A/B memakai jalur kode identik. [AM-056][P2]
 
+### BRV-INP-003 — Jalur gamepad fisik + keyboard PoC (InputState tunggal) — IMPLEMENTED (build-verified; QA perangkat menunggu)
+Satu sumber input per frame: `input_poll()` → struct `InputState{TouchState,PadState}` — SEMUA
+lapisan engine mengonsumsi SATU snapshot (bukan sebar atomic per fitur). Gamepad: Kotlin
+`MainActivity.dispatchGenericMotionEvent` (intercept SEBELUM view tree — SurfaceView tak pernah
+focus) + `onGenericMotionEvent` safety-net + `onKeyDown/Up` (dpad & key legacy; `repeatCount==0`
+buang auto-repeat OS, edge dibuat di C++ via `g_padBtn.exchange` + bitmap `g_padEdge`). JNI
+`nativePadButton(int,bool)`/`nativePadAxis(int,float)`; enum int PADB/PADAX = ABI dua file,
+komentar larang reorder di kedua sisi. **Fallback dijamin by-design: `g_padConnected` sticky 0 →
+`pad_update()` return seketika — jalur touch tak tersentuh sama sekali tanpa pad.**
+Mapping harness: LEFT_STICK X = orbit yaw kontinu (deadzone 0.25, 2.2°/frame), RIGHT_STICK X =
+yaw halus / Y = pitch 8..75° (global `g_camPitch` atomic BARU — hardcoded 24.f di tap_to_tile +
+render diganti live, jadi raycast tap ikut pitch), DPAD/HAT = nav grid edge+auto-repeat 12 frame,
+A = confirm (semantik overlay A), B = back, START = pause-stub (freeze ga+path+nav; gerbang
+`g_paused` di on_input/tap/step/frameMs), L3/R3 = fit (yaw45/pitch24/fokus-unit). Keyboard ikut
+jalur key: SPACE=A, ESC=B, ENTER=START, panah=DPAD. Trigger dinormalkan raw(-1..1)→0..1.
+`g_camYaw` kini atomic (varargs fps log wajib `.load()`). Build: gradle 8.9 + NDK 27.2 lane `poc/`
+→ `assembleDebug` SUCCESS (b52). Test: colok pad BT/USB → `adb logcat -s fe9poc` =
+`pad: connected`, `pad: START -> PAUSE`, `camYaw` berubah di fps-log; tanpa pad log identik v-pre. [P2]
+
 ### BRV-SCT-006 — Semantik native batch-2 (unit/map/camera/env) — CONFIRMED (pseudocode)
 Dari `out/ghidra/decAll/FUN_*.c` (impl ptr katalog), argc = switch `FUN_80011a5c`:
 - **UnitGetByPID** (1): `FUN_80016bdc(pid)` lookup unit global; NOT-found ⇒ 0; ketemu ⇒
@@ -756,7 +775,7 @@ Dari decompil impl (decAll) + katalog:
   UnitRotateByPID("PID_MIST",2,0); ... = spawn koordinat + rotasi eksak per unit.
 - Dispos per-difficulty = pack terpisah bmap01_first_n/h/m (+_g_* group) — engine
   memuat varian n/h/m sesuai flag difficulty (pola sama shopitem_h/m/n).
-- Definisi sukses PoC P2 �8 kini punya skrip referensi nyata per chapter. [AM-063]
+- Definisi sukses PoC P2 §8 kini punya skrip referensi nyata per chapter. [AM-063]
 
 ### BRV-MAP-003  GRID SEMANTICS: MAPLINK -> 64x64 U16 ARRAY  Decoded (parsial)
 - Konsumen slot = `FUN_80045604` (maplink/maplinkAt/maplinkAbs) +
