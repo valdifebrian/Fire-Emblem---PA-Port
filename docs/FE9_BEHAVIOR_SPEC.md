@@ -758,6 +758,23 @@ Dari decompil impl (decAll) + katalog:
   memuat varian n/h/m sesuai flag difficulty (pola sama shopitem_h/m/n).
 - Definisi sukses PoC P2 §8 kini punya skrip referensi nyata per chapter. [AM-063]
 
+### BRV-MAP-003  GRID SEMANTICS: MAPLINK -> 64x64 U16 ARRAY  Decoded (parsial)
+- Konsumen slot = `FUN_80045604` (maplink/maplinkAt/maplinkAbs) +
+  `FUN_80044450` (panelindex/uniquepanel/Roof/Base; VA string 0x8026A8CA-957,
+  DELTA file->VA = +0x80003000 untuk segmen ini!).
+- `maplink` record = u16 count + triples [x i8, y i8, val u8]; tulis
+  `grid[y*0x40 + x] = val` (u16 array global, stride 64 = PETA 64x64 tiles,
+  base global ~0x802CE5A6 area). maplinkAt = varian offset-panel, maplinkAbs
+  = koordinat absolut.
+- String slot blok-1 (mapbuilddesc/capacity/extra/fog/grid/light @0x8026A7D1+)
+  TIDAK direferensikan kode DOL = lookup generik mapbuild (via tabel; consumer
+  panelindex FUN_80044450 = yang nyata membaca grid).
+- dispos varian DIFF C/H/M/N untuk bmap01: c=4 unit (Ike/Mist/Bole/Greil,
+  JID_HERO_G/CLERIC/F/FIGHTER/RANGER, AI passive NOATTACK/NOHEAL/NOMOVE,
+  SID_IMMORTAL), h=2 unit + SEQ_ALLUNITATTACK100 (agresif, lebih sedikit
+  musuh), m/n BYTE-IDENTIK KECUALI 11 byte string event (_m/_n).
+- Grid bmap01 = slot `mapgrid` (data block 0x0b74/0x0d34/0x113c/0x12fc)
+  dibaca panelindex; triple-stream 0x16e0 = kandidat maplinkAt payload.
 ### BRV-MAP-002  PETA bmap01 (Ch1): KONTEN + SLOT GEOMETRY  Partial
 - `//zmap/bmap01/map.cmp` unpack = 13 entri: `bmap01.g/.gs` (peta 3D),
   `bmap01_water0.g/.ga/.gs`, `flower_01.g/.gs`, `tree_01/02.g/.gs` (props),
