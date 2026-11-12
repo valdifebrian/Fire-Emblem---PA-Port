@@ -758,6 +758,30 @@ Dari decompil impl (decAll) + katalog:
   memuat varian n/h/m sesuai flag difficulty (pola sama shopitem_h/m/n).
 - Definisi sukses PoC P2 �8 kini punya skrip referensi nyata per chapter. [AM-063]
 
+### BRV-SCT-005e — NATIVE SKENARIO CH1 + FLAG TABLE + COMMAND QUEUE — DECODED
+- **Arg koordinat kamera (InstantFocus/InstantSetMapCamera)**: u32 VM di-transform
+  situs: `(f64)(0x43300000hi | (p ^ 0x80000000lo)) - bias` (konstanta magic f64
+  ~2^11). Bentuk PERSIS encoding = P2 (decode dari nilai referensi Ch1 -55/55/18
+  + hasil capture bila perlu). Engine: simpan arg mentah, transform saat apply.
+- **COMMAND QUEUE (async scene cmds)**: SetGrid/SetCircle/SetOutLink/UnitFocusOff/...
+  = `FUN_8000c0c0(&DAT_80296f90)` cari / `FUN_8000caf0` alokasi record cmd di pool
+  `FUN_800c0658`, isi field +0x30..0x3c (on/off + param) ${em} renderer/engine memproses
+  antrian cmd visual tiap frame; SetGrid(-1) = SIMPAN grid unit aktif ke global
+  DAT_803307a8 (unit+0x33 = byte grid display per-unit).
+- **FLAG TABLE global script = objek @0x803307bc**: `get(name)`=FUN_800bdd08,
+  `set(name)`=FUN_800bdc68, `clr(name)`=FUN_800bdbc8 = kamus flag bernama
+  (dipakai `gf_canceled` skip-flag oleh Comeback). Engine: Map<string,bool>.
+- **Fade(mask,timeMs)**: FUN_8008a290(mask,time), time<0 ${em} default 500ms;
+  pasangannya FUN_80089650 (fade state read); Comeback() reset kamera+fade+clear
+  antrean jika flag skip/canceled/queue-penuh (mode fast-forward).
+- **_gi(handle,itemID)** = kasih item: slot=(h-1)*0x280 (SCT-005c), cek PID +0x188,
+  konstruksi stack item (FUN_8001c76c/d780/c690) + UnitAddItem (FUN_8007386c).
+- **InstantDisposFirst(pack)** = FUN_80105f0c(name,0,1) = muat pack dispos-first
+  (spawn awal skenario); varian per-difficulty = nama pack beda (bmap01_first_n/h/m),
+  mode di-set via InstantDisposFirstSetMode (script func startup.cmb ${em} bukan native).
+- **Katalog final: 406 native (406/406), 326 terexercised disc; 154 script-func
+  bernama (startup.cmb = pustaka ByPID). Semua target CALL 43 script RESOLVED.** [AM-065]
+
 ### BRV-SCT-009 — dispos_c.bin GRAMMAR CLOSED (struktur) — DECODED (semantik param = P1-gameplay)
 Loader asli `FUN_8003f87c` (dispos.cmp mode9 / dispos_c.bin mode1; buffer base X,
 header 0x20, data@X+0x20) + verifikasi byte-level `out/raw/dispos_c.bin`:
