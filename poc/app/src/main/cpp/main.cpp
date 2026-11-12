@@ -1791,6 +1791,25 @@ static int scrDlg2Items(vm::Vm&, uint32_t*, int, uint32_t* o) {
   *o = 1; /* non-blocking placeholder until dialog-choice UI [P4] */
   return 0;
 }
+/* [BRV-SCT-005o] batch-8: camera save/restore + tile-action stubs.
+ * camera follows unit mirror (g_ux/g_uz) so PastMapCamera restores the
+ * follower directly; building/rect natives log until the instance+ring
+ * system lands (P2-MAP backlog: action enum 0x23/0x24/0x25/0x29). */
+static float g_camSnap[3];
+static uint8_t g_camSnapSet = 0;
+static int scrCamCopy(vm::Vm&, uint32_t*, int, uint32_t*) {
+  g_camSnap[0] = g_ux; g_camSnap[1] = g_uz; g_camSnapSet = 1;
+  return 0;
+}
+static int scrCamPast(vm::Vm&, uint32_t*, int, uint32_t*) {
+  if (g_camSnapSet) { g_camFx = g_ux = g_camSnap[0]; g_camFz = g_uz = g_camSnap[1]; }
+  return 0;
+}
+static int scrTileLog(vm::Vm&, uint32_t* a, int c, uint32_t* o) {
+  if (c >= 2) LOGI("scr tileact(%d,%d)", (int)(int8_t)a[0], (int)(int8_t)a[1]);
+  if (o) *o = 0; /* no instances on scr maps yet -> FE9 returns found=0 */
+  return 0;
+}
 struct ScrOv { const char* n; int (*fn)(vm::Vm&, uint32_t*, int, uint32_t*); };
 static const ScrOv SCR_OVS[] = {
   {"WaitM", scrWaitM}, {"Wait", scrWaitM}, {"WaitM2", scrWaitM}, {"WaitSecs", scrWaitM},
@@ -1836,6 +1855,12 @@ static const ScrOv SCR_OVS[] = {
   {"Join", scrZero}, {"ForceGetFirst", scrZero},
   {"BGMQuietOff", scrPass}, {"BGMCont", scrPass}, {"BGMMute", scrPass},
   {"BGMPlayVol", scrBgm},
+  /* [BRV-SCT-005o] batch-8 */
+  {"CopyMapCamera", scrCamCopy}, {"PastMapCamera", scrCamPast},
+  {"SetEventCameraPrec", scrPass},
+  {"BuildInstHide", scrTileLog}, {"BuildInstShow", scrTileLog},
+  {"BuildDestruction", scrTileLog}, {"SetShooter", scrTileLog},
+  {"RectKill", scrPass}, {"RectSetCurve", scrPass}, {"DefaultDieTalk", scrPass},
 };
 static void script_init(void) {
   const uint8_t* d; int n;

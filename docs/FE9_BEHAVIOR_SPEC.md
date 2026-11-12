@@ -1145,6 +1145,52 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   tanpa device: `VMGOLD=... VMSTR=1 vmtest dir Cxx.cmb`); wave schedule engine
   diberi label data-gap yang sama. [AM-053]
 
+### BRV-SCT-005o — SEMANTIK NATIVE BATCH-8: KAMERA-SAVE, BANGUNAN=AKSI-TILE, RECT-UI, DEATH-TALK — DECODED
+- **`CopyMapCamera()` `FUN_8019ff68`**: snapshot kamera aktif
+  (`FUN_80018adc`=slot aktif, +4/+8/+0xc = x,y,z f32) → global
+  **0x80330E94/98/9C** + latch `DAT_80330E90=1`.
+  **`PastMapCamera()` `FUN_8019feb8`**: restore bila latch; non-FF: tulis
+  +4/+8/+0xc langsung; FF (bit0): tulis +4/+8 **dan duplikat ke +0x10/+0x14**
+  (start=target ⇒ tanpa-interpolasi) + `FUN_800193cc(zoom)` = terapkan zoom.
+  ⇒ pasangan save/restore kamera sekitar event-camera. [AM-083]
+- **`SetEventCameraPrec(p)` `FUN_801a2004`** = FIELD-WRITER antrean aksi
+  `DAT_80296F90`: pola baku `FUN_8000c0c0` lookup → absent→`FUN_8000caf0`
+  create-default (+0x30=1 enable, +0x33=speed-global `0x803307A8`, +0x36=1,
+  +0x3c=1) lalu **rec+0x3C = p**. Keluarga satu-field: `UnitFocusOff()` =
+  rec+**0x30=0** (disable), `UnitFadeOff()` = rec+**0x32=0** — koreksi
+  interpretasi: +0x30 = flag-aktif rekaman (bukan "enable baru").
+- **Bangunan = sistem instance + ring aksi-tile (satu sistem dgn peti/visit)**:
+  `BuildInstHide(x,y)` `FUN_8019f914` / `BuildInstShow(x,y)` `FUN_8019f9b4`:
+  lookup layer **0x80000** (bangunan) mask 0x10 → **ENQUEUE aksi 0x29**
+  (`FUN_8010feec`) vs **DEQUEUE 0x29** (`FUN_8010fe08` = hapus pending
+  serupa) + `FUN_80049c8c(rec,0/1)` = hide/show-flag instance +
+  `FUN_80044450(map,1)` DIRTY-map + `FUN_80016180()` = **refresh-terrain**
+  ⇒ bangunan hide/show mengubah pathing.
+  `BuildDestruction(x,y)` `FUN_8019eaf4`: lookup mask **0xA00** → enqueue
+  **aksi 0x25** → anim `FUN_8012adac(x,y,handle)`+re-arm (FF = instan).
+  **Enum ring aksi-tile @map+0x204**: 0x23=peti-dibuka, 0x24=visit-out,
+  0x25=bangunan-runtuh, 0x29=building-show/hide (+ aksi lain oleh engine).
+- **`SetShooter(x,y,dir,v)` `FUN_800b82d8`**: `FUN_80019e04(v)` →
+  **enqueue-varian-5-arg** `FUN_8010fdb8(&map,x,y,arg3,uVar)` = pasang
+  penembak-tertandai ke instance sistem (counter-target).
+- **Rect UI**: `RectKill(target)` `FUN_800ba4a8` = destroy jendela UI:
+  jika arg=pointer (0x8000_0000..0x8180_0000): konstanta string
+  `RID_GMAP` ⇒ jalur khusus worldmap `FUN_801cf760+FUN_801cfa44`, else
+  **`FUN_80109020(ptr)`** = tutup-window-rect; arg-int = no-op.
+  `RectSetCurve(rect,slot,x?,a,b,c)` `FUN_800ba298`: window lookup
+  `FUN_801090c0`; **slot valid 5..7**; float XOR-bias (high-word ^0x8000,
+  basis 0x4330=`175.0`) dikurangi konstanta global (-0x6e68) dan dikali
+  skala (-0x6e60); sentinel `0x75BCD15`=1.234567e9 = "jangan ubah" ⇒
+  kurva-animasi-rect (bezier) — Partial (peran slot 5-7 = follow-up).
+- **`DefaultDieTalk()` `FUN_800ba9bc`**: global **`0x80330EAC` = unit
+  TERBARU-MATI** (pid-nya via +0x188 → data unit → tabel death-talk
+  `FUN_8000d354`) ⇒ engine wajib set "lastDied" tiap unit tumbang (dipakai
+  dialog-kematian default + dispos event).
+- **Engine**: CopyMapCamera/PastMapCamera = save/restore posisi kamera scr
+  (termasuk jalur FF start=target); BuildInst*/BuildDestruction/RectKill/
+  RectSetCurve/SetShooter/DefaultDieTalk = handler log/sukses-minimal —
+  instance-bangunan+ring-aksi-tile masuk backlog P2-MAP (enum 0x23/24/25/29).
+
 ### BRV-SCT-005n — SEMANTIK NATIVE BATCH-7 (+DUMP-ASM STUB &LAB, r13=0x8036EDA0 TERDECODE) — DECODED
 - **Metode baru**: stub `&LAB_*` (natives tanpa pseudocode decAll) di-dump via
   headless `analyzeHeadless -import main.elf -processor PowerPC:BE:32:default`
