@@ -1031,9 +1031,21 @@ header 0x20, data@X+0x20) + verifikasi byte-level `out/raw/dispos_c.bin`:
   event script-attached.
 - Record len4 tunggal = referensi nama AI/kelas/item utk unit SEBELUMnya (grup
   per-spawn); record len 40-64 = blok param penuh (class+equip+AI).
+- **ISI RECORD TERBACA 2026-11-13 (verifikasi ulang pairing reloc→pool)**:
+  record berselang-seling **UNIT `[PID_x][JID_kelas][IID_item ×0-3]` ↔
+  AI `[SEQ_kondisi ×1-3][MTYPE_archetype]`** (212 record: 98 PID-unit,
+  95 SEQ-AI, 7 SID, 5 IID-murni, 4 MTYPE-murni; sel 2c×91/4c×104).
+  Contoh nyata: `PID_ASHNARD|JID_PALADIN_L/F|IID_DELPHISHIELD|
+  IID_FRAMELANCE|IID_FIRE`; `PID_TANIS|JID_HALBERDIER|IID_ELFIRE|
+  IID_CHANGESTONE`; `PID_ZIHARK|SEQ_ALLATK100_DIRECT|
+  SEQ_ATTACKRANGEMOVE|MTYPE_HEROKILLER`; AI umum =
+  `SEQ_BULLHEAL|..._NOJILL_AND_TALK|SEQ_NEARESTUNITMOVE|MTYPE_HEROKILLER`.
+  ⇒ **dispos_c = katalog unit khusus (boss/legendaris) + loadout + paket AI**
+  (global /zmap/always/), BUKAN penempatan per-peta (itu pack dispos per-map
+  via InstantDisposFirst — lihat SCT-005f).
 - **STATUS**: struktur + grammar = CLOSED; **semantik tiap u32 param** (radius aggro,
   id spawn, layer difficulty) = dikerjakan saat implementasi AI (P1-gameplay) dgn
-  cross-check dispos.cmp pack per-chapter. [AM-062]
+  cross-check dispos.cmp pack per-chapter. [AM-062; isi record AM-097]
 
 ### BRV-SCT-005f — RE-AUDIT SEMANTIK BATCH-3 + KOREKSI `InstantDispos` — DECODED
 Re-audit 18 impl top-callsite (pseudocode decAll) + call-site literal C00 — satu
@@ -1169,13 +1181,13 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   .cms baris 1 (baris stride 0x20, count di hdr-0) — SATU lagi konfirmasi
   REG-001 utk file keluarga [size/tabOff/cnt/sub].
 
-### BRV-SCT-005 — SEMANTIK NATIVE TOP-6 + KONVENSI FLOAT SCRIPT CLOSED — DECODED
-- **KONVENSI EMAS: argumen float script = u32 IEEE754 dgn SIGN-BIT TER-BALIK**
-  — semua impl native mendekode `raw ^ 0x80000000` lalu gabung ke
-  `0x43300000` (double-bias 2^54) = restore float. **Kewajiban engine:
-  interpreter WAJIB membalik sign-bit saat membaca operand argumen ke
-  native** (WRONG bila operand treated plain int — persis sumber bug "args
-  salah" engine port).
+### BRV-SCT-005 — SEMANTIK NATIVE TOP-6 CLOSED — DECODED (revisi: lihat KOREKSI)
+- **KOREKSI (2026-11-13, supersede klaim awal "float sign-bit")**: pola
+  pseudocode `CONCAT44(0x43300000, p^0x80000000) - bias` = **IDENTITAS
+  integer biasa** — TERBUKTI numerik di SCT-005e (p=4,7,-55,55,18 → hasil
+  persis; bias artefak decompile PPC/Ghidra float-int). Engine TIDAK perlu
+  transform argumen. Baris "konvensi emas" versi awal entri ini SALAH —
+  baca 005e sbg kebenaran.
 - Tabel semantik (argc dari katalog; impl pseudocode decAll):
   | Native | argc | Semantik |
   |---|---|---|
