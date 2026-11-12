@@ -72,22 +72,50 @@ struct TouchState { float tapNX, tapNY; bool tapReq; int taps100ms; };
 struct PadState    { bool btn[PADB_COUNT]; float ax[PADAX_COUNT]; bool connected; };
 struct InputState  { TouchState touch; PadState pad; };
 
-// ---------- audio mixer ----------
+// ---------- audio mixer [P3-AUD-001] ----------
+/* N-channel mixer: slots 0/1 = BGM crossfade pair, slots 2..3 = SE one-shots.
+ * SE payloads rotate through the SE slots; one-shots end when consumed (p freed
+ * for the next hit). .samp bank (P2-blocked) will feed the same playSe() later —
+ * today's SE payload is a real decoded STM as a documented stand-in. */
 struct Mixer : oboe::AudioStreamDataCallback, oboe::AudioStreamErrorCallback {
-  const int16_t* a = nullptr; int an = 0; int ap = 0; int aLoop = 0; float gainA = 0.8f;
-  const int16_t* b = nullptr; int bn = 0; int bp = 0; int bLoop = 0; float gainB = 0.f;
-  std::atomic<float> targetB{0.f};
+  static const int NBGM = 2, NSLOT = 4;
+  struct S { const int16_t* p = nullptr; int n = 0, pos = 0, loop = 0;
+             std::atomic<float> tgt{0.f}; float g = 0.f; } s[NSLOT];
+  std::atomic<float> master{1.f}, duck{1.f};
+  int seNext = NBGM;
   oboe::AudioStream* stream = nullptr;
-  oboe::DataCallbackResult onAudioReady(oboe::AudioStream* s, void* audioData, int32_t numFrames) override {
+  void bindBgm(int i, const stm_file& d) { /* call on engine thread before start */
+    s[i].p = d.pcm; s[i].n = d.pcmFrames; s[i].pos = 0; s[i].loop = d.loopStart >= 0 ? d.loopStart : 0;
+    s[i].tgt.store(i == 0 ? 0.8f : 0.f);
+  }
+  void bgmMix(float x) { s[1].tgt.store(x); }
+  void setDuck(float v) { duck.store(v); }             /* menu/dialog duck for BGM */
+  void setMaster(float v) { master.store(v); }
+  bool playSe(const int16_t* p, int n) {               /* rotate SE slots; returns slot busy-drop as false */
+    if (!p || n <= 0) return false;
+    int i = seNext++; if (seNext >= NSLOT) seNext = NBGM;
+    s[i].pos = 0; s[i].n = n; s[i].loop = 0;           /* n before p: callback reads p last */
+    s[i].p = p; s[i].tgt.store(1.f);
+    return true;
+  }
+  oboe::DataCallbackResult onAudioReady(oboe::AudioStream* st, void* audioData, int32_t numFrames) override {
     auto* out = static_cast<int16_t*>(audioData);
-    float tgt = targetB.load();
-    gainB += (tgt - gainB) * 0.02f; // ~100ms ramp at 50fps cb
+    float dk = duck.load(), mst = master.load();
     for (int32_t f = 0; f < numFrames; f++) {
-      int sa = a ? a[ap * 2] : 0, sa1 = a ? a[ap * 2 + 1] : 0;
-      int sb = b ? b[bp * 2] : 0, sb1 = b ? b[bp * 2 + 1] : 0;
-      if (a) { if (++ap >= an) ap = aLoop; }
-      if (b) { if (++bp >= bn) bp = bLoop; }
-      int rl = (int)(sa * gainA + sb * gainB), rr = (int)(sa1 * gainA + sb1 * gainB);
+      float mL = 0.f, mR = 0.f;
+      for (int i = 0; i < NSLOT; i++) {
+        S& c = s[i];
+        if (!c.p) continue;
+        float tgt = c.tgt.load() * (i < NBGM ? dk : 1.f);
+        c.g += (tgt - c.g) * (i < NBGM ? 0.02f : 0.3f); /* BGM slow crossfade, SE fast attack */
+        mL += c.p[c.pos * 2] * c.g;
+        mR += c.p[c.pos * 2 + 1] * c.g;
+        if (++c.pos >= c.n) {
+          if (c.loop) c.pos = c.loop;
+          else { c.tgt.store(0.f); if (c.g < 0.001f) { c.p = nullptr; c.n = 0; } else c.pos = c.n - 1; }
+        }
+      }
+      int rl = (int)(mL * mst), rr = (int)(mR * mst);
       if (rl > 32767) rl = 32767; if (rl < -32768) rl = -32768;
       if (rr > 32767) rr = 32767; if (rr < -32768) rr = -32768;
       out[f * 2] = (int16_t)rl; out[f * 2 + 1] = (int16_t)rr;
@@ -475,8 +503,7 @@ static void audio_start() {
     ->setErrorCallback(&g_mixer);
   oboe::Result r = ob.openStream(&g_mixer.stream);
   if (r == oboe::Result::OK) {
-    g_mixer.a = g_sA.pcm; g_mixer.an = g_sA.pcmFrames; g_mixer.aLoop = g_sA.loopStart >= 0 ? g_sA.loopStart : 0;
-    g_mixer.b = g_sB.pcm; g_mixer.bn = g_sB.pcmFrames; g_mixer.bLoop = g_sB.loopStart >= 0 ? g_sB.loopStart : 0;
+    g_mixer.bindBgm(0, g_sA); g_mixer.bindBgm(1, g_sB);
     auto rr = g_mixer.stream->requestStart();
     LOGI("oboe start=%d rate=%d frames=%d", (int)rr, g_mixer.stream->getSampleRate(), g_mixer.stream->getFramesPerBurst());
   } else LOGI("oboe open fail=%d", (int)r);
@@ -652,8 +679,9 @@ static void scene_req(int op, SceneId id) {
 }
 static void scene_enter(SceneId s) {
   g_sceneDim = (s == SC_ATTRACT || s == SC_WORLD) ? 1.f : 0.5f;
-  g_mixer.targetB.store(s == SC_BATTLE ? 1.f : 0.f); /* battle = boss theme crossfade */
-  LOGI("scene: enter %s depth=%d dim=%.2f bossMix=%d", scene_name(s), g_sm.depth(), g_sceneDim, s == SC_BATTLE);
+  g_mixer.bgmMix(s == SC_BATTLE ? 1.f : 0.f);          /* battle = boss theme crossfade */
+  g_mixer.setDuck(s == SC_DIALOG ? 0.35f : 1.f);       /* dialog ducks BGM for voice clarity [P3-AUD-001] */
+  LOGI("scene: enter %s depth=%d dim=%.2f bossMix=%d duck=%.2f", scene_name(s), g_sm.depth(), g_sceneDim, s == SC_BATTLE, s == SC_DIALOG ? 0.35 : 1.0);
 }
 static void scene_tick() {
   if (g_fd == FD_OUT) {
@@ -701,7 +729,7 @@ static void on_input(Act action) {
   switch (action) {
     case ACT_LEFT: case ACT_RIGHT: case ACT_UP: case ACT_DOWN:
       dpad_step((int)action); break; /* screen-direction -> world axis */
-    case ACT_CONFIRM: g_mixB.store(1.f - g_mixB.load()); g_mixer.targetB.store(g_mixB.load()); break; // A = mix B on/off
+    case ACT_CONFIRM: g_mixB.store(1.f - g_mixB.load()); g_mixer.bgmMix(g_mixB.load()); break; // A = mix B on/off
     case ACT_CANCEL: { /* B = cycle anim set */
       g_gaSel = (g_gaSel + 1) & 3;
       if (g_gas[g_gaSel].endF > 0) { memcpy(&g_ga, &g_gas[g_gaSel], sizeof(g_ga)); g_frame = g_ga.startF; }
@@ -876,6 +904,14 @@ static void engine_main(AAssetManager* am) {
     Act a;                                 /* [P3-INP-001] all sources drained here */
     SceneId top = g_sm.top();              /* [P3-SCN-001] top scene owns the frame */
     while (g_acts.pop(&a)) {
+      /* SE hook [P3-AUD-001]: payload = head of real decoded STM as documented
+       * stand-in until the .samp bank decodes (P2 RAM trace) feeds playSe(). */
+      if (g_sB.pcm && g_sB.pcmFrames > 0) {
+        static bool seLogged = false;
+        int n = g_sB.pcmFrames < 48000 ? g_sB.pcmFrames : 48000;
+        g_mixer.playSe(g_sB.pcm, n);
+        if (!seLogged) { seLogged = true; LOGI("se: hook live, payload=real-stm stand-in n=%d (.samp P2 pending)", n); }
+      }
       if (g_fd != FD_NONE) continue;       /* fade covers a scene cut: swallow input */
       if (top == SC_ATTRACT) {             /* explicit start input leaves attract */
         if (a == ACT_LEFT || a == ACT_RIGHT || a == ACT_UP || a == ACT_DOWN ||
