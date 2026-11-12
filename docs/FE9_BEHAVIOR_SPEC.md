@@ -1169,6 +1169,37 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   .cms baris 1 (baris stride 0x20, count di hdr-0) — SATU lagi konfirmasi
   REG-001 utk file keluarga [size/tabOff/cnt/sub].
 
+### BRV-SCT-005 — SEMANTIK NATIVE TOP-6 + KONVENSI FLOAT SCRIPT CLOSED — DECODED
+- **KONVENSI EMAS: argumen float script = u32 IEEE754 dgn SIGN-BIT TER-BALIK**
+  — semua impl native mendekode `raw ^ 0x80000000` lalu gabung ke
+  `0x43300000` (double-bias 2^54) = restore float. **Kewajiban engine:
+  interpreter WAJIB membalik sign-bit saat membaca operand argumen ke
+  native** (WRONG bila operand treated plain int — persis sumber bug "args
+  salah" engine port).
+- Tabel semantik (argc dari katalog; impl pseudocode decAll):
+  | Native | argc | Semantik |
+  |---|---|---|
+  | `WaitM` | 1 | arg=ms float; `(arg - t0)/60` = FRAMES (60fps); simpan
+    frames-1 di node-wait `+0x60` (`DAT_8028d22c` list); flag
+    `r13-0x7c90&1` = mode fast-skip → return 0 (selesai) else 1 (yield) |
+  | `MapLoad` | 1 | nama/id peta → `FUN_8014c7c0(0x80330708=base BMAP, arg)`
+    loader peta; selalu return 1 (blocking-once) |
+  | `UnitGetByPID` | 1 | lookup unit (ptr via `FUN_80016bdc`); kembalikan
+    BYTE `unit+0x198`; unit hilang → 0 |
+  | `InstantDispos` | 1 | `FUN_80105f0c(arg,0,0)` spawn dispos即时 (varian
+    Instant = tanpa delay; `+0/+0` = mode/queue) |
+  | `InstantSetMapCamera` | 3 | (x,y,z) float → rec kamera
+    (`FUN_80018adc`): x→+0x04&+0x10, y→+0x08&+0x14 (pasangan duplikat
+    = prev/cur), z→`FUN_800193cc` (zoom) + update |
+  | `Focus` | 2 | (x,y) float → `FUN_8014cbd8(x, y, 0x80330708)` geser
+    kamera ke titik; skip-flag &1 → +`FUN_8001885c` (snap instan); return 0
+    = non-blocking |
+- Helper global yang jadi kontrak engine: base BMAP `0x80330708`;
+  flag fast-skip `r13-0x7c90` (mode demo/skip scene); clock t0
+  `r2-0x6e68` + divisor 60fps `r2-0x6e6c`; list node wait `DAT_8028d22c`.
+- Implikasi P2: wait-timer per-thread frames + kamera x/y/z + skip-flag =
+  minimal-state utk replay capture (T-RE-CAP) presisi.
+
 ### BRV-CHR-003 — TABEL SUPPORT/RELIANCE/DIVINE FE8Data — DECODED (struct)
 - **`KiznaData@0x14674` = 36×[PID_A][PID_B][u32-flag] triples (12B)** —
   **DAFTAR PASANGAN SUPPORT** dari disc (`HIBUCCHI×MAP21_DKN_3`,
