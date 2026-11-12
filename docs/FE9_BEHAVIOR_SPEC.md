@@ -1169,6 +1169,21 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   .cms baris 1 (baris stride 0x20, count di hdr-0) — SATU lagi konfirmasi
   REG-001 utk file keluarga [size/tabOff/cnt/sub].
 
+### BRV-REG-002 — FE8DATA SUB-TABEL: SkillData/JobData STRUCT CLOSED — DECODED
+- **`SkillData@0xe374` = [u32 n=98] + 98 rec × 40B**, kolom (u32):
+  +0 ptr **SID_*** (nama skill), +4 ptr (alias/MSID pool), +8 ptr
+  **MSID_*** (display JP), +0x10/+0x14 ptr **`Mess_Help_skill_*`** (teks
+  help in-game — link langsung ke mess/common.m), +0x18 ptr Mess_Help2,
+  +0x1c icon (numeric), **+0x20 flags = (recIdx<<24)|mode** (ID implisit),
+  +0x24 flags2, +0x28/+0x2C = **runtime fn-ptrs (reloc)** = handler skill.
+  ⇒ RANTAI BONUS TERKUNCI: terrain → BattleTerrData → SID_* → SkillData →
+  handler; contoh SID_WEAPONDESTROY/SID_ABSMOVE/SID_WINGSHIELD ✓.
+- **`JobData@0x6fa0` = [u32 n=115] + 115 rec × 100B**: +0 **JID_*** (kelas),
+  +4 **MJID_*** (promo-target), +8 **MH_J_*** (help), +0x18 region
+  konstan/kamera? +0x44 region scene — field move/range numeric BELUM
+  terpetakan (P4); registry nama kelas 115 valid semua.
+- ItemData@0x9c90 (16948B) tersisa field-map numeric (P4).
+
 ### BRV-REG-001 — KELUARGA POINTER-PATCH-REGISTRY CLOSED (FE8Anim/FE8Effect/cp_data) — DECODED
 - **Semantik loader universal DEFINITIF** (`FUN_8003fccc`→`FUN_8003f87c`,
   dibaca penuh 174 baris): payload base = block+**0x20**; **tabel pointer-patch
