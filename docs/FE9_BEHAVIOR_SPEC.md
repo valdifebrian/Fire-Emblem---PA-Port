@@ -1200,6 +1200,37 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
 - Implikasi P2: wait-timer per-thread frames + kamera x/y/z + skip-flag =
   minimal-state utk replay capture (T-RE-CAP) presisi.
 
+### BRV-SCT-006 — TUT_DATA(.bin/_en) INDEKS TUTORIAL DISC-ROOT CLOSED — DECODED
+- Keluarga tabel `[u32 size][u32 tabOff][u32 cnt][u32 sub]` anggota #7/#8
+  (`3990/3116/186/5` JP, `4206/3292/196/5` EN); table = u32 pool-offsets
+  stride 4; pool ASCII di [0x10..tabOff).
+- **50 step tutorial bernama `tut_NN_<Mechanic>`** — `NN` = chapter index
+  tutorial (00..12): `tut_00_Hero/MapMenu/Turn, tut_01_Attack/Idou/Item/
+  Lvup/Skill/Tackle, tut_02_3weapon/Inherit/Rescue/Riding/Trade/Visit/
+  WinSeiatsu, tut_03_EnemyArea/Recovery/Terrain/WinZenmetsu,
+  tut_04_Aspect/IDAttack/SFX/Setup/WinDefeat, tut_05_3Magic/Disposal/Help/
+  Parameter, tut_06_Sakuteki/Trade2/WinDefense, tut_07_Defection/Equip,
+  tut_08_Box/Neutrality/Talk, tut_09_Command/Support, tut_10_Equip2/Fly/
+  Mutate/Request, tut_11_ClassChange/Door/Steal, tut_12_WinGoal`
+  (IDou=gerak, Sakuteki=tujuan, WinSeiatsu/Zenmetsu/Defense = win-type
+  JP-romaji — bocoran kondisi menang tiap tutorial!).
+- **94 key pesan `MT_*`**: `MT_C00..C18` + varian `_s<paramSJIS>` (pesan
+  per mekanik), `MT_ALPH_A..W` (glyph utk input nama?) → link ke
+  `mess/common.m` (keluarga .m sudah Decoded).
+- Engine: daftar trigger tutorial lengkap TANPA reverse runtime; EN vs JP
+  cnt 196/186 = +10 entri (varian/preset param) — lokal wiring = P2.
+
+### BRV-AUD-004 — SOUNDROOM.BIN KATALOG BGM TERBACA — DECODED
+- `[624/508/21/0]`; region record stride-8 `u32 [sid][trackId]` di [0x10..)
+  + pool **21 nama resource `RID_*` SJIS** + table u32 offset step 8.
+- **21 judul TERDECODE SJIS (TextDecoder shift_jis)**: クリミアの復興1/2,
+  ゴルドアの竜鱗族, 外観-ガリア/キルバス/クリミア/デイン/フェニキス/
+  ベグニオン (6 negara!), 決意, 再会と別離-A/B, 進軍, 聖天馬騎士,
+  切なる願い02, 忠誠と誓言, 塔, 崩れる城A/B/C, 明かされし過去.
+- Nilai: roster BGM showcase + **track-id** utk sound-test engine (P6);
+  roster penuh via SEQ_* di dbx/dispos (sudah ada); nama display = JP
+  (canon) — label EN tidak ada di disc (bukan asset hilang).
+
 ### BRV-CHR-003 — TABEL SUPPORT/RELIANCE/DIVINE FE8Data — DECODED (struct)
 - **`KiznaData@0x14674` = 36×[PID_A][PID_B][u32-flag] triples (12B)** —
   **DAFTAR PASANGAN SUPPORT** dari disc (`HIBUCCHI×MAP21_DKN_3`,
