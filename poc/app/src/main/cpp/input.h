@@ -13,7 +13,10 @@ enum Act : uint8_t {
   ACT_CONFIRM = 5,                                      /* A: menu confirm / harness mix */
   ACT_CANCEL = 6,                                       /* B: back / harness anim cycle */
   ACT_DEBUG_TEX = 7,                                    /* debug-only texture cycle */
-  ACT_COUNT = 8
+  ACT_DIALOG = 8,                                       /* scene-stack: push dialog (pad X) */
+  ACT_BATTLE = 9,                                       /* scene-stack: push battle (pad Y) */
+  ACT_BACK = 10,                                        /* system back (KEYCODE_BACK) */
+  ACT_COUNT = 11
 };
 
 /* Tiny mutex ring: producers on UI/USB threads, single consumer on engine frame.

@@ -99,14 +99,24 @@ struct Mixer : oboe::AudioStreamDataCallback, oboe::AudioStreamErrorCallback {
 };
 static Mixer g_mixer;
 
+// ---------- scenes [P3-SCN-001] ----------
+#include "scene.h"
+static SceneStack g_sm;                 // root = ATTRACT; cold boot lands here (product rule)
+static FadeState g_fd = FD_IN;          // boot itself fades in from black
+static float g_fDim = 1.f;              // 1 = black, 0 = full image (uDim multiplier)
+static int g_fdOp = 0;                  // pending op applied at black: 1 replace 2 push 3 pop
+static SceneId g_fdId = SC_ATTRACT;
+static float g_sceneDim = 1.f;          // dialog/battle keep a 0.5 world dim outside transitions
+static float g_camDist = 55.f;          // eased per-scene camera distance
+
 // ---------- GL ----------
 static const char* VS = R"(#version 300 es
 layout(location=0) in vec3 aPos; layout(location=1) in vec3 aNrm; layout(location=2) in vec2 aUV;
 uniform mat4 uMVP; out vec3 vN; out vec2 vUV;
 void main(){ vN=aNrm; vUV=aUV; gl_Position=uMVP*vec4(aPos,1.0); })";
 static const char* FS = R"(#version 300 es
-precision mediump float; in vec3 vN; in vec2 vUV; uniform sampler2D uTex; out vec4 o;
-void main(){ vec3 c=texture(uTex,vUV).rgb; float l=0.35+0.65*max(dot(normalize(vN),normalize(vec3(0.4,0.8,0.6))),0.0); o=vec4(c*l,1.0); })";
+precision mediump float; in vec3 vN; in vec2 vUV; uniform sampler2D uTex; uniform float uDim; out vec4 o;
+void main(){ vec3 c=texture(uTex,vUV).rgb; float l=0.35+0.65*max(dot(normalize(vN),normalize(vec3(0.4,0.8,0.6))),0.0); o=vec4(c*l*uDim,1.0); })";
 static const char* VS2 = R"(#version 300 es
 layout(location=0) in vec2 aPos; layout(location=1) in float aIdx;
 uniform vec2 uScr; uniform float uHeld[8]; out float vH;
@@ -490,7 +500,7 @@ static void render(int w, int h) {
   mat4 proj = {};
   proj.m[0] = f / aspect; proj.m[5] = f; proj.m[10] = (far + near) / (near - far);
   proj.m[11] = -1; proj.m[14] = 2 * far * near / (near - far);
-  float yaw = g_camYaw.load() * 3.14159265f / 180.f, pit = g_camPitch.load() * 3.14159265f / 180.f, dist = 55.f;
+  float yaw = g_camYaw.load() * 3.14159265f / 180.f, pit = g_camPitch.load() * 3.14159265f / 180.f, dist = g_camDist;
   float ex = g_camFx + sinf(yaw) * cosf(pit) * dist, ey = sinf(pit) * dist, ez = g_camFz + cosf(yaw) * cosf(pit) * dist;
   float fx = g_camFx, fy = 8, fz = g_camFz;
   // view = lookAt (column-major, GL)
@@ -515,6 +525,7 @@ static void render(int w, int h) {
 
   if (g_triCount) {
     glUseProgram(g_prog);
+    glUniform1f(glGetUniformLocation(g_prog, "uDim"), g_fDim * g_sceneDim);
     glUniformMatrix4fv(glGetUniformLocation(g_prog, "uMVP"), 1, GL_FALSE, mvp.m);
     glUniform1i(glGetUniformLocation(g_prog, "uTex"), 0);
     glActiveTexture(GL_TEXTURE0);
@@ -634,6 +645,38 @@ static void draw_buttons(int w, int h) {
   glEnable(GL_DEPTH_TEST);
 }
 
+/* ---------- scene plumbing [P3-SCN-001] ----------
+ * Ops queue and execute at fade==1 so every scene change is an invisible cut. */
+static void scene_req(int op, SceneId id) {
+  if (g_fd == FD_NONE) { g_fd = FD_OUT; g_fdOp = op; g_fdId = id; }
+}
+static void scene_enter(SceneId s) {
+  g_sceneDim = (s == SC_ATTRACT || s == SC_WORLD) ? 1.f : 0.5f;
+  g_mixer.targetB.store(s == SC_BATTLE ? 1.f : 0.f); /* battle = boss theme crossfade */
+  LOGI("scene: enter %s depth=%d dim=%.2f bossMix=%d", scene_name(s), g_sm.depth(), g_sceneDim, s == SC_BATTLE);
+}
+static void scene_tick() {
+  if (g_fd == FD_OUT) {
+    g_fDim += 0.083f; /* ~12 frames @60 */
+    if (g_fDim >= 1.f) {
+      g_fDim = 1.f;
+      SceneId was = g_sm.top();
+      switch (g_fdOp) { case 1: g_sm.replace(g_fdId); break; case 2: g_sm.push(g_fdId); break; case 3: g_sm.pop(); break; }
+      scene_enter(g_sm.top());
+      LOGI("scene: %s -> %s", scene_name(was), scene_name(g_sm.top()));
+      g_fd = FD_IN;
+    }
+  } else if (g_fd == FD_IN) {
+    g_fDim -= 0.083f;
+    if (g_fDim <= 0.f) { g_fDim = 0.f; g_fd = FD_NONE; }
+  }
+  SceneId s = g_sm.top();
+  float dT = s == SC_DIALOG ? 22.f : s == SC_BATTLE ? 30.f : s == SC_ATTRACT ? 40.f : 55.f;
+  g_camDist += (dT - g_camDist) * 0.05f;
+  if (s == SC_ATTRACT) g_camYaw.store(g_camYaw.load() + 0.15f);  /* slow showcase orbit */
+  else if (s == SC_BATTLE) g_camYaw.store(g_camYaw.load() + 0.4f);
+}
+
 static int g_texPickSel = -1; /* engine-thread only */
 static void on_input(Act action) {
   if (g_paused.load() && (int)action <= ACT_DOWN) return; /* paused: grid nav frozen */
@@ -694,6 +737,9 @@ static void pad_update(const PadState& p) {
   }
   if (e & (1u << PADB_A)) g_acts.push(ACT_CONFIRM);  /* confirm == overlay A semantics */
   if (e & (1u << PADB_B)) g_acts.push(ACT_CANCEL);   /* back    == overlay B semantics */
+  if (e & (1u << PADB_X)) g_acts.push(ACT_DIALOG);   /* scene-stack test pushes [P3-SCN-001] */
+  if (e & (1u << PADB_Y)) g_acts.push(ACT_BATTLE);
+  if (e & (1u << PADB_GUIDE)) g_acts.push(ACT_BACK); /* KEYCODE_BACK lands here */
   /* dpad + hat -> grid nav with auto-repeat */
   int dcode = 0;
   if (p.btn[PADB_DPLEFT]) dcode = 1; else if (p.btn[PADB_DPRIGHT]) dcode = 2;
@@ -821,21 +867,35 @@ static void engine_main(AAssetManager* am) {
   upload_mesh();
   build_grid();
   audio_start();
+  LOGI("scene: root=%s (fade-in)", scene_name(g_sm.top())); /* cold boot lands on attract */
   long long last = 0; int frames = 0; long long fpsT0 = 0;
   long long g_latMax = 0; int g_latN = 0; /* 2s-window tap->render stats */
   while (true) {
     InputState in = input_poll();          /* ONE object for all layers */
     pad_update(in.pad);                    /* inert until a pad is seen */
     Act a;                                 /* [P3-INP-001] all sources drained here */
-    while (g_acts.pop(&a)) on_input(a);
-    /* ground tap -> path queue (consume request set by UI thread) */
-    if (in.touch.tapReq) {
+    SceneId top = g_sm.top();              /* [P3-SCN-001] top scene owns the frame */
+    while (g_acts.pop(&a)) {
+      if (g_fd != FD_NONE) continue;       /* fade covers a scene cut: swallow input */
+      if (top == SC_ATTRACT) {             /* explicit start input leaves attract */
+        if (a == ACT_LEFT || a == ACT_RIGHT || a == ACT_UP || a == ACT_DOWN ||
+            a == ACT_CONFIRM || a == ACT_CANCEL) scene_req(1, SC_WORLD);
+      } else if (top == SC_WORLD) {
+        if (a == ACT_DIALOG) scene_req(2, SC_DIALOG);
+        else if (a == ACT_BATTLE) scene_req(2, SC_BATTLE);
+        else on_input(a);
+      } else {                             /* dialog/battle overlay any scene */
+        if (a == ACT_CONFIRM || a == ACT_CANCEL || a == ACT_BACK) scene_req(3, SC_ATTRACT);
+      }
+    }
+    scene_tick();
+    if (g_sm.top() == SC_WORLD && in.touch.tapReq) {
       int tx = -1, ty = -1;
       tap_to_tile(in.touch.tapNX, in.touch.tapNY, &tx, &ty);
       if (tx >= 0 && !g_paused.load()) { LOGI("tap->tile %d,%d (unit %d,%d)", tx, ty, g_gx, g_gy); queue_path(tx, ty); }
     }
     /* step along queued path: 1.4 world-units/frame ~ 0.35 s/tile @20fps */
-    if (g_pathN > 0 && !g_paused.load()) {
+    if (g_pathN > 0 && !g_paused.load() && g_sm.top() == SC_WORLD) {
       int tgx = g_path[0], tgy = g_path[1];
       float tx = tile_cx(tgx), tz = tile_cx(tgy);
       float dx = tx - g_ux, dz = tz - g_uz;
@@ -850,8 +910,10 @@ static void engine_main(AAssetManager* am) {
        directions world-stable); only focus position trails the unit */
     g_camFx += (g_ux - g_camFx) * 0.06f;
     g_camFz += (g_uz - g_camFz) * 0.06f;
-    // advance ga: ~12 anim fps (frozen while paused = P3 overlay stub)
-    if (!g_paused.load()) g_frameMs++;
+    // advance ga: ~12 anim fps (frozen while paused or under an overlay scene;
+    //   attract keeps idling so the showcase unit breathes)
+    bool frozen = g_paused.load() || (g_sm.top() != SC_WORLD && g_sm.top() != SC_ATTRACT);
+    if (!frozen) g_frameMs++;
     if (g_frameMs >= 3) {
       g_frameMs = 0;
       g_frame++;

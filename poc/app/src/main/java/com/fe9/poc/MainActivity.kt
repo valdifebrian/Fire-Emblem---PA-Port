@@ -137,7 +137,11 @@ class MainActivity : Activity(), SurfaceHolder.Callback {
   /* legacy path: dpad + old-style gamepad keys surface as key events
    * (also covers the only keyboard-adjacent route; KEY repeat spam is safe —
    * C++ ignores press-while-held for edges and repeats dpad on its own timer) */
-  private fun keyToPad(code: Int): Int = when (code) {
+  private fun keyToPad(code: Int): Int {
+    // [P3-SCN-001] scene dev-triggers; when() kept for the rest
+    if (code == KeyEvent.KEYCODE_T) return PADB_X      // push dialog scene
+    if (code == KeyEvent.KEYCODE_M) return PADB_Y      // push battle scene (boss mix)
+    return when (code) {
     KeyEvent.KEYCODE_DPAD_UP -> PADB_DPUP
     KeyEvent.KEYCODE_DPAD_DOWN -> PADB_DPDOWN
     KeyEvent.KEYCODE_DPAD_LEFT -> PADB_DPLEFT
@@ -152,13 +156,16 @@ class MainActivity : Activity(), SurfaceHolder.Callback {
     KeyEvent.KEYCODE_BUTTON_R2 -> PADB_R2
     KeyEvent.KEYCODE_BUTTON_SELECT -> PADB_SELECT
     KeyEvent.KEYCODE_BUTTON_START, KeyEvent.KEYCODE_ENTER -> PADB_START
+    KeyEvent.KEYCODE_BACK -> PADB_GUIDE /* scene pop / refuse-to-exit; consumed in C++ [P3-SCN-001] */
     KeyEvent.KEYCODE_BUTTON_THUMBL -> PADB_L3
     KeyEvent.KEYCODE_BUTTON_THUMBR -> PADB_R3
     else -> -1
   }
+  }
 
   override fun onKeyDown(code: Int, ev: KeyEvent): Boolean {
     val b = keyToPad(code)
+    android.util.Log.i("FE9PoC", "keyDown code=$code pad=$b")
     if (b >= 0) {
       if (ev.repeatCount == 0) nativePadButton(b, true)
       return true
