@@ -1,4 +1,5 @@
 name,argc,impl,script_calls
+set,1,FUN_800bb018,42
 WaitM,1,FUN_800b7790,41
 InstantDispos,1,FUN_801a1934,41
 MapLoad,1,FUN_801a0400,41
@@ -29,6 +30,7 @@ SetEventCameraPrec,1,FUN_801a2004,35
 InstantFocus,2,FUN_800bae4c,34
 UnitFocusOff,0,FUN_801a23d0,34
 EventCameraWait,0,FUN_8019fc08,34
+get,1,FUN_800bb04c,34
 BGMPlay,2,FUN_800b8070,33
 DisableSkip,0,&LAB_800c0ae0,33
 EnableSkip,0,&LAB_800c0acc,32
@@ -47,6 +49,7 @@ InstantDisposRank,1,FUN_801a1884,30
 RectKill,1,FUN_800ba4a8,29
 BMGetTurn,0,&LAB_800bcc24,29
 UnitFadeOut,0,FUN_801a212c,29
+GCST,0,LAB_800bbc50,29
 RectBuild,1,FUN_800ba5ac,27
 CopyMapCamera,0,FUN_8019ff68,27
 AchieveSet,2,FUN_801b7818,27
@@ -78,6 +81,7 @@ Focus,2,FUN_800bad9c,18
 SFXPlay,1,FUN_800b7a2c,18
 Maniac,0,&LAB_800b78d4,18
 BuildInstShow,2,FUN_8019f9b4,18
+Join,1,FUN_800b7140,18
 BGMMute,2,FUN_800b7d08,16
 BGMCont,2,FUN_800b7c4c,16
 UnitMoveDir,2,FUN_801a1198,16
@@ -91,6 +95,7 @@ RectMoveOffset,5,FUN_800b9c14,13
 UnitTransform,2,FUN_801a0434,13
 InstantDisposFirst,1,FUN_801a17a0,13
 GMapPointOn,6,FUN_800b9630,12
+Hard,0,LAB_800b78f0,12
 DialogTutorial,1,FUN_800b8f98,11
 ENVNoisyOff,0,FUN_800b7948,11
 UnitQueryJID,2,FUN_800bce64,11
@@ -217,6 +222,7 @@ SetWeather,1,FUN_801a01d8,2
 SetAmbient,3,FUN_801a016c,2
 BuildInstAnim,3,FUN_8019fa50,2
 SetPullCursor,1,&LAB_8019e690,2
+clr,1,FUN_800bafe4,2
 global,1,FUN_800bb0b4,1
 TalkExist,0,FUN_800baeac,1
 RectFadeOutDelete,2,FUN_800b9a34,1
@@ -311,6 +317,14 @@ UnitSetFixed,2,&LAB_8019e5d4,1
 EnemyUnitCheckByPID,1,FUN_801b7564,1
 EnemyMonkCheck,0,FUN_801b7488,1
 EnemySelfDefenceCheck,0,FUN_801b73dc,1
+_gi,2,FUN_800ba69c,1
+td,1,FUN_800b8ed0,1
+tde,0,LAB_800b8ebc,1
+_mf1,0,FUN_8014c6e0,1
+_mf2,0,FUN_8014c6b8,1
+_pa,1,FUN_801275bc,1
+_tt,1,FUN_80126fa0,1
+_tr,0,FUN_80126f7c,1
 SetTerrain,3,&LAB_800ba75c,0
 TalkEventDirect,1,FUN_800baf80,0
 RectMove,6,FUN_800b9c38,0
@@ -389,3 +403,5 @@ PlayerEscapeCheck,0,FUN_801b7260,0
 PlayerEscapeCount,0,FUN_801b7188,0
 ShooterBulletCheck,0,FUN_801b70c8,0
 GetDiedPlayerCount,0,&LAB_801b7094,0
+Fade,2,FUN_800b8a28,0
+dump,0,FUN_80016538,0
