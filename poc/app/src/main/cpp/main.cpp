@@ -366,6 +366,10 @@ struct WUnit {
   int path[64]; int pathN;       /* flat (gx,gy) FIFO per unit */
 };
 static WUnit g_u[MAXU]; static int g_nu = 0;
+/* [BRV-SCT-005p] FE9 analogs: 0x80330EAC lastDied + UnitsPop/Push snapshot
+ * stack (FE9 buffer 0xA000 subset; we snapshot the full mirror). */
+static int g_lastDied = -1;
+static WUnit g_snap[6][MAXU]; static int g_snapNu[6], g_snapN = 0;
 static int g_cur = 0;            /* active unit index (script moves / camera) */
 static uint8_t g_cost[MAP_TW * MAP_TH]; /* baked: 1=land, 99=water */
 static uint8_t g_exits[64][2]; static int g_nExits = 0;
@@ -511,7 +515,7 @@ static void strike_seq(WUnit* A, WUnit* D) {
     D->hp -= dmg;
     LOGI("btl: %s->%s dmg=%d%s hp=%d/%d", A->pid, D->pid, dmg, crit ? " CRIT" : "",
          D->hp > 0 ? D->hp : 0, D->mhp);
-    if (D->hp <= 0) { D->dead = 1; LOGI("btl: %s DOWN", D->pid); }
+    if (D->hp <= 0) { D->dead = 1; g_lastDied = (int)(D - g_u); /* [BRV-SCT-005p] 0x80330EAC */ LOGI("btl: %s DOWN", D->pid); }
   }
 }
 static void battle_exchange(WUnit* A, WUnit* D) {
@@ -1810,6 +1814,27 @@ static int scrTileLog(vm::Vm&, uint32_t* a, int c, uint32_t* o) {
   if (o) *o = 0; /* no instances on scr maps yet -> FE9 returns found=0 */
   return 0;
 }
+/* [BRV-SCT-005p] UnitsPop = capture snapshot; UnitsPush_Uninitialize =
+ * restore+drop (FE9 stack-mgr DAT_803206EC). Depth 6 mirrors FE9 usage. */
+static int scrUnitsPop(vm::Vm&, uint32_t*, int, uint32_t*) {
+ if (g_snapN >= 6) { LOGI("scr UnitsPop: stack FULL"); return 0; }
+ memcpy(g_snap[g_snapN], g_u, sizeof(WUnit) * MAXU);
+ g_snapNu[g_snapN] = g_nu; g_snapN++;
+ LOGI("scr UnitsPop: snapshot #%d nu=%d", g_snapN, g_nu);
+ return 1;
+}
+static int scrUnitsRestore(vm::Vm&, uint32_t*, int, uint32_t*) {
+ if (g_snapN <= 0) { LOGI("scr UnitsPush_Uninit: EMPTY stack"); return 0; }
+ g_snapN--; g_nu = g_snapNu[g_snapN];
+ memcpy(g_u, g_snap[g_snapN], sizeof(WUnit) * MAXU);
+ LOGI("scr UnitsPush_Uninitialize: restore nu=%d", g_nu);
+ return 1;
+}
+static int scrDieTalk(vm::Vm&, uint32_t*, int, uint32_t*) {
+ LOGI("scr DefaultDieTalk lastDied=%d%s", g_lastDied,
+      g_lastDied >= 0 && g_lastDied < MAXU ? g_u[g_lastDied].pid : "");
+ return 1;
+}
 struct ScrOv { const char* n; int (*fn)(vm::Vm&, uint32_t*, int, uint32_t*); };
 static const ScrOv SCR_OVS[] = {
   {"WaitM", scrWaitM}, {"Wait", scrWaitM}, {"WaitM2", scrWaitM}, {"WaitSecs", scrWaitM},
@@ -1860,7 +1885,9 @@ static const ScrOv SCR_OVS[] = {
   {"SetEventCameraPrec", scrPass},
   {"BuildInstHide", scrTileLog}, {"BuildInstShow", scrTileLog},
   {"BuildDestruction", scrTileLog}, {"SetShooter", scrTileLog},
-  {"RectKill", scrPass}, {"RectSetCurve", scrPass}, {"DefaultDieTalk", scrPass},
+  {"RectKill", scrPass}, {"RectSetCurve", scrPass}, {"DefaultDieTalk", scrDieTalk},
+ /* [BRV-SCT-005p] */
+ {"UnitsPop", scrUnitsPop}, {"UnitsPush_Uninitialize", scrUnitsRestore},
 };
 static void script_init(void) {
   const uint8_t* d; int n;
