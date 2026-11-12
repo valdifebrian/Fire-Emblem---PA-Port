@@ -870,3 +870,34 @@ header 0x20, data@X+0x20) + verifikasi byte-level `out/raw/dispos_c.bin`:
 - **STATUS**: struktur + grammar = CLOSED; **semantik tiap u32 param** (radius aggro,
   id spawn, layer difficulty) = dikerjakan saat implementasi AI (P1-gameplay) dgn
   cross-check dispos.cmp pack per-chapter. [AM-062]
+
+### BRV-SCT-005f — RE-AUDIT SEMANTIK BATCH-3 + KOREKSI `InstantDispos` — DECODED
+Re-audit 18 impl top-callsite (pseudocode decAll) + call-site literal C00 — satu
+KOREKSI kesalahan label di 005c, sisanya konfirmasi + detail layout baru:
+- **KOREKSI `InstantDispos(name)`** (BUKAN despawn per-PID — klaim 005c SALAH):
+  core `FUN_80105f0c(name,0,flag)` = (1) intern nama (`FUN_8000d354`); (2) baca record
+  dispos: field X=+0x0A, Y=+0x0B byte; (3) jika unit PID sudah ADA (`FUN_80016bdc`
+  scan 0x188) → handle-nya ditulis ke record gerak (+0x3c); (4) JIKA TIDAK → jalur
+  INSTANSIASI unit baru (`FUN_80107d64(clsPtr,x,y,...)`). Call-site literal:
+  `MapLoad "Map6_mikata_n"` → `SallySetByGroup "Map6"` → `InstantDispos "Map6_first_n"`
+  (nama PACK dispos <map>_<scene>_<diff>, bukan PID) ⇒ semantik = **tempatkan unit
+  instan dari pack dispos aktif (spawn-instant, 0=reguler/1=first per 005e)**.
+  Kontrak engine: spawn-instant, bukan despawn.
+- **FLAG TABLE `0x803307bc` presisi layout** (005e + impl): 96 slot ×
+  `{ u32 namePtr[i] @i*4 ; u32 hash[i] @0x180+i*4 ; bit[i] @0x300+(i>>3) }` —
+  `regist(n)` = isi slot kosong pertama (top-down) name+hash (return 1);
+  `set(n)` = hash-lookup + strcmp → bit ON (return 0); get/clr per 005e.
+  Engine: Map<string,bool> sudah memadai; capacity 96/script-context dicatat.
+- **BGM slot table** = `DAT_8032ff08` stride **0x30/slot**, flag bit0 = aktif,
+  vtable+8 = isPlaying; `BGMFadeOut(ch,frames)`: hanya bila playing → fade;
+  **`ch==0` juga memicu `FUN_80146b00()` = clear auto-BGM global** (detail baru).
+- **`TimeiShow(x,y,ptr,...)` argc6**: arg3 divalidasi pointer ROM
+  (0x80000000..0x817FFFFF) — di luar rentang = no-op return 0.
+- **`ENVSilentOff(0)`** = `FUN_80145520()`; `ENVSilentOn(n)` clamp ≥0 →
+  `FUN_801455b8(n)` — pasangan level senyap lingkungan.
+- **Konfirmasi ulang (tanpa perubahan)**: protokol wait 1-frame-queue
+  `DAT_8028d22c rec+0x60`, skip-flag r13-0x7c90 bit0, flag-touch
+  `FUN_80013864` (keep-alive per frame), kamera rec float (identitas int per 005e;
+  InstantSetMapCamera duplikasi +0x10/+0x14 = replika), FocusHardWait 2-fase +
+  wait-table `DAT_8028d19c` + focus global 0x80320060, AllUnitEscape = filter
+  kelas (`FUN_80015320(3,buf)` + kelas ptr@+0x190 byte+8) → escape semua lolos. [AM-076]
