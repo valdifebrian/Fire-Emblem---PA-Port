@@ -50,6 +50,11 @@ Dari mana saja: rekam `cap4_ui.dmo`, di dalam map Chapter 1: zoom/rotate kamera
 (kalau ada), buka menu unit (info panel), buka inventory, buka menu pause,
 tutup semua. Stop + 3 screenshot (info panel, inventory, pause).
 
+> NOTE (2026-11-13): save-state F1..F4 dari CAP-3 juga dipakai offline untuk
+> **pin field ItemData**: UNIP di RAM-state = [u16 id][u8 dur] per slot item
+> (SVT-002) — dur byte ↔ scan ItemData.bin(96B/rec) = pin instan kolom
+> durability/Mt; tidak perlu capture tambahan.
+
 ## Setelah selesai — lapor
 Copy SEMUA file ini ke `C:\Kodingan\fe9-captures\`:
 - `C:\Dolphin\User\Movie\GFEE01\*.dmo` (semua recording input)

@@ -1182,7 +1182,19 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   +4 **MJID_*** (promo-target), +8 **MH_J_*** (help), +0x18 region
   konstan/kamera? +0x44 region scene — field move/range numeric BELUM
   terpetakan (P4); registry nama kelas 115 valid semua.
-- ItemData@0x9c90 (16948B) tersisa field-map numeric (P4).
+- ItemData@0x9c90 = **[u32 189] + 189 rec × 96B** (stride 96 TERKONFIRMASI:
+  4+189×96=16948 ✓; reloc densitas tinggi; col0-3 = ptr nama IID_/MIID_/
+  MH_I_/help). **Numeric zone = 0x40..0x5F (20×u8)**; kolom terdepan (diff
+  IRON vs STEEL pair, 2026-11-13): **+0x41 = Mt** (IRONAXE 8 ✓ BTL-007
+  ground-truth, STEELAXE 16, SILVERSWORD 15), **+0x42 = durability**
+  (STEELAXE 35 ✓ capture-observed 35, IRONAXE 45 ∈ {44/45} observed ✓),
+  +0x43..+0x48 = rank/wtype/hit modifiers, +0x54..+0x5B = byte-pair
+  konstan-per-tier (0x05/0xFB efek?) — CATATAN: sebagian record (IRON-
+  SWORD/LANCE, SILVERAXE, STEELLANCE) pola byte TIDAK selaras = walk()
+  salah-tembak nama (suffix-dedup collision) ⇒ pin akhir field = **UNIP
+  save capture** (SVT-002: item = [u16 id][u8 dur] — dur byte save ↔ scan
+  tabel = pin instan semua durability; TAMBRAH ke sheet device: tarik
+  save.bin via SVT-001 IO).
 
 ### BRV-REG-001 — KELUARGA POINTER-PATCH-REGISTRY CLOSED (FE8Anim/FE8Effect/cp_data) — DECODED
 - **Semantik loader universal DEFINITIF** (`FUN_8003fccc`→`FUN_8003f87c`,
