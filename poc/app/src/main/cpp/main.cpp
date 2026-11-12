@@ -41,10 +41,11 @@
 #include "texfile.h"
 #include "stmdec.h"
 #include "resmgr.h"
+#include "input.h"
 
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "FE9PoC", __VA_ARGS__)
 
-static std::atomic<int> g_action{0};      // 0 none, 1..8 dpad/a/b edge
+static ActQueue g_acts;  // [P3-INP-001] one edge queue, three producers (touch/pad/keyboard)
 static std::atomic<float> g_touchYaw{0.f};
 static std::atomic<int> g_tapsIn100ms{0};
 static std::atomic<float> g_mixB{0.f};    // gain of stream B 0..1
@@ -67,7 +68,7 @@ static std::atomic<int> g_padConnected{0};           // sticky once any pad inpu
 static std::atomic<unsigned> g_padEdge{0};           // bit i = fresh press of PADB_i
 static std::atomic<int> g_paused{0};                 // START overlay toggle (P3 menu stub)
 
-struct TouchState { int action; float tapNX, tapNY; bool tapReq; int taps100ms; };
+struct TouchState { float tapNX, tapNY; bool tapReq; int taps100ms; };
 struct PadState    { bool btn[PADB_COUNT]; float ax[PADAX_COUNT]; bool connected; };
 struct InputState  { TouchState touch; PadState pad; };
 
@@ -634,9 +635,9 @@ static void draw_buttons(int w, int h) {
 }
 
 static int g_texPickSel = -1; /* engine-thread only */
-static void on_input(int action) {
-  if (g_paused.load() && action <= 4) return; /* paused: grid nav frozen */
-  if (action == 7) { /* T = cycle every decodable FE9 image (tpl+cms) into the unit slot */
+static void on_input(Act action) {
+  if (g_paused.load() && (int)action <= ACT_DOWN) return; /* paused: grid nav frozen */
+  if (action == ACT_DEBUG_TEX) { /* T = cycle every decodable FE9 image (tpl+cms) into the unit slot */
     if (!g_texId) return;
     tpl_file* srcs[2] = {&g_texA, &g_tex};
     int total = 0, siPick = 0, iPick = 0;
@@ -655,9 +656,10 @@ static void on_input(int action) {
     return;
   }
   switch (action) {
-    case 1: case 2: case 3: case 4: dpad_step(action); break; /* screen-direction -> world axis */
-    case 5: g_mixB.store(1.f - g_mixB.load()); g_mixer.targetB.store(g_mixB.load()); break; // A = mix B on/off
-    case 6: { /* B = cycle anim set */
+    case ACT_LEFT: case ACT_RIGHT: case ACT_UP: case ACT_DOWN:
+      dpad_step((int)action); break; /* screen-direction -> world axis */
+    case ACT_CONFIRM: g_mixB.store(1.f - g_mixB.load()); g_mixer.targetB.store(g_mixB.load()); break; // A = mix B on/off
+    case ACT_CANCEL: { /* B = cycle anim set */
       g_gaSel = (g_gaSel + 1) & 3;
       if (g_gas[g_gaSel].endF > 0) { memcpy(&g_ga, &g_gas[g_gaSel], sizeof(g_ga)); g_frame = g_ga.startF; }
       LOGI("anim -> %s frames %d..%d", GA_LABEL[g_gaSel], g_ga.startF, g_ga.endF);
@@ -690,8 +692,8 @@ static void pad_update(const PadState& p) {
     g_camFx = g_ux; g_camFz = g_uz;   /* instant fit */
     LOGI("pad: camera fit");
   }
-  if (e & (1u << PADB_A)) on_input(5);  /* confirm == overlay A semantics */
-  if (e & (1u << PADB_B)) on_input(6);  /* back    == overlay B semantics */
+  if (e & (1u << PADB_A)) g_acts.push(ACT_CONFIRM);  /* confirm == overlay A semantics */
+  if (e & (1u << PADB_B)) g_acts.push(ACT_CANCEL);   /* back    == overlay B semantics */
   /* dpad + hat -> grid nav with auto-repeat */
   int dcode = 0;
   if (p.btn[PADB_DPLEFT]) dcode = 1; else if (p.btn[PADB_DPRIGHT]) dcode = 2;
@@ -702,7 +704,7 @@ static void pad_update(const PadState& p) {
   }
   static int repCnt = 0, repLast = 0;
   if (dcode) {
-    if (dcode != repLast || ++repCnt >= 12) { on_input(dcode); repLast = dcode; repCnt = 0; }
+    if (dcode != repLast || ++repCnt >= 12) { g_acts.push((Act)dcode); repLast = dcode; repCnt = 0; }
   } else { repCnt = 0; repLast = 0; }
   /* sticks: deadzone 0.25 */
   auto dz = [](float v) { return (v > -0.25f && v < 0.25f) ? 0.f : v; };
@@ -719,7 +721,6 @@ static void pad_update(const PadState& p) {
 /* one snapshot per frame: engine layers consume ONE object from here on */
 static InputState input_poll() {
   InputState in{};
-  in.touch.action = g_action.exchange(0);
   in.touch.tapNX = g_tapNX.load();
   in.touch.tapNY = g_tapNY.load();
   in.touch.tapReq = g_tapReq.exchange(0) != 0;
@@ -760,7 +761,7 @@ static void touch_event(float nx, float ny, int action, int slot) {
         if (action == 0) { /* fresh press edge */
           g_tapDownT.store(mono_ns());
           g_tapsIn100ms.fetch_add(1);
-          g_action.store(code);
+          g_acts.push((Act)code);
         }
       }
     } else if (action == 0) {
@@ -825,8 +826,8 @@ static void engine_main(AAssetManager* am) {
   while (true) {
     InputState in = input_poll();          /* ONE object for all layers */
     pad_update(in.pad);                    /* inert until a pad is seen */
-    int a = in.touch.action;
-    if (a) on_input(a);
+    Act a;                                 /* [P3-INP-001] all sources drained here */
+    while (g_acts.pop(&a)) on_input(a);
     /* ground tap -> path queue (consume request set by UI thread) */
     if (in.touch.tapReq) {
       int tx = -1, ty = -1;
