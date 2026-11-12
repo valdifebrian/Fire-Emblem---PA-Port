@@ -51,3 +51,13 @@
   (model+sebagian tex terganti, area MAGENTA = slot tekstur tak dicakup file override = limitasi by-design);
   restored=normal ✓ → **OVR device QA PASS dgn catatan coverage**.
 - `poc_emu13.png`, `agent/` 557 artefak lama tetap arsip.
+
+## Penambahan offline mining (2026-11-12 sesi sore)
+- **staffroll.bin CLOSED 105/105**: tabel offset u32 @2780 (≈4-aligned ±8) + monotonic matching → urutan kredit
+  tampil penuh (tag `#F04*`, nama ASCII+SJIS 川西, duplikat bersebelahan = label role berlanjut) →
+  `docs/data/staffroll_credits.csv`. Sisa row `/ending|.bin` = RectFinale (rect ending) → tetap Partial.
+- **/shop shopitem_h/m/n** (tetap Partial, struktur terpetakan): `T1[16..tOff)` = u32 pointer array TER-SEPARASI 0 →
+  **1013 grup** (ukuran 2-14 = daftar stok per toko); slot table `@tOff+32` (cnt u32 → entri T1 non-separator);
+  pool = 41 IID_* + MDV_* + ts 2005-02-20; tail pool = hook event `WSHOP_ITEMS_C0..C31` per chapter.
+  PR kecil: rule presisi pointer→nama (posisi 4-aligned meleset 0-8 dr start) + field harga/qty = P5 ekonomi.
+- Counts tetap: 31 Decoded / 13 Partial / 1 Investigating / 10 Discovered / 2 Deferred.
