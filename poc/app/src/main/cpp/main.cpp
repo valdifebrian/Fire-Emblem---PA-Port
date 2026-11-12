@@ -40,6 +40,7 @@
 #include "gaanim.h"
 #include "texfile.h"
 #include "stmdec.h"
+#include "resmgr.h"
 
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "FE9PoC", __VA_ARGS__)
 
@@ -217,6 +218,16 @@ static bool override_read(const char* name, std::vector<uint8_t>& v) {
   }
   return false;
 }
+/* Raw provider for ResMgr [P3-RES-001]: override dir first (IP-swap path),
+ * then FPK entry copy. resmgr.h owns caching/LRU/prefetch on top of this. */
+static bool raw_provider(const char* name, std::vector<uint8_t>& v) {
+  if (override_read(name, v)) return true;
+  const fpk_entry* e = fpk_find(&g_fpak, name);
+  if (e) v.assign(g_fpak.data + e->off, g_fpak.data + e->off + e->len);
+  return e != nullptr;
+}
+static ResMgr g_res;
+
 static g_model g_g; static gs_body g_gs; static ga_anim g_ga;
 static ga_anim g_gas[4]; static int g_gaSel = 0;
 static const char* const GA_LABEL[4] = {"move_n", "move_bw", "wait_n", "wait_bw"};
@@ -321,12 +332,13 @@ static void load_asset(AAssetManager* am) {
   LOGI("fpk_open=%d (0=ok)", r);
   if (r) return;
   override_init();
+  g_res.init(raw_provider, 32u << 20); /* 32 MB cache budget [P3-RES-001] */
   auto rd = [&](const char* name, std::vector<uint8_t>& v) -> bool {
-    if (override_read(name, v)) return true;
-    const fpk_entry* e = fpk_find(&g_fpak, name);
-    if (e) v.assign(g_fpak.data + e->off, g_fpak.data + e->off + e->len);
-    LOGI("entry %s -> %s len=%u", name, e ? "ok" : "MISSING", e ? e->len : 0);
-    return e != nullptr;
+    const uint8_t* d; int n;
+    if (!g_res.read(name, &d, &n)) { LOGI("entry %s -> MISSING", name); return false; }
+    v.assign(d, d + n);
+    LOGI("entry %s -> ok len=%d (resmgr)", name, n);
+    return true;
   };
   rd("archer/skeleton.g", buf_g); rd("archer/body.gs", buf_gs);
   for (int i = 0; i < 4; i++) rd(GA_ENTRY[i], buf_ga[i]);
@@ -353,6 +365,9 @@ static void load_asset(AAssetManager* am) {
       LOGI("tex[%d] %dx%d fmt=%d ok=%d", i, g_tex.imgs[i].w, g_tex.imgs[i].h, g_tex.imgs[i].fmt, g_tex.imgs[i].ok);
   }
   rd("bgm/boss1.stm", g_stmA); rd("bgm/boss2.stm", g_stmB);
+  /* P3-RES-001 prefetch demo: next-scene asset loads on the worker while the
+   * engine runs; later g_res.read() must hit cache (miss stays 11). */
+  g_res.prefetch("archer/tex_5.tpl");
   if (!g_stmA.empty()) { if (stm_decode(&g_sA, g_stmA.data(), (int)g_stmA.size()) == 0) LOGI("stm A sr=%d frames=%d loop=%d", g_sA.sr, g_sA.pcmFrames, g_sA.loopStart); }
   if (!g_stmB.empty()) { if (stm_decode(&g_sB, g_stmB.data(), (int)g_stmB.size()) == 0) LOGI("stm B sr=%d frames=%d", g_sB.sr, g_sB.pcmFrames); }
 }
@@ -861,9 +876,11 @@ static void engine_main(AAssetManager* am) {
         long long v; if (fscanf(tf, "%lld", &v) == 1) millic = (int)v;
         fclose(tf);
       }
-      LOGI("fps=%d taps2s=%d tile=%d,%d path=%d camYaw=%.0f tapLatMax=%lldus tapLatN=%d th=%dC",
+      size_t rused, rhits, rmiss, rfails; g_res.stats(&rused, &rhits, &rmiss, &rfails);
+      LOGI("fps=%d taps2s=%d tile=%d,%d path=%d camYaw=%.0f tapLatMax=%lldus tapLatN=%d th=%dC res=%zuK h=%zu m=%zu f=%zu",
            frames * 500000000LL / (now - fpsT0), tapr, g_gx, g_gy, g_pathN, g_camYaw.load(),
-           g_latMax / 1000, g_latN, millic < 0 ? -1 : millic / 1000);
+           g_latMax / 1000, g_latN, millic < 0 ? -1 : millic / 1000,
+           rused >> 10, rhits, rmiss, rfails);
       frames = 0; fpsT0 = now; g_latMax = 0; g_latN = 0;
     }
     (void)last;
