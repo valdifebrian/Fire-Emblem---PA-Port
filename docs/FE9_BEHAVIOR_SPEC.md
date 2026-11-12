@@ -1092,6 +1092,43 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
 - `FUN_800b36d8` = pembuka bank suara (session 0x80319aa8, path "/pool") — titik
   masuk SE utk PoC Android saat AUD. [AM-079]
 
+### BRV-SCT-005j — GOLDEN-TRACE BER-STRING VMSTR: GRAMMAR SKENARIO CH1 LENGKAP (args string ter-resolve statis) — DECODED
+- **`vmtest --VMSTR`** (edit `poc/tools/vmtest.cpp` histHook; env `VMSTR=1` +
+  `VMGOLD=csv`): golden trace kini menulis STRING RAM ter-resolve di samping hex
+  tiap arg ⇒ **dekode arg native statis tanpa device** (intern bump base ≈0x45800,
+  blok ±0x40). Replay C01 Opening0 60k frames = 4525 panggilan natives.
+- **Rantai pembuka Ch1 (verbatim, frame-akurat)**: `MoviePlay("movie/s01.thp")` →
+  `ChapterMoviePlay(1)` → `MapLoad("bmap01")` (bukan "map01"!) → `SetGrid(0)`
+  `SetCircle(0)` `SetOutLink(0)` `UnitFocusOff` → `InstantFocus(4,7)` →
+  `InstantSetMapCamera(-55,-?0x37=55,18)` → `SallySetByGroup("bmap01_mikata_c")` →
+  `InstantDisposFirst("bmap01_mikata_c")` `InstantDisposFirst("bmap01_first_c")` →
+  `InstantDisposFirstSetMode("bmap01_first_g_n","_g_h","_g_m")` ×2 (arg2
+  `bmap01_first_n/h/m`) → `UnitSetPosDirByPID("PID_BOLE_MAP1", 15, 13, dir4)` →
+  rotate×3 (`PID_IKE` dir1, `PID_MIST` dir2, `PID_GREIL_MAP1` dir8) →
+  `UnitGetByPID`×3 → `UnitSetWeaponAway`×3 → f1499 walk-slow paths **numpad**:
+  IKE `"4"`, MIST `"6666"`, GREIL `"444442"`; f2706 `UnitFadeIn` +
+  `UnitSetPosDirByPID(BOLE, 9, 0, 4)` + path `"222224"`; kamera focus (5,6)/zoom
+  0x10; BGM **bernama**: `BGMPlay(2,"BGM_EVT_IKE1")`; f3453
+  `DisposContinueSetMode("bmap01_first_n","_h","_m")`; penutup f4400
+  `UnitGetXByPID/UnitGetYByPID(PID_IKE)` (script baca posisi utk trigger) +
+  `SetOutLink(1)` `Comeback`. ROTASI dir arg = kode numpad mentah (1/2/6/8) +
+  0x10e/0x190 = f64XOR-bias (jalur float, SCT-005h) utk arg2. [BRV-MAP-005 xref]
+- **dispos per-peta bmap01 (out/bmap01/dispos_{c,h,m,n}.bin, 905/586/566/566B,
+  grid-112 stride variant)** pool ASCII = KEBENARAN CH1: squad mikata 4 unit =
+  `PID_IKE`+`PID_MIST`+`PID_BOLE_MAP1`+`PID_GREIL_MAP1`; kelas
+  `JID_FIGHTER`(Ike)+IID_PRACTICESWORD, `JID_CLERIC/F`(Mist), `JID_RANGER`(Bole),
+  `JID_HERO_G`(Greil); pembuka dikunci `SEQ_NOMOVE` `SEQ_NOATTACK` `SEQ_NOHEAL` +
+  `SID_IMMORTAL` (Bole/Greil abadi = reason mereka tak pernah mati di opening);
+  grup event: `bmap01_mikata_c` `bmap01_first_c` (+varian h/m/n)
+  `bmap01_event_bole_c` `bmap01_ending_c` `Abmap01_date_c`; build ts 2005-02-23.
+- **ENEMY Ch1 BUKAN file ini** (0 PID musuh; 48 PID root dispos_c = semuanya
+  karakter cerita) ⇒ gelombang bandit disuplai via `DisposContinueSetMode` yang
+  menunjuk tabel kelas generik (JID_*) — koordinat spawn presisi = **butuh capture
+  runtime** (blocked T-RE-CAP1); engine v1 tetap pakai pool exit maplinkAt.
+- Impl: tooling replay kini jadi oracle string statis (setiap bab bisa dibaca
+  tanpa device: `VMGOLD=... VMSTR=1 vmtest dir Cxx.cmb`); wave schedule engine
+  diberi label data-gap yang sama. [AM-053]
+
 ### BRV-SCT-005i — KONTRAK RUNTIME NATIVE TERVERIFIKASI DEVICE (C01 end-to-end) — DECODED/VERIFIED
 - **Bukti**: emulator-5554 2026-11-12 19:29–19:31 — `script: Opening0 DONE @f=2316 -> WORLD`
   penuh: movie beat → MapLoad → spawn+move → 6 dialog (`MS_01_OP_01`..`OP_04`) →

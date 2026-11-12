@@ -86,7 +86,16 @@ static void histHook(Vm& V, int ni, const uint32_t* args, int argc) {
   gHist[V.natives[ni].name]++;
   if (gGold) {
     std::fprintf(gGold, "%llu,%s", (unsigned long long)V.frame, V.natives[ni].name);
-    for (int i = 0; i < argc; i++) std::fprintf(gGold, ",0x%x", args[i]);
+    static const bool str = getenv("VMSTR") != nullptr;
+    char buf[128];
+    for (int i = 0; i < argc; i++) {
+      std::fprintf(gGold, ",0x%x", args[i]);
+      if (str && args[i] < RAM_SIZE) {
+        const char* s = V.rdCstr(args[i], buf, sizeof buf);
+        if (s && *s) for (const char* p = s; *p; p++)
+          std::fputc(*p == ',' ? ';' : *p, gGold);
+      }
+    }
     std::fputc('\n', gGold);
   }
 }

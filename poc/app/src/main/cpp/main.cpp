@@ -517,7 +517,9 @@ static void world_stats(WUnit* u) { /* v1 stat bake; semantics gate = P4-CHR */
   else { u->mhp = u->hp = 14; u->pow_ = 4; u->skl = 3; u->spd = 5; u->lck = 2;
     u->def_ = 2; u->res = 0; u->mov = 5; u->wmt = 4; u->whit = 80; u->wcrit = 5; }
 }
-static void spawn_wave(int turn) { /* placeholder schedule [NOT extracted data] */
+static void spawn_wave(int turn) { /* [BRV-SCT-005j] real Ch1 enemy feed = DisposContinueSetMode
+ * ("bmap01_first_n/h/m") -> generic-class tables; exact coords need runtime capture
+ * (T-RE-CAP1). Until then: deterministic pool over baked maplinkAt exits. */
   if (g_nExits <= 0) { LOGE("wloop: no exits baked — wave skipped"); return; }
   int made = 0;
   for (int k = 0; k < 4; k++) {
