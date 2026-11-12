@@ -930,3 +930,14 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   dari peta + mask state `&=0xFF88C7FE` + reset substate (+0x1A4 dsb) → lalu
   `FUN_8014da88(0x80330ACC,1)`, flag 0x8033071A=1, phase++ → 0x1D, 0x8033075C=4.
   Konfirmasi mesin fase BMAP (MAP-002) dgn handler eksplisit fase 0x1C. [AM-078]
+
+### UNKNOWN-U012 — Pool deskriptor `0x802832E0+0x21EE0` (segmen data) — Unknown
+Serat `FUN_8002e0d0` TIDAK dipanggil `bl` manapun; satu-satunya xref = **ptr @0x80284FA8**
+(dlm segmen data `0x802832E0+0x21EE0`). Dump area menampilkan pola berulang
+`{u16 tag; u32 funcptr/data}` — tag teramati: 0x200F(+func), 0x2012, 0x2025(+ptr 0x80269311),
+0x100A/0x11001/0x13120B/0x14120B/0x19120B, 0x28100A, 0x21001/0x31001, 0x6100C — kandidat:
+blok cmd scene/event terserialisasi (keluarga CmSleepScript SCT-005) ATAU tabel state
+UI. Handler terikat contoh: FUN_8002e780/8002e648/8002df54/8002df8c/80018af4/801b87e8/
+801f649c. String "TRK_CMD_*" berdekatan = distractor (opcode TRK byte, bukan u16).
+Bukti: `bin/pxref.mjs 8002e0d0` + dump word region. Prioritas: P1-map (saat event/
+scene runner diimplementasi; parser-nya = target investigasi berikutnya).
