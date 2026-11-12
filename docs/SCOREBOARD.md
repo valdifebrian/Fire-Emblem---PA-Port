@@ -111,3 +111,19 @@
 - AI: `ce68(FUN_8003cff0%)` = keputusan serang; keluarga 0x800FA0E8 = pemilih aksi (bukan damage).
 - Impl engine: mirror numerik C++ + golden LFSR test wajib (seed capture saat T-CAP masuk).
   Test T-C1-CALC/T-SYS-EFF tetap Planned (golden case butuh capture) — BRV 54.
+
+## BRV-MAP-002/004 map.bin + FE8Data register — CLOSED (2026-11-12, offline mining)
+- **Parser universal loader `FUN_8003f87c`** (tool `bin/mapbin.mjs`): hdr [size|relTbl|
+  ptrCnt|dirCnt] base+0x20, dir [dataOff|nameOff], pool nama, RELOC `val+0x20=offset file`
+  (kalibrasi terukur 5/5 pointer→nama model).
+- **map.bin bmap01 CLOSED**: capacity **16×14 grid logis** + 5 instance (bmap01, tree_01/02,
+  water0, flower_01 + posisi f32); panelindex u16[16×14] → uniquepanel 86 rec (109 daratan,
+  29 air, sisanya dekor per-tile). Grid engine lama 29×24 = overlay visual (bukan logis).
+- **FE8Data.bin = 112 named-chunk CLOSED** (reloc 6686): 12 tabel data + 100 SID_*;
+  **BattleTerrData hdr [u16 77][u16 42] = bonus tempur per terrain-id** (sumber BRV-BTL-008);
+  TerrainData 77 entri (hash `FUN_8005b7a4` = packed-ASCII ≤4 char). POOL SJIS TERBACA:
+  **MT_×52 material** (平地/移動不可/橋/玉座/宝箱…), **MW_×14 objective** (制圧/到達_15 ✓
+  win-cond C01/全滅/離脱…), MTM_ musik, RID_ bg dialog — kosakata grammar world-loop.
+- Impl P4-M1: movement-cost per tile dari material MT_ + BattleTerrData utk bonus; terrain-id
+  presisi per-tile nunggu capture (blocked P3-M2.4) — Ch1 pakai pemetaan panel (109/29/…) dlu.
+  BRV 55.

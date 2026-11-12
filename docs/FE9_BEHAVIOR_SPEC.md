@@ -886,6 +886,50 @@ Dari decompil impl (decAll) + katalog:
   Avo 0 Def 0 MDf 0"). Sumber struktural terrain masih open (kandidat:
   konsumer `mapbuildinst` atau blok .data tanpa string).
 - Loader chain: MapLoad native (FUN_801a0400) -> baca cmp + map.bin slot.
+- **ADDENDUM 2026-11-12 (tool `bin/mapbin.mjs`, parser general loader FUN_8003f87c)**:
+  kalibrasi RELOK terukur: nilai u32 di slot ter-patch + 0x20 = offset file target
+  (bukti 5/5: pointer mapbuilddesc → nama model). `mapcapacity` = [u16 W=16][u16
+  H=14][u16 nInst=5][u32 0x00e644fa][u16] ⇒ GRID LOGIS Ch1 = 16×14 (bukan 29×24 —
+  29×24 = overlay visual engine; tile 10u model memuat margin). `mapbuilddesc` =
+  5×rec 0x20B: [? u32][f32@+0x10 pos][ptr nama@+0x1c]: (bmap01,31,240,-2),(tree_02),
+  (tree_01),(bmap01_water0), (flower_01) = INSTANCE props + posisi; `mapbuildinst`
+  = 5×0x14B varian u8. `panelindex` = u16[W*H] → **indeks langsung uniquepanel
+  (86 rec)**: histogram bmap01 = id1×109 (daratan), id2×29 (air — cocok water0),
+  id0×1, id3..85 unik ×1 (props/dekor). np uniquepanel = sentinel 0x1757/0x175C
+  (region maplinkAt) = konfirmasi 003. RELOC table 170 entri tervalidasi.
+### BRV-MAP-004  FE8Data.bin = REGISTER 112 NAMED-CHUNK (loader sama map.bin) + TABEL TERRAIN + KOSAKATA — DECODED (semantik field = P4)
+- `FE8Data.bin` (system.cmp) = container IDENTIK format map.bin (base +0x20, hdr
+  [size][tableOff][ptrCnt=6686][dirCnt=112]; dir [dataOff][nameOff]; parse via
+  `bin/mapbin.mjs` — 112/112 nama valid). Chunks: **DatabaseHead** (32B master),
+  12 tabel data = BattleSkyData, **BattleTerrData@0xfa44**, ChapterData, DivineData,
+  GameData, GroupData, **ItemData@0x9c90**, JobData@0x6fa0, KiznaData, **PersonData@0xc**
+  (0xc..0x6fa0 = 28KB stats karakter), RelianceData, SkillData@0xe374 + **100 SID_***
+  (skill/efek bernama SID_*) = 112.
+- **BattleTerrData hdr = [u16 77][u16 42]** ⇒ **77 terrain × 42 field u16** = tabel
+  bonus tempur per terrain-id (DEF/AVO/MDEF/CRIT/heal dll — BRV-BTL-008 video-ok).
+  Rec0 = [ptr-str 0x19aa0=MW_未到_16?][ptr 0x1c135 skill-region]… = campuran
+  ptr+numeric; pemetaan field 42 = kerja P4 (cross-check display help tempur).
+- **TerrainData@0xf538** = tabel induk 77 terrain (konsumer hash `FUN_8005b7a4`:
+  h=(h+c)*0x10 per char ⇒ Nama≤4 char = packed-ASCII; tabel 77 runtime dibangun
+  boot `FUN_8005b820`; special idx9/33→0x1c). Records stride-12 = [ptr SJIS
+  region 0x1c7xx][ptr pool 0x198xx][sub-offset 0xf8dc-0xfa2c region internal];
+  region record tumpang-tindih ekor SID_* — pemetaan record↔id presisi = P4.
+- **POOL KOSAKATA TERBACA (SJIS Shift-JIS, tool decode)**:
+  - `MT_*` ×52 = **nama material tileset**: 移動不可(impassable!), 平地(plains), 海,
+    海岸, 川, 水路, 沼, 砂漠, 雪原, 山道, 茂み, 木, 岩, 崖, 橋, 石畳, 床, 壁, 屋根,
+    建物, 城, 城門, 扉, 壊れる扉, 玉座, 砦, 柵, 柱, 台座, 土嚢, 宝箱, 遺跡, 廃墟,
+    噴水, 穴, 階段, 花壇, 回復, 制圧, 訪問, 防衛, 到達, 離脱, 堀, 落石, 投石器,
+    アーチ, 小物, 船... ⇒ material = pemegang peran gameplay (seize/gate/chest...).
+  - `MW_*` ×14 = **kondisi menang/kalah peta**: 制圧(seize), 到達_15/_20 (survive/
+    reach), 防衛_6/8/10, 防衛敵, 未到_16/_21, 全滅(rout), 離脱(escape), エ死(leader
+    death), 王宮? ... ⇒ grammar objective Ch1 = REACH_15 (到達_15 ✓ sesuai C01!).
+  - `MTM_*` = nama theme musik map (MTM_TRI_MAP5...); `RID_*` ×27 = background
+    dialog (天幕/城内/民家...); region 0x1c7xx = nama skill SJIS (HPの歌, ぶちかまし,
+    カウンター, カリスマ, エリート... = terjemahan SID_*).
+- Impl engine: BattleTerrData = sumber status terrain begitu terrain-id per tile
+  terpetakan (tile→MT_ via panel np + runtime table capture); MW_* = enum objective
+  world-loop. [AM-050]
+
 ### BRV-SCT-005e — NATIVE SKENARIO CH1 + FLAG TABLE + COMMAND QUEUE — DECODED
 - **Arg koordinat kamera = INTEGER BIASI (TERBUKTI)**: pseudocode f64-magic
   `bits{0x43300000,p^0x80000000} - bias` = identitas (uji numerik: p=4,7,-55,55,18
