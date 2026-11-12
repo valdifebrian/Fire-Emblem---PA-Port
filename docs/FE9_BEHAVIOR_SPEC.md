@@ -1145,6 +1145,79 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   tanpa device: `VMGOLD=... VMSTR=1 vmtest dir Cxx.cmb`); wave schedule engine
   diberi label data-gap yang sama. [AM-053]
 
+### BRV-SCT-005n — SEMANTIK NATIVE BATCH-7 (+DUMP-ASM STUB &LAB, r13=0x8036EDA0 TERDECODE) — DECODED
+- **Metode baru**: stub `&LAB_*` (natives tanpa pseudocode decAll) di-dump via
+  headless `analyzeHeadless -import main.elf -processor PowerPC:BE:32:default`
+  + postScript Java (`DisassembleCommand` per alamat, resep tersimpan
+  `fe9-re/tmp_stubs.ps1`+`tmp_scripts/DumpStubs.java`). **r13 (SDA base) =
+  0x8036EDA0** (dari `lis r13,0x8036; ori r13,r13,0xeda0` @0x80003334) —
+  semua `(r13+n)` yang selama ini `unaff` kini terkonversi konkret. [AM-082]
+- **`AchieveSet(name,val)` `FUN_801b7818`**: tabel ACHIEVE = ptr @0x80368254,
+  indeks-u32 @0x80368250, rekaman stride **0x40**, field nilai **+0x200**
+  (⇒ rekaman extends 0x200+ — tabel per-rekaman besar); **scaling difficulty
+  di sini**: mode-byte `0x803307AE`==2 ⇒ val/=2, ==3 ⇒ val+=val/2 (⇒
+  objective-score EXP-like); init ptr oleh `FUN_8008794c`-family (`-0x6b4c`
+  writer). lookup nama = `FUN_80234450` (intern).
+- **Dialog-pilihan CLOSED**: `DialogResult` `FUN_8006f014` = **i8 di STACK**
+  (r13-0x7fb8 → Ghidra-stack = state dialog global; wrapper `DialogGetRes`
+  `FUN_800b8d34` = tail-call); `Dialog2Items(a,b)` `FUN_800b8e5c` = **menu 2
+  item** — validasi pointer-string (0x8000_0000..0x8180_0000), `FUN_8006f10c`
+  buka + `FUN_80013864` re-arm ⇒ skrip percabangan (store result→`get`).
+- **`SFXPlay(se)` `FUN_800b7a2c`**: guard `(u32@0x80367210 &3)==0` lalu
+  **`FUN_801475fc(se,100)`** = main SE bank-id `se` vol100 ⇒ id = entri bank
+  /pool (link SEQID SVT-002 = domain sama).
+- **SKIP/FF-STATE u32 @ 0x80367210 (=r13-0x7C90)**: bit0=fast-forward (gerbang
+  FocusWait &1, VisitOut &1, SFXPlay &3), `DisableSkip()` `LAB_800c0ae0` |=0x4,
+  `EnableSkip()` `LAB_800c0acc` &=~6. **`GCST()` `LAB_800bbc50` = read-u32 word
+  ini** (state scene penuh). Gerbang SFX/BGMPlayVol &3≠0 ⇒ SE di-silent saat FF.
+- **BMVars CLOSED**: `BMSetValue(i,v)`/`BMGetValue(i)` `LAB_800bcb0c/24` =
+  **u16[16] @ 0x80330708** (`sthx/lhax idx<<1`) — var per-peta yang ditulis
+  script; ⇒ struktur BMAP-global 0x80330708 punya **BM0..15 di +0x00..0x1E**
+  (temuan "BMAP pointer" lama = field dalam struct yang sama, rekonsiliasi:
+  diff-byte 0x803307AE = **+0xA6** dari base ini).
+- **Mind-state**: `MindGetMe()` `LAB_800bcd58` / `MindGetTarget()`
+  `LAB_800bcd34` = **handle unit (u8 +0x198)** dari `[me@0x802EF4C8,
+  target@0x802EF4CC]` — pasang unit-AI aktif saat giliran mind (engine AI harus
+  expose dua slot ini).
+- **Event-cursor @ 0x8031FFC0**: `EventGetX/GetY` `LAB_800bcaec/adc` =
+  i16 +0/+2; `Check()` `LAB_800b7200` = byte **+0xA** state event-point
+  (state konfirmasi prompt event).
+- **`GetBattleType()` `LAB_800bbc40`** = u32 @ **0x80331B54** (tipe battle bab;
+  ditulis loader mode).
+- **Predikat mode `Normal/Hard/Maniac` `LAB_800b790c/8f0/8d4`**: ketiganya baca
+  byte **0x803307AE** (=BMAP+0xA6) dengan pola cmp: Normal()=byte∈{0,3},
+  Maniac()=(2−v)≥0 non-overflow (v∈{0,1} true), Hard()=(1−v)≥0 (v==0) —
+  ⇒ ENCODING byte masih **Partial** (AchieveSet: 2→÷2, 3→×1.5); butuh capture
+  menu-difficulty + observasi runtime untuk memetakan nilai. Engine: store byte
+  + 3 predikat apa-adanya.
+- **BGM-variants CLOSED** (slot-record stride **0x30** base **0x8032FF08**,
+  flag+0xC bit0, vtbl+0x8 method[1]=isPlaying): `BGMCont(slot,v)` = if
+  playing→`FUN_801487d0(rec,v)` + slot0→stop-all + ramp vol100→v (continue
+  dengan fade); `BGMMute(slot,v)` = if playing→`FUN_80148888(rec,v)` + slot0→
+  master-mute `FUN_80146b00`; `BGMQuietOff()` = `FUN_801457b4` instan;
+  `BGMPlayVol(slot,name,vol)` = play-with-vol `FUN_8014832c` (skip-guard &3) +
+  slot0→`FUN_80146af0`; `ENVNoisyOff()` = `FUN_801453f0`.
+- **`ForceGetFirst(force)` `LAB_800bd610`** = `*(0x802CA264 + f*0xC)` = HEAD
+  list faksi (pasangan ForceGetCount ✓).
+- **`TBoxOpen(x,y)` `FUN_8019f230`**: lookup instance peta
+  `FUN_8004721c(bmap,x,y,layer=0x200,mask=0x410)` (array instance stride
+  **0xB4**, bounds +4..+7 i8, mask-type **+0x10+0xBC**) → sukses:
+  `FUN_8012942c(box,handle)` = ANIM-BUKA-peti + enqueue **aksi-tile 0x23**
+  (`FUN_8010feec` = rekaman (x,y,act,0) @ map+0x200*8, ptr count +0x204... =
+  action-ring) + re-arm; fail → `FUN_800056a0(0)` abort.
+  **`VisitOut(h,x,y)` `FUN_8019ecb4`**: lookup mask **0xA00** (bangunan-visit),
+  enqueue **aksi 0x24**, FF=instan-hapus `FUN_80049d08` else anim
+  `FUN_800498a4` + re-arm ⇒ **peti & rumah = sistem instance + ring aksi-tile
+  yang sama dengan maplinkAt** (MAP-005) — grammar lengkap: 0x23=buka-peti,
+  0x24=keluar-kunjungi.
+- **`RemoveBackdrop()` `FUN_800894f8`** = `FUN_8000bf00(&DAT_802899C0)` =
+  hapus backdrop dari manager (pasang `AddBackdrop` family).
+- **`FocusWait()` `FUN_800baccc`**: jika FF → lanjut-pan `FUN_800187f0` return
+  0 (re-pump); else jika focus-selesai `FUN_800188a4(0)` → queue-pump
+  `FUN_800c0658` ke list `DAT_8028D188` + re-arm + arm-pump `0x80320060`.
+- **`Join(u)` `FUN_800b7140`**: `FUN_80107294(u,5)`+`FUN_801070fc(u)` =
+  set state-unit 5 (join-anim) — pasangan `VisitOut/TBoxOpen` action-set.
+
 ### BRV-SCT-005m — REGISTRAR FLAG & INVENTARIS NAMA FLAG SCRIPT (501 nama, SJIS) — DECODED
 - **Mekanisme registrasi**: `regist(name)` `FUN_800bb080`→`FUN_800bddcc` =
   MENDEKLARASKAN string ke slot kosong tabel 96-slot (ptr+hash) — BUKAN registry

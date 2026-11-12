@@ -1750,6 +1750,47 @@ static int scrRegistFlag(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   (void)o;
   return 0;
 }
+/* [BRV-SCT-005n] batch-7 quick-wins: BM vars, mind, event-cursor, skip-word,
+ * diff predicates, achieve, dialog-choice, tile-action natives.
+ * BM u16[16] @BMAP+0x00; diff-byte @BMAP+0xA6 (encoding Partial: 2=Hard-ish
+ * /2, 3=Normal-ish x1.5; default 3 = only Normal() true). */
+static uint16_t g_bmVars[16];
+static uint8_t g_mindMe = 0, g_mindTgt = 0, g_evState = 0, g_diffByte = 3;
+static int32_t g_evX = 0, g_evY = 0;
+static uint32_t g_skipWord = 0;
+static std::unordered_map<std::string, int32_t> g_achieve;
+static int8_t g_dlgRes = 0;
+static int scrBmGet(vm::Vm&, uint32_t* a, int c, uint32_t* o) {
+  *o = c > 0 ? g_bmVars[a[0] & 15] : 0;
+  return 0;
+}
+static int scrBmLog(vm::Vm&, uint32_t* a, int c, uint32_t* o) {
+  if (c > 0) { g_bmVars[a[0] & 15] = (uint16_t)(c > 1 ? a[1] : 0);
+    LOGI("scr BM%d=%u", a[0] & 15, g_bmVars[a[0] & 15]); }
+  (void)o;
+  return 0;
+}
+static int scrZero(vm::Vm&, uint32_t*, int, uint32_t* o) { *o = 0; return 0; }
+static int scrGcst(vm::Vm&, uint32_t*, int, uint32_t* o) { *o = g_skipWord; return 0; }
+static int scrDisSkip(vm::Vm&, uint32_t*, int, uint32_t*) { g_skipWord |= 4; return 0; }
+static int scrEnSkip(vm::Vm&, uint32_t*, int, uint32_t*) { g_skipWord &= ~6u; return 0; }
+static int scrNormal(vm::Vm&, uint32_t*, int, uint32_t* o) { *o = (g_diffByte == 0 || g_diffByte == 3); return 0; }
+static int scrHard(vm::Vm&, uint32_t*, int, uint32_t* o) { *o = (g_diffByte == 0); return 0; }
+static int scrManiac(vm::Vm&, uint32_t*, int, uint32_t* o) { *o = (g_diffByte <= 1); return 0; }
+static int scrAchieve(vm::Vm& V, uint32_t* a, int c, uint32_t*) {
+  char b[256];
+  const char* s = sarg(V, c > 0 ? a[0] : 0, b);
+  int32_t v = c > 1 ? (int32_t)a[1] : 0;
+  if (g_diffByte == 2) v /= 2;
+  else if (g_diffByte == 3) v += v / 2;
+  g_achieve[s] = v;
+  LOGI("scr achieve(\"%s\")=%d", s, v);
+  return 0;
+}
+static int scrDlg2Items(vm::Vm&, uint32_t*, int, uint32_t* o) {
+  *o = 1; /* non-blocking placeholder until dialog-choice UI [P4] */
+  return 0;
+}
 struct ScrOv { const char* n; int (*fn)(vm::Vm&, uint32_t*, int, uint32_t*); };
 static const ScrOv SCR_OVS[] = {
   {"WaitM", scrWaitM}, {"Wait", scrWaitM}, {"WaitM2", scrWaitM}, {"WaitSecs", scrWaitM},
@@ -1777,6 +1818,24 @@ static const ScrOv SCR_OVS[] = {
   {"MoviePlay", scrMovie}, {"ChapterMoviePlay", scrMovie},
   {"IsE3Version", scrIsE3}, {"ENVSilentOn", scrPass}, {"ENVNoisyOn", scrPass}, {"ENVNoisyOff", scrPass}, {"ENVSilentOff", scrPass},
   {"set", scrSetFlag}, {"get", scrGetFlag}, {"clr", scrClrFlag}, {"regist", scrRegistFlag},
+  /* [BRV-SCT-005n] batch-7 */
+  {"BMSetValue", scrBmLog}, {"BMGetValue", scrBmGet},
+  {"MindGetMe", [](vm::Vm&, uint32_t*, int, uint32_t* o) { *o = g_mindMe; return 0; } },
+  {"MindGetTarget", [](vm::Vm&, uint32_t*, int, uint32_t* o) { *o = g_mindTgt; return 0; } },
+  {"EventGetX", [](vm::Vm&, uint32_t*, int, uint32_t* o) { *o = (uint32_t)g_evX; return 0; } },
+  {"EventGetY", [](vm::Vm&, uint32_t*, int, uint32_t* o) { *o = (uint32_t)g_evY; return 0; } },
+  {"Check", [](vm::Vm&, uint32_t*, int, uint32_t* o) { *o = g_evState; return 0; } },
+  {"GCST", scrGcst}, {"EnableSkip", scrEnSkip}, {"DisableSkip", scrDisSkip},
+  {"GetBattleType", scrZero},
+  {"Normal", scrNormal}, {"Hard", scrHard}, {"Maniac", scrManiac},
+  {"AchieveSet", scrAchieve},
+  {"DialogResult", [](vm::Vm&, uint32_t*, int, uint32_t* o) { *o = (uint8_t)g_dlgRes; return 0; } },
+  {"DialogGetRes", [](vm::Vm&, uint32_t*, int, uint32_t* o) { *o = (uint8_t)g_dlgRes; return 0; } },
+  {"Dialog2Items", scrDlg2Items},
+  {"FocusWait", scrZero}, {"TBoxOpen", scrZero}, {"VisitOut", scrZero},
+  {"Join", scrZero}, {"ForceGetFirst", scrZero},
+  {"BGMQuietOff", scrPass}, {"BGMCont", scrPass}, {"BGMMute", scrPass},
+  {"BGMPlayVol", scrBgm},
 };
 static void script_init(void) {
   const uint8_t* d; int n;
