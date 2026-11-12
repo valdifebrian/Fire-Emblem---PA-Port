@@ -942,6 +942,27 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   `FUN_8014da88(0x80330ACC,1)`, flag 0x8033071A=1, phase++ → 0x1D, 0x8033075C=4.
   Konfirmasi mesin fase BMAP (MAP-002) dgn handler eksplisit fase 0x1C. [AM-078]
 
+### BRV-SCT-005h — SEMANTIK NATIVE BATCH-4 (kamera/unit helpers) — DECODED
+- **UnitGetByPID `FUN_800bd5ac`**: `u = lookup(pid)`; 0→return 0, else return
+  `u+0x198` (HANDLE u8). Semua native ber-arg handle = indeks slot 1-based (005c).
+- **Focus(x,y) `FUN_800bad9c`**: `cam_pan(x,y, BMAP@80330708)` via `FUN_8014cbd8`
+  (PAN-TERINTERPOLASI); flag skrip `(-0x7c90)(r13)&1` (fast-skip) → TETAP pan +
+  tambahan `FUN_8001885c()` (finalize-segera). Return 0 (non-blocking, pump ulang).
+- **InstantFocus(x,y) `FUN_800bae4c`**: pan + `FUN_8001885c` TANPA cek flag = lompat
+  instan kamera. **InstantSetMapCamera(x,y,z) `FUN_8019ffbc`**: tulis slot kamera
+  `s=cam_slot()`: `+4=+0x10=x`, `+8=+0x14=y`, `z→FUN_800193cc(z)` (zoom/tinggi),
+  lalu `FUN_800187f0()` commit. Slot = record terpisah dari BMAP (bukan 80330708).
+- **ABI float skrip TERKONFIRMASI ulang di 4 native**: arg float u32 didekode
+  `(double)CONCAT44(0x43300000, arg^0x80000000) − 524288.0` → pola = **f32 di-XOR
+  sign-bit + bias**; integer push biasa TIDAK lewat idiom ini (WaitM pakai skala
+  r2−0x6e6c utk ms→frame). Port: decoder arg skrip wajib dua jalur (int vs float-bias).
+- **Iterator helper `FUN_80016498`** (phase/sweep): arg-api(3) ambil byte-flag per
+  nama-unit → loop slot 1..0x9F: `pid(u+0x188)!=0 && flag[nameref+8]` → aksi
+  per-unit. Pola universal command "semua unit满足 syarat" — mirror sbg iterator
+  filter engine.
+- `FUN_800b36d8` = pembuka bank suara (session 0x80319aa8, path "/pool") — titik
+  masuk SE utk PoC Android saat AUD. [AM-079]
+
 ### UNKNOWN-U012 — Pool deskriptor `0x802832E0+0x21EE0` (segmen data) — Unknown
 Serat `FUN_8002e0d0` TIDAK dipanggil `bl` manapun; satu-satunya xref = **ptr @0x80284FA8**
 (dlm segmen data `0x802832E0+0x21EE0`). Dump area menampilkan pola berulang
