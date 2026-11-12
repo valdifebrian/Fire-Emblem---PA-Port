@@ -1387,6 +1387,13 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   Salah satu keluarga memakai byte utk peran LAIN (mode E3/demo?) ATAU
   predikat dipakai ter-inversi script. Engine SUDAH implement literal-asm;
   resolusi butuh capture menu-difficulty (T-RE-CAP backlog).
+  **UPDATE 2026-11-13 (shop loader):** konsumen ke-3 `FUN_8016a028`/
+  `FUN_8016a0cc` (pemilih `shop/shopitem_{n,h,m}.bin`) = v0→_n, v1→_h,
+  v2→_m, v3→**_n**, v>3→**tidak load sama sekali**. Konsumen SAMA-SAMA byte
+  ini tapi peta-suffix BERBEDA (dispos: v<4→_m incl. 3; shop: 3→_n; shop
+  selaras predikat Normal()={0,3}) ⇒ **bukan kontradiksi global — PETA
+  PER-MODUL**; engine WAJIB mirror switch per-pemanggil (jangan satu
+  pemetaan global). Resolusi makna v3 tetap = capture menu.
 - **`RectMoveOffset(...)` `FUN_800b9c14`** = tail-call `FUN_800b9cd4(f32
   GOT-0x6e5c)` — geser jendela rect dgn offset-global (UI minor; 5 argc di
   registrar vs 0 terpakai = dead-args).
