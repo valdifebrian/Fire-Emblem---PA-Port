@@ -271,6 +271,18 @@ per aksi ✓ sinkron /xcam|.dbx 437. `/xwp|.cmp` 88 = `g+gs+tpl` per nama senjat
 kemungkinan track non-bone scroll/warp — P6). Confidence: Confirmed (gramatika/vocab/frekuensi);
 Partial (semantik `ldc/lar/arc/h/kn/cr/br` — perlu konteks C*.cmb call-site saat P1-map). [AM-075]
 
+### BRV-ANM-006 — Kadensia walk world-map (anim vs kecepatan geser) — CONFIRMED (device A/B)
+Clip `move_n` archer = 15 bone / 46 curve / **loop 36 frame**; pada 30fps native = 1,2 s/siklus
+(2 langkah). Regresi ter-bukti di PoC: ticker anim 1 langkah/3-frame-render (≈10fps → 3,6 s
+siklus) + geser 1,4 u/frame (0,23 s/ubin) → kaki 15× lebih lambat dari perpindahan = "bidak
+catur geser". Perbaikan terverifikasi device: (1) anim **1:1 dengan render fps**; (2) kecepatan
+translasi 0,85 u/frame ≈ 0,4 s/ubin; (3) **state machine clip per edge**: walk→`move_n`,
+stop→`wait_n` (loop kedua-duanya); (4) yaw unit eased 25%/frame (FE9 belok halus, bukan snap);
+(5) `wait_*` = pose idle meneguk napas kecil (bukan statues). Implikasi P3: **satukan clock anim
+dengan frame engine, jangan rasio tetap** — dan kalibrasi `u/frame-per-tile` = konstanta game-feel
+yang harus A/B vs rekaman GC (bukan turunan fisik). Confidence: Confirmed (render device).
+Test: T-C1-MOVE walk vs diam frame-diff (wk1–4). [M2.2]
+
 ### BRV-FNT-001 — `.gcf` = font metrics + sheet tekstur GX I4 polos — DECODED
 Header (semua BE): **u32@0x00 = magic 0x20**; u16@0x08 ascent / @0x0a descent / @0x0c lineH
 (fe 29/3, talk 22/5, alpha 28/6); u32@0x14 = BYTES per sheet (0x2000 = 128×128 I4,

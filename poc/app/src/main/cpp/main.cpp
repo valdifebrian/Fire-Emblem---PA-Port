@@ -137,7 +137,7 @@ static uint32_t g_rng = 0xC0FFEEu; // xorshift state; reseeded from loaded-state
 static uint64_t g_playFrames = 0;  // cumulative engine frames (save payload field)
 static SceneStack g_sm;                 // root = ATTRACT; cold boot lands here (product rule)
 static FadeState g_fd = FD_IN;          // boot itself fades in from black
-static float g_fDim = 1.f;              // 1 = black, 0 = full image (uDim multiplier)
+static float g_fDim = 1.f;              // fade amount: 1=black, 0=full (FS gets (1-g_fDim)*sceneDim as brightness)
 static int g_fdOp = 0;                  // pending op applied at black: 1 replace 2 push 3 pop
 static SceneId g_fdId = SC_ATTRACT;
 static float g_sceneDim = 1.f;          // dialog/battle keep a 0.5 world dim outside transitions
@@ -285,6 +285,10 @@ static g_model g_g; static gs_body g_gs; static ga_anim g_ga;
 static ga_anim g_gas[4]; static int g_gaSel = 0;
 static const char* const GA_LABEL[4] = {"move_n", "move_bw", "wait_n", "wait_bw"};
 static tpl_file g_tex; static tpl_file g_texA; static uint32_t g_texId = 0;
+/* M2.2 terrain [BRV-MAP-001]: bmap01 static mesh + texpack img0 atlas */
+static gs_body g_mapgs; static tpl_file g_maptex; static GLuint g_mapTex = 0;
+static GLuint g_mapVao = 0, g_mapVbo = 0; static int g_mapTris = 0;
+static g_model g_mapnobones; /* no .ga: gs_vertex falls through to raw pos */
 static GLuint g_vao = 0, g_vbo = 0; static int g_triCount = 0;
 static GLuint g_prog = 0, g_prog2 = 0, g_prog3 = 0;
 /* ---------- UI engine [P3-UI-001] ---------- */
@@ -298,10 +302,10 @@ static std::vector<uint8_t> g_gcf;
 static std::vector<uint8_t> g_stmA, g_stmB;
 static stm_file g_sA, g_sB;
 static std::atomic<float> g_camYaw{45.f}; /* deg; FIXED isometric default, pad-orbit writable */
-static float g_unitYaw = 45.f;
+static float g_unitYaw = 45.f, g_unitYawT = 45.f; /* T = target; yaw eases for FE9-style turns */
 static std::atomic<float> g_camPitch{24.f}; /* deg; RIGHT_STICK look, L3/R3 refit resets it */
-static int g_gx = 4, g_gy = 4;        /* unit tile coords 0..9 */
-static float g_ux = -5.f, g_uz = -5.f; /* unit world pos (tile centers: -45+10*g) */
+static int g_gx = 14, g_gy = 14;     /* unit tile coords on 29x24 map [BRV-MAP-001] */
+static float g_ux = 0.f, g_uz = 0.f; /* unit world pos (tile centers: -140+10*g) */
 static float g_camFx = 0.f, g_camFz = 0.f; /* smoothed camera focus */
 static int g_path[48]; static int g_pathN = 0; /* queued tiles, flat (gx,gy) FIFO */
 static std::atomic<int> g_tapReq{0};
@@ -310,11 +314,15 @@ static float g_scrW = 1.f, g_scrH = 1.f;
 static int g_frame = 0; static long long g_frameMs = 0;
 
 /* ---------- grid movement ----------
- * Tile = 10 world units, grid lines at -50..50 step 10; tile (gx,gy) center =
- * (-45+10gx, -45+10gy). Path = FIFO of tile coords. Unit yaw = atan2(dx,dz)
+ * M2.2 [BRV-MAP-001]: tiles are REAL bmap01 cells: 29x24 of 10 units, world
+ * x -145..145, z -120..120; tile (gx,gy) center = (-140+10gx, -140+10gy).
+ * Script tile coords (e.g. UnitSetPosDirByPID 15,13) map 1:1 onto this grid.
+ * Path = FIFO of tile coords. Unit yaw = atan2(dx,dz)
  * (model front assumed +Z at identity; flip +180 if vision shows otherwise). */
 #define TILE_W 10.f
-static float tile_cx(int g) { return -45.f + 10.f * g; }
+#define MAP_TW 29
+#define MAP_TH 24
+static float tile_cx(int g) { return -140.f + 10.f * g; }
 static void path_push(int tx, int ty) {
   if (g_pathN >= 22) return; /* spam cap */
   g_path[2 * g_pathN] = tx; g_path[2 * g_pathN + 1] = ty; g_pathN++;
@@ -323,8 +331,8 @@ static void step_tile(int dgx, int dgy) { /* enqueue 1 tile step from queue tail
   int sx = g_gx, sy = g_gy;
   if (g_pathN > 0) { sx = g_path[2 * (g_pathN - 1)]; sy = g_path[2 * (g_pathN - 1) + 1]; }
   int nx = sx + dgx, ny = sy + dgy;
-  if (nx < 0 || nx > 9 || ny < 0 || ny > 9) return;
-  g_unitYaw = atan2f((float)dgx, (float)dgy) * 57.29578f;
+  if (nx < 0 || nx > 28 || ny < 0 || ny > 23) return; /* M2.2: full 29x24 map grid */
+  g_unitYawT = atan2f((float)dgx, (float)dgy) * 57.29578f;
   path_push(nx, ny);
 }
 /* dpad button (1 L,2 R,3 U,4 D) -> best world axis so that motion matches the
@@ -362,8 +370,8 @@ static void tap_to_tile(float nx, float ny, int* tx, int* ty) {
   float t = -eye[1] / d[1];
   if (t <= 0.f) return;
   float hx = eye[0] + d[0] * t, hz = eye[2] + d[2] * t;
-  int gx = (int)floorf((hx + 50.f) / TILE_W), gy = (int)floorf((hz + 50.f) / TILE_W);
-  if (gx < 0) gx = 0; if (gx > 9) gx = 9; if (gy < 0) gy = 0; if (gy > 9) gy = 9;
+  int gx = (int)floorf((hx + 145.f) / TILE_W), gy = (int)floorf((hz + 120.f) / TILE_W);
+  if (gx < 0) gx = 0; if (gx > MAP_TW - 1) gx = MAP_TW - 1; if (gy < 0) gy = 0; if (gy > MAP_TH - 1) gy = MAP_TH - 1;
   *tx = gx; *ty = gy;
 }
 static void queue_path(int tx, int ty) { /* x-first L-path from current tile */
@@ -380,6 +388,7 @@ static void load_asset(AAssetManager* am) {
   /* Persistent storage: loaders keep raw-data pointers (posT/name/etc);
    * a local vector here would dangle at upload time. */
   static std::vector<uint8_t> buf_g, buf_gs, buf_cms, buf_tex;
+  static std::vector<uint8_t> buf_mapgs, buf_maptex;
   static std::vector<uint8_t> buf_ga[4];
   static const char* const GA_ENTRY[4] = {"archer/move_n.ga", "archer/move_bw.ga",
                                           "archer/wait_n.ga", "archer/wait_bw.ga"};
@@ -433,6 +442,18 @@ static void load_asset(AAssetManager* am) {
       LOGI("ui: fukidasi.tpl %d imgs (%dx%d)", g_fuki.count, g_fuki.imgs[0].w, g_fuki.imgs[0].h);
     if (rd("ui/arrow.tpl", tb) && texfile_decode(tb.data(), (int)tb.size(), &g_arrow) == 0)
       LOGI("ui: arrow.tpl %d imgs (%dx%d)", g_arrow.count, g_arrow.imgs[0].w, g_arrow.imgs[0].h); }
+  /* M2.2 [BRV-MAP-001]: real Chapter-1 terrain (bmap01.gs + texpack img0).
+   * STATIC buffers: g_mapgs.posT/uvT alias this memory for the engine's life. */
+  {
+    if (rd("map/bmap01.gs", buf_mapgs) && gs_load(&g_mapgs, buf_mapgs.data(), (int)buf_mapgs.size()) == 0) {
+      int tris = 0; for (int i = 0; i < g_mapgs.nsub; i++) tris += g_mapgs.subs[i].triCount;
+      LOGI("map: subs=%d tris=%d", g_mapgs.nsub, tris);
+    } else LOGE("map: bmap01.gs load FAIL");
+    if (rd("map/texpack.tpl", buf_maptex) && texfile_decode(buf_maptex.data(), (int)buf_maptex.size(), &g_maptex) == 0)
+      LOGI("map: texpack %d imgs img0=%dx%d fmt%d ok%d", g_maptex.count, g_maptex.imgs[0].w,
+           g_maptex.imgs[0].h, g_maptex.imgs[0].fmt, g_maptex.imgs[0].ok);
+    else LOGE("map: texpack decode FAIL");
+  }
   /* P3-RES-001 prefetch demo: next-scene asset loads on the worker while the
    * engine runs; later g_res.read() must hit cache (miss stays 11). */
   g_res.prefetch("archer/tex_5.tpl");
@@ -585,14 +606,18 @@ static void build_grid() {
   const unsigned char w4[16] = {220, 220, 230, 255, 220, 220, 230, 255,
                                 220, 220, 230, 255, 220, 220, 230, 255};
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, w4);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); /* no mips: default mipmap filter = incomplete = black */
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   std::vector<float> V;
-  for (int i = -5; i <= 5; i++) {
-    float c = i * 10.f;
-    for (int s = 0; s < 2; s++) { /* [p3 n3 uv2] line along x and along z */
-      float x0 = s ? c : -50.f, z0 = s ? -50.f : c;
-      float x1 = s ? c : 50.f, z1 = s ? 50.f : c;
-      V.insert(V.end(), {x0, 0, z0, 0, 1, 0, 0, 0, x1, 0, z1, 0, 1, 0, 0, 0});
-    }
+  /* M2.2 [BRV-MAP-001]: grid aligned to map model: 29x24 tiles of 10 units,
+   * world = mapX-145, mapZ-120 (x -145..145, z -120..120). */
+  for (int k = 0; k <= 29; k++) {
+    float c = -145.f + 10.f * k;
+    V.insert(V.end(), {c, 0, -120.f, 0, 1, 0, 0, 0, c, 0, 120.f, 0, 1, 0, 0, 0});
+  }
+  for (int m = 0; m <= 24; m++) {
+    float c = -120.f + 10.f * m;
+    V.insert(V.end(), {-145.f, 0, c, 0, 1, 0, 0, 0, 145.f, 0, c, 0, 1, 0, 0, 0});
   }
   g_gridN = (int)(V.size() / 8);
   glGenVertexArrays(1, &g_gridVao); glBindVertexArray(g_gridVao);
@@ -603,6 +628,50 @@ static void build_grid() {
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
   glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
   LOGI("grid built verts=%d", g_gridN);
+}
+
+/* M2.2 [BRV-MAP-001]: static terrain VBO. bmap01 model coords (0..290, y,
+ * 0..240) shifted to center; tile pitch 10 units == engine TILE_W. No .ga ->
+ * gs_vertex early-outs to raw positions (n=(0,1,0), flat terrain lighting). */
+static void upload_map() {
+  std::vector<float> V;
+  LOGI("map dbg: fbPos=%d fbNrm=%d fbUv=%d npos=%d posToff=%d uvToff=%d sub0 bone=%d flags=%x attr=%d tris=%d",
+       g_mapgs.fbPos, g_mapgs.fbNrm, g_mapgs.fbUv, g_mapgs.npos,
+       (int)(g_mapgs.posT - g_mapgs.d), (int)(g_mapgs.uvT - g_mapgs.d),
+       g_mapgs.subs[0].bone, g_mapgs.subs[0].flags, g_mapgs.subs[0].attr, g_mapgs.subs[0].triCount);
+  {
+    const gs_submesh* s = &g_mapgs.subs[0];
+    float p[3], n[3];
+    gs_vertex(&g_mapgs, s, s->tris[0].v[0], nullptr, &g_mapnobones, p, n);
+    LOGI("map dbg v0: pidx=%d nidx=%d uidx=%d raw=%d,%d,%d out=%.2f,%.2f,%.2f",
+         s->tris[0].v[0].p, s->tris[0].v[0].n, s->tris[0].v[0].u,
+         gs_bei16(g_mapgs.posT, s->tris[0].v[0].p * 6), gs_bei16(g_mapgs.posT, s->tris[0].v[0].p * 6 + 2),
+         gs_bei16(g_mapgs.posT, s->tris[0].v[0].p * 6 + 4), p[0], p[1], p[2]);
+  }
+  for (int si = 0; si < g_mapgs.nsub; si++) {
+    const gs_submesh* s = &g_mapgs.subs[si];
+    for (int t = 0; t < s->triCount; t++)
+      for (int k = 0; k < 3; k++) {
+        float p[3], n[3], uv[2];
+        gs_vertex(&g_mapgs, s, s->tris[t].v[k], nullptr, &g_mapnobones, p, n);
+        gs_uv(&g_mapgs, s->tris[t].v[k], uv);
+        V.insert(V.end(), {p[0] - 145.f, p[1], p[2] - 120.f, n[0], n[1], n[2], uv[0], uv[1]});
+      }
+  }
+  g_mapTris = (int)(V.size() / 8 / 3);
+  float mn[3] = {1e30f, 1e30f, 1e30f}, mx[3] = {-1e30f, -1e30f, -1e30f};
+  for (size_t i = 0; i + 7 < V.size(); i += 8)
+    for (int k = 0; k < 3; k++) { float v = V[i + k]; if (v < mn[k]) mn[k] = v; if (v > mx[k]) mx[k] = v; }
+  LOGI("map mesh built tris=%d bbox x %.0f..%.0f y %.0f..%.0f z %.0f..%.0f",
+       g_mapTris, mn[0], mx[0], mn[1], mx[1], mn[2], mx[2]);
+  glGenVertexArrays(1, &g_mapVao); glBindVertexArray(g_mapVao);
+  glGenBuffers(1, &g_mapVbo); glBindBuffer(GL_ARRAY_BUFFER, g_mapVbo);
+  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(V.size() * sizeof(float)), V.data(), GL_STATIC_DRAW);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+  glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
+  glBindVertexArray(0);
 }
 
 static void upload_mesh() {
@@ -701,9 +770,20 @@ static void render(int w, int h) {
   mat4 vp = m4mul(proj, view);
   mat4 mvp = m4mul(vp, model);
 
+  /* M2.2 [BRV-MAP-001]: real bmap01 terrain under everything */
+  if (g_mapTris && g_mapTex) {
+    glUseProgram(g_prog);
+    glUniform1f(glGetUniformLocation(g_prog, "uDim"), (1.f - g_fDim) * g_sceneDim); /* brightness: 1=full, 0=black */
+    glUniformMatrix4fv(glGetUniformLocation(g_prog, "uMVP"), 1, GL_FALSE, vp.m);
+    glUniform1i(glGetUniformLocation(g_prog, "uTex"), 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, g_mapTex);
+    glBindVertexArray(g_mapVao);
+    glDrawArrays(GL_TRIANGLES, 0, g_mapTris * 3);
+  }
   if (g_triCount) {
     glUseProgram(g_prog);
-    glUniform1f(glGetUniformLocation(g_prog, "uDim"), g_fDim * g_sceneDim);
+    glUniform1f(glGetUniformLocation(g_prog, "uDim"), (1.f - g_fDim) * g_sceneDim); /* brightness: 1=full, 0=black */
     glUniformMatrix4fv(glGetUniformLocation(g_prog, "uMVP"), 1, GL_FALSE, mvp.m);
     glUniform1i(glGetUniformLocation(g_prog, "uTex"), 0);
     glActiveTexture(GL_TEXTURE0);
@@ -727,7 +807,7 @@ static void render(int w, int h) {
       glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
       glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
     }
-    float cx = tile_cx(g_gx), cz = tile_cx(g_gy), s = 4.4f, y0 = 0.2f;
+    float cx = tile_cx(g_gx), cz = tile_cx(g_gy), s = 4.6f, y0 = 0.6f;
     float c[6][2] = { {cx-s,cz-s}, {cx+s,cz-s}, {cx+s,cz+s}, {cx-s,cz-s}, {cx+s,cz+s}, {cx-s,cz+s} };
     float cv[48];
     for (int i = 0; i < 6; i++) {
@@ -852,7 +932,7 @@ static void scene_tick() {
     if (g_fDim <= 0.f) { g_fDim = 0.f; g_fd = FD_NONE; }
   }
   SceneId s = g_sm.top();
-  float dT = s == SC_DIALOG ? 22.f : s == SC_BATTLE ? 30.f : s == SC_ATTRACT ? 40.f : 55.f;
+  float dT = s == SC_DIALOG ? 22.f : s == SC_BATTLE ? 30.f : s == SC_ATTRACT ? 40.f : 110.f;
   g_camDist += (dT - g_camDist) * 0.05f;
   if (s == SC_ATTRACT) g_camYaw.store(g_camYaw.load() + 0.15f);  /* slow showcase orbit */
   else if (s == SC_BATTLE) g_camYaw.store(g_camYaw.load() + 0.4f);
@@ -887,7 +967,7 @@ static bool doLoad(int slot) {
 }
 static void doNew(int slot) {
   bool had = g_saves.removeSlot(slot);
-  g_gx = 4; g_gy = 4; g_ux = tile_cx(4); g_uz = tile_cx(4); g_pathN = 0;
+  g_gx = 14; g_gy = 14; g_ux = tile_cx(14); g_uz = tile_cx(14); g_pathN = 0;
   g_camYaw.store(45.f); g_playFrames = 0; g_rng = 0xC0FFEEu;
   LOGI("save: NEW GAME slot%d (%s)", slot, had ? "old save deleted" : "no prior save");
 }
@@ -1005,6 +1085,7 @@ static inline long long mono_ns() {
   return ts.tv_sec * 1000000000LL + ts.tv_nsec;
 }
 static void touch_event(float nx, float ny, int action, int slot) {
+  if (action == 0) LOGI("touch: dn n=%.3f,%.3f slot=%d", nx, ny, slot);
   if (action <= 1) { /* down / move: hit-test & track */
     int code = 0;
     float best = BR * BR * 2.25f; /* 1.5x visual, nearest-wins on overlap */
@@ -1094,9 +1175,12 @@ static void engine_main(AAssetManager* am) {
   if (!egl_create(win, &w, &h)) { LOGI("FATAL egl"); return; }
   g_prog = makeProgram(VS, FS); g_prog2 = makeProgram(VS2, FS2); g_prog3 = makeProgram(VS3, FS3);
   upload_texture();
-  ui_init();
-  upload_mesh();
   build_grid();
+  upload_mesh();
+  /* M2.2 [BRV-MAP-001] */
+  ui_upload_tpl(&g_maptex, &g_mapTex, 0);
+  if (g_mapgs.nsub) upload_map();
+  ui_init();
   audio_start();
   LOGI("scene: root=%s (fade-in)", scene_name(g_sm.top())); /* cold boot lands on attract */
   long long last = 0; int frames = 0; long long fpsT0 = 0;
@@ -1149,17 +1233,33 @@ static void engine_main(AAssetManager* am) {
         g_ux = tx; g_uz = tz; g_gx = tgx; g_gy = tgy;
         for (int i = 1; i < g_pathN; i++) { g_path[2*i-2] = g_path[2*i]; g_path[2*i-1] = g_path[2*i+1]; }
         g_pathN--;
-      } else { g_ux += dx / dl * 1.4f; g_uz += dz / dl * 1.4f; }
+      } else { g_ux += dx / dl * 0.85f; g_uz += dz / dl * 0.85f; } /* ~0.4s/tile: matches stride cadence */
     }
     /* follow camera: FE9-style FIXED isometric yaw (no auto-rotate: keeps dpad
        directions world-stable); only focus position trails the unit */
     g_camFx += (g_ux - g_camFx) * 0.06f;
     g_camFz += (g_uz - g_camFz) * 0.06f;
-    // advance ga: ~12 anim fps (frozen while paused or under an overlay scene;
-    //   attract keeps idling so the showcase unit breathes)
+    { /* FE9-style turn easing */
+      float d = g_unitYawT - g_unitYaw;
+      while (d > 180.f) d -= 360.f;
+      while (d < -180.f) d += 360.f;
+      g_unitYaw += d * 0.25f;
+    }
+    { /* [M2.2] anim state machine: move clip while walking, wait clip when idle
+       * (B remains debug clip cycle; next walk/stop edge re-asserts). */
+      bool moving = g_pathN > 0 && !g_paused.load();
+      static int mvPrev = -1;
+      int want = moving ? 0 : 2; /* 0 move_n, 2 wait_n in GA_ENTRY order */
+      if (mvPrev != (moving ? 1 : 0) && g_gas[want].endF > 0) {
+        mvPrev = moving ? 1 : 0;
+        g_gaSel = want; memcpy(&g_ga, &g_gas[want], sizeof(g_ga)); g_frame = g_ga.startF;
+      }
+    }
+    // advance ga: FULL RATE 1:1 vs render (move_n = 36f loop = 1.2s stride cycle;
+    //   3x-slow ticker earlier desynced feet from travel = "sliding chess piece")
     bool frozen = g_paused.load() || (g_sm.top() != SC_WORLD && g_sm.top() != SC_ATTRACT);
     if (!frozen) g_frameMs++;
-    if (g_frameMs >= 3) {
+    if (g_frameMs >= 1) {
       g_frameMs = 0;
       g_frame++;
       if (g_ga.endF > 0) {
