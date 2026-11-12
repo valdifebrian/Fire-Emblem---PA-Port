@@ -769,6 +769,13 @@ Dari decompil impl (decAll) + katalog:
 - String slot blok-1 (mapbuilddesc/capacity/extra/fog/grid/light @0x8026A7D1+)
   TIDAK direferensikan kode DOL = lookup generik mapbuild (via tabel; consumer
   panelindex FUN_80044450 = yang nyata membaca grid).
+**PANEL-PIPELINE (grid nyata Ch1) DECODED  FUN_80044450**:
+  panelindex slot = u16[W*H] (W=*hdr, H=hdr+4) -> indeks ke uniquepanel[]
+  (record 12B = 6*u16: [0..3] param panel u16, [+4] u32 -> FUN_8005b7a4 ==
+  u8 flag tile). Base variant (map 0-0?): panelindexBase/uniquepanelBase.
+  Tulis global: tileflag u8[y*0x40+x] @~0x802CB525; arrA u16[4]/tile
+  (stride 16B) @~0x802DE7EC; arrB u16[4]/tile (8B) @~0x802E67F0.
+  = engine model: panel table + W*H indeks -> flags/param per tile.
 - dispos varian DIFF C/H/M/N untuk bmap01: c=4 unit (Ike/Mist/Bole/Greil,
   JID_HERO_G/CLERIC/F/FIGHTER/RANGER, AI passive NOATTACK/NOHEAL/NOMOVE,
   SID_IMMORTAL), h=2 unit + SEQ_ALLUNITATTACK100 (agresif, lebih sedikit
