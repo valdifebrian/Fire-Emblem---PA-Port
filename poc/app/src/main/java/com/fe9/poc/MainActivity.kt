@@ -35,6 +35,8 @@ class MainActivity : Activity(), SurfaceHolder.Callback {
   external fun nativeTouch(nx: Float, ny: Float, action: Int, pointerId: Int)
   external fun nativePadButton(button: Int, pressed: Boolean)
   external fun nativePadAxis(axis: Int, value: Float)
+  external fun nativeAct(act: Int)
+  external fun nativeSetFilesDir(path: java.io.File)
   external fun nativeSetSurface(surface: Surface?)
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,6 +56,7 @@ class MainActivity : Activity(), SurfaceHolder.Callback {
       or android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
       or android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
       or android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE)
+    nativeSetFilesDir(filesDir)
     nativeStart(assets)
     val root = FrameLayout(this)
     val gl = SurfaceView(this)
@@ -164,6 +167,11 @@ class MainActivity : Activity(), SurfaceHolder.Callback {
   }
 
   override fun onKeyDown(code: Int, ev: KeyEvent): Boolean {
+    when (code) {
+      KeyEvent.KEYCODE_S -> { nativeAct(11); return true }  // SAVE  [P3-SAV-001]
+      KeyEvent.KEYCODE_L -> { nativeAct(12); return true }  // LOAD
+      KeyEvent.KEYCODE_N -> { nativeAct(13); return true }  // NEW GAME
+    }
     val b = keyToPad(code)
     android.util.Log.i("FE9PoC", "keyDown code=$code pad=$b")
     if (b >= 0) {

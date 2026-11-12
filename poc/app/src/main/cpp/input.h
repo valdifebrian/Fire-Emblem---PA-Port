@@ -16,7 +16,8 @@ enum Act : uint8_t {
   ACT_DIALOG = 8,                                       /* scene-stack: push dialog (pad X) */
   ACT_BATTLE = 9,                                       /* scene-stack: push battle (pad Y) */
   ACT_BACK = 10,                                        /* system back (KEYCODE_BACK) */
-  ACT_COUNT = 11
+  ACT_SAVE = 11, ACT_LOAD = 12, ACT_NEW = 13,           /* save mgr keys S/L/N [P3-SAV-001] */
+  ACT_COUNT = 14
 };
 
 /* Tiny mutex ring: producers on UI/USB threads, single consumer on engine frame.

@@ -44,6 +44,7 @@
 #include "input.h"
 
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "FE9PoC", __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "FE9PoC", __VA_ARGS__)
 
 static ActQueue g_acts;  // [P3-INP-001] one edge queue, three producers (touch/pad/keyboard)
 static std::atomic<float> g_touchYaw{0.f};
@@ -129,6 +130,10 @@ static Mixer g_mixer;
 
 // ---------- scenes [P3-SCN-001] ----------
 #include "scene.h"
+#include "savemgr.h"
+static SaveMgr g_saves;            // [P3-SAV-001] engine-thread only
+static uint32_t g_rng = 0xC0FFEEu; // xorshift state; reseeded from loaded-state hash
+static uint64_t g_playFrames = 0;  // cumulative engine frames (save payload field)
 static SceneStack g_sm;                 // root = ATTRACT; cold boot lands here (product rule)
 static FadeState g_fd = FD_IN;          // boot itself fades in from black
 static float g_fDim = 1.f;              // 1 = black, 0 = full image (uDim multiplier)
@@ -705,6 +710,40 @@ static void scene_tick() {
   else if (s == SC_BATTLE) g_camYaw.store(g_camYaw.load() + 0.4f);
 }
 
+/* ---------- save plumbing [P3-SAV-001] ---------- */
+static SaveV1 snapSave(int slot) {
+  SaveV1 s{};
+  s.slot = (uint32_t)slot; s.chapter = 1; s.gx = g_gx; s.gy = g_gy;
+  s.playFrames = (uint32_t)(g_playFrames & 0xFFFFFFFFu); s.rngSeed = g_rng;
+  s.camYaw = g_camYaw.load(); s.gaSel = (uint8_t)g_gaSel; s.mixB = (uint8_t)g_mixB.load();
+  return s;
+}
+static void doSave(int slot) {
+  SaveV1 s = snapSave(slot);
+  if (g_saves.save(slot, s))
+    LOGI("save: slot%d ok tile=%d,%d frames=%u yaw=%.0f seed=%08x", slot, s.gx, s.gy, s.playFrames, s.camYaw, s.rngSeed);
+  else
+    LOGE("save: slot%d WRITE FAILED", slot);
+}
+static bool doLoad(int slot) {
+  SaveV1 s;
+  if (!g_saves.load(slot, &s)) { LOGI("save: slot%d absent/corrupt — refused", slot); return false; }
+  g_gx = s.gx; g_gy = s.gy; g_ux = tile_cx(g_gx); g_uz = tile_cx(g_gy);
+  g_pathN = 0; g_camYaw.store(s.camYaw);
+  g_gaSel = s.gaSel & 3; if (g_gas[g_gaSel].endF > 0) { memcpy(&g_ga, &g_gas[g_gaSel], sizeof(g_ga)); g_frame = g_ga.startF; }
+  g_mixB.store(s.mixB ? 1 : 0); g_mixer.bgmMix(g_mixB.load());
+  g_playFrames = s.playFrames;
+  g_rng = rngSeedFromState(s); /* [P3-SAV-001] seed DERIVED from state, never clock */
+  LOGI("save: slot%d loaded tile=%d,%d frames=%u seed=%08x (rng reseeded from state)", slot, s.gx, s.gy, s.playFrames, g_rng);
+  return true;
+}
+static void doNew(int slot) {
+  bool had = g_saves.removeSlot(slot);
+  g_gx = 4; g_gy = 4; g_ux = tile_cx(4); g_uz = tile_cx(4); g_pathN = 0;
+  g_camYaw.store(45.f); g_playFrames = 0; g_rng = 0xC0FFEEu;
+  LOGI("save: NEW GAME slot%d (%s)", slot, had ? "old save deleted" : "no prior save");
+}
+
 static int g_texPickSel = -1; /* engine-thread only */
 static void on_input(Act action) {
   if (g_paused.load() && (int)action <= ACT_DOWN) return; /* paused: grid nav frozen */
@@ -871,6 +910,21 @@ JNIEXPORT void JNICALL Java_com_fe9_poc_MainActivity_nativePadAxis(JNIEnv*, jobj
   /* triggers sit >0 for half their range; only |stick|>0.6 latches connection */
   if (i <= PADAX_RY && value > 0.6f && !g_padConnected.exchange(1)) LOGI("pad: connected (axis)");
 }
+extern "C" JNIEXPORT void JNICALL
+Java_com_fe9_poc_MainActivity_nativeAct(JNIEnv*, jobject, jint act) {
+  if (act >= 0 && act < ACT_COUNT) g_acts.push((Act)act); /* direct engine-thread producer */
+}
+extern "C" JNIEXPORT void JNICALL
+Java_com_fe9_poc_MainActivity_nativeSetFilesDir(JNIEnv* env, jobject, jobject path) {
+  if (!path) return;
+  jclass cls = env->GetObjectClass(path);
+  jmethodID mid = env->GetMethodID(cls, "toString", "()Ljava/lang/String;");
+  auto s = (jstring)env->CallObjectMethod(path, mid);
+  const char* c = env->GetStringUTFChars(s, nullptr);
+  g_saves.init(c);
+  LOGI("save: dir=%s/saves", c);
+  env->ReleaseStringUTFChars(s, c);
+}
 JNIEXPORT void JNICALL Java_com_fe9_poc_MainActivity_nativeSetSurface(JNIEnv* env, jobject, jobject surface) {
   std::lock_guard<std::mutex> lk(g_windowMx);
   if (surface) g_window = ANativeWindow_fromSurface(env, surface);
@@ -914,9 +968,13 @@ static void engine_main(AAssetManager* am) {
       }
       if (g_fd != FD_NONE) continue;       /* fade covers a scene cut: swallow input */
       if (top == SC_ATTRACT) {             /* explicit start input leaves attract */
+        if (a == ACT_LOAD && doLoad(0)) { scene_req(1, SC_WORLD); continue; } /* CONTINUE */
         if (a == ACT_LEFT || a == ACT_RIGHT || a == ACT_UP || a == ACT_DOWN ||
             a == ACT_CONFIRM || a == ACT_CANCEL) scene_req(1, SC_WORLD);
       } else if (top == SC_WORLD) {
+        if (a == ACT_SAVE) { doSave(0); continue; }
+        if (a == ACT_NEW) { doNew(0); continue; }
+        if (a == ACT_LOAD) { doLoad(0); continue; }
         if (a == ACT_DIALOG) scene_req(2, SC_DIALOG);
         else if (a == ACT_BATTLE) scene_req(2, SC_BATTLE);
         else on_input(a);
@@ -925,6 +983,7 @@ static void engine_main(AAssetManager* am) {
       }
     }
     scene_tick();
+    g_playFrames++;
     if (g_sm.top() == SC_WORLD && in.touch.tapReq) {
       int tx = -1, ty = -1;
       tap_to_tile(in.touch.tapNX, in.touch.tapNY, &tx, &ty);
