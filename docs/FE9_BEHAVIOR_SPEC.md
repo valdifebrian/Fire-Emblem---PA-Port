@@ -1243,6 +1243,33 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
   roster penuh via SEQ_* di dbx/dispos (sudah ada); nama display = JP
   (canon) — label EN tidak ada di disc (bukan asset hilang).
 
+### BRV-SCT-011 — TALKRESUME CLOSED — DECODED
+- `TalkResume()` argc0 → `FUN_8011d650`: cari record antrian-talk global
+  (`DAT_8028fe50` pool), global state talk `r13-0x7348`: **clear bit4
+  (0x10 = pause/tunggu-input)**, record `+0x30 += 2` (message-stream u16
+  token advance), lalu: skip-flag `(r13-0x7c90&3)==0` → pump 1 frame
+  (`FUN_80013864` yield); kalau SKIP-mode → flush jalur cepat
+  (`FUN_8011ded8`) + tutup record (`FUN_8000c60c`) bila bit-0x10 masih
+  clear. = **resume/advance mesin dialog**: engine model = queue record dgn
+  pc u16 + pause-bit + fast-forward saat skip.
+
+### BRV-UI-001 — RECTUNITLIST = LAYOUT PANEL-UNIT PETA CLOSED (struct) — DECODED
+- Konsumen: init modul panel `FUN_8012dfa8` (window module) — load
+  `/window/RectUnitList(_en).bin` (loader keluarga `FUN_8003fccc`) +
+  `butai_en.cmp/.tpl` (background panggung) + `RID_UNITLIST`. Fungsi:
+  **panel daftar unit utk skip-target/urutan** — hitung unit aktif per
+  team-list via linked-list `unit+0x184` + filter flag `unit+0x1a0`
+  (bit3|bit4 = excluded; daftar `[MODE4]` versi team).
+- Format = keluarga pointer-patch (R=39, N=1): **25 entry-layout rec 32B**
+  (ptr-table 0x14..0x6C step4) + **14 rec template stride 36B** @0x13C
+  (semua pointer → SATU nama `RID_UNITLIST` + ref `window/butai.tpl`).
+- Isi rec u16-BE = pasangan rect + parameter: konstanta layar `1280`
+  (2×640 hi-res), `256/528/576/240/120/560`, **pitch grid slot = 16 slot
+  × 256** (field `... 0x10 0x100` berulang di semua 14 template) —
+  layout list-unit: 16 slot vertikal pitch-256 per panel.
+- Engine: rect panel list-unit = tabel, BUKAN hardcode; template per
+  kondisi (14 varian = state/layar berbeda). Pixel-exact formula = P2-UI.
+
 ### BRV-CHR-003 — TABEL SUPPORT/RELIANCE/DIVINE FE8Data — DECODED (struct)
 - **`KiznaData@0x14674` = 36×[PID_A][PID_B][u32-flag] triples (12B)** —
   **DAFTAR PASANGAN SUPPORT** dari disc (`HIBUCCHI×MAP21_DKN_3`,
