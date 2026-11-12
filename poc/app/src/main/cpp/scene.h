@@ -7,11 +7,12 @@
 #define SCENE_H_
 #include <cstdint>
 
-enum SceneId : uint8_t { SC_ATTRACT = 0, SC_WORLD, SC_DIALOG, SC_BATTLE, SC_COUNT };
+enum SceneId : uint8_t { SC_ATTRACT = 0, SC_WORLD, SC_DIALOG, SC_BATTLE, SC_SCRIPT, SC_COUNT };
 
 inline const char* scene_name(SceneId s) {
   switch (s) { case SC_ATTRACT: return "attract"; case SC_WORLD: return "world";
-    case SC_DIALOG: return "dialog"; case SC_BATTLE: return "battle"; default: return "?"; }
+    case SC_DIALOG: return "dialog"; case SC_BATTLE: return "battle";
+    case SC_SCRIPT: return "script"; default: return "?"; }
 }
 
 class SceneStack {

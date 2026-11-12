@@ -1022,6 +1022,34 @@ internal 1/2/4/8 (bukan 0-3) untuk seluruh API gerak. [AM-077]
 - `FUN_800b36d8` = pembuka bank suara (session 0x80319aa8, path "/pool") — titik
   masuk SE utk PoC Android saat AUD. [AM-079]
 
+### BRV-SCT-005i — KONTRAK RUNTIME NATIVE TERVERIFIKASI DEVICE (C01 end-to-end) — DECODED/VERIFIED
+- **Bukti**: emulator-5554 2026-11-12 19:29–19:31 — `script: Opening0 DONE @f=2316 -> WORLD`
+  penuh: movie beat → MapLoad → spawn+move → 6 dialog (`MS_01_OP_01`..`OP_04`) →
+  WORLD interaktif (unit geser tile 16,18→17,18 via DPAD; screenshot
+  `fe9-captures/agent/open_done_world.png`).
+- **WaitM(ms)**: deadline frame = ms×60/1000; **satu slot `waitUntil` ter-latch** —
+  panggilan baru MENIMPA yang lama (konsisten satu slot game); slot dibersihkan
+  saat kedaluwarsa (bukan saat bangun) supaya dialog yang menutup di frame yang
+  sama tak ikut makan deadline baru.
+- **TalkEvent**: push baris lalu YIELD 1 frame/token sampai tombol confirm; dialog
+  child KELUAR → **RESUME, BUKAN restart** — guard wajib: (a) `onEnter` scene
+  SC_SCRIPT tidak restart script yang hidup; (b) resume path tidak mengosongkan
+  string pending (pump berhenti saat dialog hidup; string baru boleh diganti hanya
+  oleh CALL TalkEvent berikutnya).
+- **QUEUE WALK/HITUNG-SATU-KAKI HARUS SCENE-AGONOSTIK**: drain `g_m.top` tiap frame
+  kapan pun engine TIDAK di-pause (termasuk SC_SCRIPT/DIALOG) — karakter FE9 asli
+  berjalan DI BELAKANG dialog. Gerbang lama `==SC_WORLD` = resep wedges sunyi:
+  `UnitMoveDirByPID` antre saat script → `UnitMoveWait` loop → antrean tak
+  pernah terdrain (ring streak 240 frame tanpa kemajuan).
+- **Native gap tak dikenal engine**: auto-TERDAFTAR saat WARN pertama (stub pass,
+  argc dari tapak panggilan) — rantai skrip tak pernah mati; daftar SCR_OVS menutup
+  yang punya semantik (bound-intersection saat load).
+- **Tool `bin/ring.mjs`**: gabung dump op-ring perangkat (`trace_ring.txt`, auto-dump
+  LOOPSTREAK≥3) dengan JSON disasembler `cmb.mjs` → `@pc op CALL "nama" [fn]`;
+  localize helper sunyi, mis. `#b8c` = prolog film (Fade(1,0)+Fade(2,500)+
+  SetWhiteBackdrop+IsE3Version→MoviePlay) yang dipanggil Opening0 via `CALL_LOCAL 2`.
+  [P4-M0]
+
 ### BRV-SCT-010 — REGISTRY MODUL PROC (pool `0x802832E0`) — DECODED (struktur; semantik per-modul = P1-fitur)  [menutup UNKNOWN-U012]
 - **Pool = REGISTRY PROC/MODUL ENGINE** (framework `Proc(0x%08X:%s)` — string debug
   satu blok). Grammar record: `[u16 param][u16 tag][u32 payload]`; **0x2003/0x2025 = NAMA modul**

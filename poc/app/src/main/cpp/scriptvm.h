@@ -35,7 +35,9 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -111,6 +113,9 @@ struct Native {
   int (*fn)(Vm& vm, uint32_t* args, int argc, uint32_t* out); /* nonzero=yield */
   int argc;
 };
+static inline int passNative(Vm& v, uint32_t* a, int c, uint32_t* out) {
+  (void)v; (void)a; (void)c; *out = 0; return 0;
+}
 
 struct Thread {
   Cmb* cmb = nullptr;
@@ -137,6 +142,7 @@ struct Vm {
   std::unordered_map<std::string, std::pair<Cmb*, int>> global;
   std::vector<Native> natives;
   std::unordered_map<std::string, int> nativeIx;
+  std::deque<std::string> autoNames; /* live-registered gap natives (stable storage) */
   void (*onNative)(Vm&, int ni, const uint32_t* args, int) = nullptr; /* observer */
   std::unordered_map<uint64_t, uint32_t> strCache; /* (cmbIx<<32|poolOff) -> ram addr */
   LogFn log;
@@ -149,8 +155,10 @@ struct Vm {
     if (!trace) return;
     ring[ringI & 16383] = {f, pc, op, sp}; ringI++;
   }
-  void dumpRing() const {
-    uint32_t n = ringI < 16384 ? ringI : 16384, start = ringI - n;
+  void dumpRing(uint32_t tail = 16384) const {
+    uint32_t n = ringI < 16384 ? ringI : 16384;
+    if (tail < n) n = tail;
+    uint32_t start = ringI - n;
     for (uint32_t i = start; i < ringI; i++) {
       auto& e = ring[i & 16383];
       logf("TRACE %s @0x%x op=%02x sp=%u", e.file ? e.file : "?", e.pc, e.op, e.sp);
@@ -236,6 +244,7 @@ static StepRes pushFrame(Vm& V, Thread& t, Cmb* c, int recIx) {
 
 static void callNative(Vm& V, int ni, uint32_t* args, int argc, uint32_t* out, bool* yielding) {
   if (V.onNative) V.onNative(V, ni, args, argc); /* optional observer hook (harness/SE) */
+  *out = 0; /* default result: branches on native results never read indeterminate garbage */
   *yielding = V.natives[ni].fn(V, args, argc, out) != 0;
 }
 
@@ -397,9 +406,21 @@ static StepRes run(Vm& V, Thread& t, uint32_t maxOps) {
           continue;
         }
         auto nit = V.nativeIx.find(nm);
-        if (nit == V.nativeIx.end()) { V.logf("vm ERR unknown '%s' @0x%x", nm, t.pc); return STEP_ERROR; }
+        if (nit == V.nativeIx.end()) {
+          /* engine/catalog gap: register live with the CALL-site argc (opcode u8)
+           * as a pass stub so RE gaps never wedge the running scene; the WARN
+           * line is the audit trail for the missing bridge entry. */
+          V.logf("vm WARN auto-native '%s' argc=%d @0x%x", nm, (int)na, t.pc);
+          V.autoNames.push_back(nm);
+          V.regNative({V.autoNames.back().c_str(), passNative, (int)na});
+          nit = V.nativeIx.find(nm);
+        }
         int ni = nit->second;
         int argc = V.natives[ni].argc;
+        if (argc != (int)na) { /* canonical vs callsite mismatch: follow the callsite this turn */
+          V.logf("vm WARN argc '%s' reg=%d call=%d", nm, argc, (int)na);
+          argc = (int)na;
+        }
         if ((int32_t)t.sp < argc) { V.logf("vm ERR under @n:%s", nm); return STEP_ERROR; }
         uint32_t args[10];
         for (int i = 0; i < argc && i < 10; i++) args[i] = S[t.sp - argc + i];

@@ -19,6 +19,7 @@
 #include <oboe/Oboe.h>
 
 #include <atomic>
+#include <cerrno>
 #include <chrono>
 #include <cmath>
 #include <condition_variable>
@@ -30,6 +31,8 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <deque>
+#include <unordered_map>
 
 #define FPK_IMPL
 #define CMSDEC_IMPL
@@ -38,6 +41,7 @@
 #include "gload.h"
 #include "gsload.h"
 #include "gaanim.h"
+#include "scriptvm.h"
 #include "texfile.h"
 #include "ui.h"
 #include "stmdec.h"
@@ -138,6 +142,7 @@ static uint64_t g_playFrames = 0;  // cumulative engine frames (save payload fie
 static SceneStack g_sm;                 // root = ATTRACT; cold boot lands here (product rule)
 static FadeState g_fd = FD_IN;          // boot itself fades in from black
 static float g_fDim = 1.f;              // fade amount: 1=black, 0=full (FS gets (1-g_fDim)*sceneDim as brightness)
+static inline float scr_fade(void);     /* [P4-M0] script Fade overlay, defined in script module */
 static int g_fdOp = 0;                  // pending op applied at black: 1 replace 2 push 3 pop
 static SceneId g_fdId = SC_ATTRACT;
 static float g_sceneDim = 1.f;          // dialog/battle keep a 0.5 world dim outside transitions
@@ -546,11 +551,17 @@ static const char* const DLG_TEXT[3] = {
   "FROM THE WESTERN CAMP I COUNT TWELVE LANCES. THREE OF THEM MAY BE ARCHERS.",
   "GIVE THE ORDERS WHEN YOU ARE READY. THE DEMON BLOOD WILL NOT WAIT FOR US.",
 };
+/* script-driven pages [P4-M0 / T-C1-EVT]: non-empty override the placeholder set;
+ * TalkEvent fills them with the real pooled sequence string read via VM ram. */
+static std::vector<std::string> g_scrDlgN, g_scrDlgT;
+static inline int dlg_pages(void) { return g_scrDlgT.empty() ? 3 : (int)g_scrDlgT.size(); }
+static inline const char* dlg_name(int i) { return g_scrDlgT.empty() ? DLG_NAME[i % 3] : g_scrDlgN[i].c_str(); }
+static inline const char* dlg_text(int i) { return g_scrDlgT.empty() ? DLG_TEXT[i] : g_scrDlgT[i].c_str(); }
 static void dialog_advance(void) {
   int shown = (int)((g_playFrames - g_dlgT0) / 2);
-  int len = (int)strlen(DLG_TEXT[g_dlgPage]);
+  int len = (int)strlen(dlg_text(g_dlgPage));
   if (!g_dlgAll && shown < len) { g_dlgAll = 1; return; } /* A = reveal all first */
-  if (g_dlgPage < 2) { g_dlgPage++; g_dlgT0 = g_playFrames; g_dlgAll = 0; }
+  if (g_dlgPage + 1 < dlg_pages()) { g_dlgPage++; g_dlgT0 = g_playFrames; g_dlgAll = 0; }
   else scene_req(3, SC_ATTRACT);                          /* end of page stack: pop */
 }
 static void draw_dialog(int w, int h) {
@@ -578,7 +589,7 @@ static void draw_dialog(int w, int h) {
   float plateX = bx + bw * 0.018f;
   float plateH = bw * 0.19f * 24.f / 160.f;
   float plateY = by - plateH * 0.55f;
-  bool anna = g_annaTex != 0 && strstr(DLG_NAME[g_dlgPage], "ANNA") != nullptr;
+  bool anna = g_annaTex != 0 && strstr(dlg_name(g_dlgPage), "ANNA") != nullptr;
   if (anna) {
     float ph = bh * 0.92f, pw = ph * 192.f / 128.f;
     float px = bx + bw * 0.012f, py = by - ph * 0.52f;
@@ -599,17 +610,17 @@ static void draw_dialog(int w, int h) {
     ui_quad(&g_uiB, px, py, px + pw, py + ph, 0, 0, 1, 1);
     ui_flush(g_fukiTex, C_WHITE, w, h);
     float ns = sc * 1.1f;
-    float tw = ui_text_w(&g_font, DLG_NAME[g_dlgPage], ns);
+    float tw = ui_text_w(&g_font, dlg_name(g_dlgPage), ns);
     ui_batch_reset(&g_uiB);
     ui_text(&g_uiB, &g_font, px + (pw - tw) * 0.5f, py + ph * 0.32f, ns,
-            DLG_NAME[g_dlgPage], pw, 1, 1 << 30);
+            dlg_name(g_dlgPage), pw, 1, 1 << 30);
     ui_flush(g_font.tex, C_NAME, w, h);
   }
   /* body: word-wrap + typewriter (2 chars/frame, A to reveal); FE9 = light text */
   int visible = g_dlgAll ? (1 << 30) : (int)((g_playFrames - g_dlgT0) / 2);
   ui_batch_reset(&g_uiB);
   ui_text(&g_uiB, &g_font, txtx, by + bh * 0.14f, sc,
-          DLG_TEXT[g_dlgPage], txtw, 4, visible);
+          dlg_text(g_dlgPage), txtw, 4, visible);
   ui_flush(g_font.tex, C_WHITE, w, h);
   /* next-page cursor: real arrow.tpl 12-frame anim at 8fps */
   if (g_arrowTex && g_arrow.imgs[0].ok) {
@@ -797,7 +808,7 @@ static void render(int w, int h) {
   /* M2.2 [BRV-MAP-001]: real bmap01 terrain under everything */
   if (g_mapTris && g_mapTex) {
     glUseProgram(g_prog);
-    glUniform1f(glGetUniformLocation(g_prog, "uDim"), (1.f - g_fDim) * g_sceneDim); /* brightness: 1=full, 0=black */
+    glUniform1f(glGetUniformLocation(g_prog, "uDim"), (1.f - fmaxf(g_fDim, scr_fade())) * g_sceneDim); /* brightness: max(scene-fade, script Fade overlay) */
     glUniformMatrix4fv(glGetUniformLocation(g_prog, "uMVP"), 1, GL_FALSE, vp.m);
     glUniform1i(glGetUniformLocation(g_prog, "uTex"), 0);
     glActiveTexture(GL_TEXTURE0);
@@ -807,7 +818,7 @@ static void render(int w, int h) {
   }
   if (g_triCount) {
     glUseProgram(g_prog);
-    glUniform1f(glGetUniformLocation(g_prog, "uDim"), (1.f - g_fDim) * g_sceneDim); /* brightness: 1=full, 0=black */
+    glUniform1f(glGetUniformLocation(g_prog, "uDim"), (1.f - fmaxf(g_fDim, scr_fade())) * g_sceneDim); /* brightness: max(scene-fade, script Fade overlay) */
     glUniformMatrix4fv(glGetUniformLocation(g_prog, "uMVP"), 1, GL_FALSE, mvp.m);
     glUniform1i(glGetUniformLocation(g_prog, "uTex"), 0);
     glActiveTexture(GL_TEXTURE0);
@@ -930,12 +941,14 @@ static void draw_buttons(int w, int h) {
 
 /* ---------- scene plumbing [P3-SCN-001] ----------
  * Ops queue and execute at fade==1 so every scene change is an invisible cut. */
+static void script_begin(void); /* [P4-M0] defined in script module below */
 static void scene_req(int op, SceneId id) {
   if (g_fd == FD_NONE) { g_fd = FD_OUT; g_fdOp = op; g_fdId = id; }
 }
 static void scene_enter(SceneId s) {
   if (s == SC_DIALOG) { g_dlgPage = 0; g_dlgT0 = g_playFrames; g_dlgAll = 0; }
-  g_sceneDim = (s == SC_ATTRACT || s == SC_WORLD) ? 1.f : 0.5f;
+  if (s == SC_SCRIPT) { g_scrDlgN.clear(); g_scrDlgT.clear(); script_begin(); }
+  g_sceneDim = (s == SC_ATTRACT || s == SC_WORLD || s == SC_SCRIPT) ? 1.f : 0.5f;
   g_mixer.bgmMix(s == SC_BATTLE ? 1.f : 0.f);          /* battle = boss theme crossfade */
   g_mixer.setDuck(s == SC_DIALOG ? 0.35f : 1.f);       /* dialog ducks BGM for voice clarity [P3-AUD-001] */
   LOGI("scene: enter %s depth=%d dim=%.2f bossMix=%d duck=%.2f", scene_name(s), g_sm.depth(), g_sceneDim, s == SC_BATTLE, s == SC_DIALOG ? 0.35 : 1.0);
@@ -960,6 +973,313 @@ static void scene_tick() {
   g_camDist += (dT - g_camDist) * 0.05f;
   if (s == SC_ATTRACT) g_camYaw.store(g_camYaw.load() + 0.15f);  /* slow showcase orbit */
   else if (s == SC_BATTLE) g_camYaw.store(g_camYaw.load() + 0.4f);
+}
+
+/* ---------- script scene [P4-M0 / T-C1-EVT / BRV-SCT-005] ----------
+ * The real C01.cmb (Opening0 prologue) runs on the P3-M3 VM inside the engine.
+ * Natives are the on-device bridge: names+argc from docs/data natreg (baked);
+ * every call logs (chain audit vs FE9_C01_OPENING_GOLD.csv); yielding natives
+ * (Wait/FadeWait/TalkEvent/move-wait) park the coroutine across frames exactly
+ * like the GC thread model. Strings pass as RAM pool addresses: read via
+ * rdCstr, never host pointers [BRV-SCT-005 design note]. */
+struct ScriptSim {
+  vm::Vm vm;
+  vm::Cmb cmb;
+  std::deque<std::string> names; /* stable storage for Native::name */
+  vm::Thread* vt = nullptr;
+  bool loaded = false;
+  float fade = 0.f, fadeTo = 0.f, fadeSpd = 0.f; /* script black overlay [Fade mode1/2] */
+  uint64_t waitUntil = 0;                        /* latched Wait/FadeWait deadline */
+  uint32_t dlgSeq = 0;                           /* ram addr of active TalkEvent string */
+  int walkSlow = 0;
+  uint64_t lastLog = 0;                          /* frame of last scr_natlog line (wedge detector) */
+  bool ringDumped = false;                       /* one-shot op-ring dump on wedge */
+};
+static ScriptSim g_scr;
+static inline float scr_fade(void) { return g_scr.fade; }
+
+static void scr_vblog(void* u, const char* msg) { (void)u; LOGI("vm %s", msg); }
+static const char* sarg(vm::Vm& V, uint32_t a, char* buf) {
+  const char* s = a < vm::RAM_SIZE ? V.rdCstr(a, buf, 256) : nullptr;
+  return s && *s ? s : (a < vm::RAM_SIZE ? "" : "<int>");
+}
+/* full native-call chain audit, re-entry pump lines (same name+args, consecutive
+ * frame) logged once so logcat stays readable on WaitM's 600+ re-entries */
+static void ring_to_file(const char* name) {
+  FILE* fp = fopen(name, "w");
+  if (!fp) fp = fopen("/data/data/com.fe9.poc/files/trace_ring.txt", "w"); /* private dir: always writable */
+  if (!fp) { LOGI("scr ring dump: fopen failed errno=%d", errno); return; }
+  const vm::Vm& V = g_scr.vm;
+  uint32_t n = V.ringI < 16384 ? V.ringI : 16384, start = V.ringI - n;
+  fprintf(fp, "# ring n=%u ringI=%u frame=%llu\n", n, V.ringI, (unsigned long long)V.frame);
+  for (uint32_t i = start; i < V.ringI; i++) {
+    auto& e = V.ring[i & 16383];
+    fprintf(fp, "%s @0x%x op=%02x sp=%u\n", e.file ? e.file : "?", e.pc, e.op, e.sp);
+  }
+  fclose(fp);
+  LOGI("scr ring dump ok n=%u", n);
+}
+static void scr_natlog(vm::Vm& V, int ni, const uint32_t* args, int argc) {
+  static const char* pn = nullptr; static uint32_t pa0, pa1;
+  const char* n = V.natives[ni].name;
+  uint32_t a0 = args[0], a1 = argc > 1 ? args[1] : 0;
+  g_scr.lastLog = V.frame; /* any call = chain alive, even deduped pump re-entries */
+  static int streakN;
+  if (pn && strcmp(pn, n) == 0 && pa0 == a0 && pa1 == a1) {
+    /* same call hammered: 4th time = loop signature, dump op ring once for pc-level view */
+    if (++streakN == 3) {
+      static int dumps = 0;
+      if (dumps < 10) {
+        LOGI("scr LOOPSTREAK x%d %s -> ring file dump", streakN, n);
+        ring_to_file("trace_ring.txt"); /* logd rate-limits bursts; file keeps full fidelity */
+        dumps++;
+      }
+    }
+    return;
+  } /* streak: re-entry pump silent */
+  pn = n; pa0 = a0; pa1 = a1; streakN = 0;
+  LOGI("scr f=%llu %s(%x%s%x%s)", (unsigned long long)V.frame, V.natives[ni].name, a0,
+       argc > 1 ? "," : "", argc > 1 ? a1 : 0, argc > 2 ? ",.." : "");
+}
+static int scrPass(vm::Vm& V, uint32_t* a, int c, uint32_t* o) { (void)a; (void)c; *o = 0; (void)V; return 0; }
+static uint64_t scr_ms2f(uint32_t ms) { return ((uint64_t)ms * 3 + 49) / 50; } /* ms@60fps; 750->45f [BRV-SCT-005b] */
+/* Single-slot deadline protocol: latched on first entry (wu==0), re-entry checks,
+ * expiry CLEARS to 0 and returns done — re-latching on expiry would yield forever.
+ * Scripts issue waits strictly sequentially, so one slot is sound. [P4-M0] */
+static int scrWaitM(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)c; (void)o;
+  uint64_t& wu = g_scr.waitUntil;
+  if (wu == 0) wu = V.frame + scr_ms2f(a[0]) + 1;
+  if (V.frame < wu) return 1;
+  wu = 0; return 0;
+}
+static int scrWaitF(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)c; (void)o;
+  uint64_t& wu = g_scr.waitUntil;
+  if (wu == 0) wu = V.frame + (a[0] ? a[0] : 1);
+  if (V.frame < wu) return 1;
+  wu = 0; return 0;
+}
+static int scrFade(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)V; (void)c; (void)o; /* mode 1=to black, 2=to clear; time ms@60fps */
+  g_scr.fadeTo = a[0] == 1 ? 1.f : 0.f;
+  uint64_t fr = scr_ms2f(a[1]);
+  float d = g_scr.fadeTo - g_scr.fade;
+  g_scr.fadeSpd = fr ? d / (float)fr : d; /* time 0 = snap [golden Fade(1,0)] */
+  if (!fr) g_scr.fade = g_scr.fadeTo;
+  return 0;
+}
+static int scrFadeWait(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)V; (void)a; (void)c; (void)o;
+  return g_scr.fadeSpd != 0.f;
+}
+static int scrMapLoad(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)c; (void)o;
+  char b[256]; LOGI("scr MapLoad(\"%s\") -> baked bmap01", sarg(V, a[0], b));
+  return 0;
+}
+static int scrCamera(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)c; (void)o;
+  LOGI("scr camera(%d,%d,%d) raw -- iso cam follows unit [M0]", (int)a[0], (int)a[1], c > 2 ? (int)a[2] : 0);
+  return 0;
+}
+static int scrFocus(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)a; (void)c; (void)o;
+  uint64_t& wu = g_scr.waitUntil; /* soft focus pan beat */
+  if (wu == 0) wu = V.frame + 20;
+  if (V.frame < wu) return 1;
+  wu = 0; return 0;
+}
+static int scrTalk(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)c; (void)o;
+  if (g_sm.top() == SC_DIALOG || g_fd != FD_NONE) return 1; /* parked: dialog showing/fading */
+  if (g_scr.dlgSeq == a[0]) { g_scr.dlgSeq = 0; return 0; } /* our dialog just closed */
+  char b[256]; const char* s = sarg(V, a[0], b);
+  g_scrDlgN.clear(); g_scrDlgT.clear();
+  g_scrDlgN.push_back("???");                 /* speaker mining = P4-M1 [BRV-TXT-*] */
+  g_scrDlgT.push_back(s);                     /* real pooled string via VM ram */
+  LOGI("scr TalkEvent(\"%s\") -> dialog overlay", s);
+  g_scr.dlgSeq = a[0];
+  scene_req(2, SC_DIALOG);
+  return 1;
+}
+/* FE9 internal dir = 4-bit compass: bit1=S bit2=W bit4=E bit8=N (numpad map
+ * 2/4/6/8 -> 1/2/4/8 [BRV-SCT-005f]); diagonals = OR (5=SE, 10=NW seen in C01) */
+static void scr_dir_delta(uint32_t d, int& dx, int& dz) {
+  dx = ((d & 4) ? 1 : 0) - ((d & 2) ? 1 : 0);
+  dz = ((d & 1) ? 1 : 0) - ((d & 8) ? 1 : 0);
+}
+static int scrSetPos(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)c; (void)o;
+  char b[256]; int gx = (int)a[1], gy = (int)a[2];
+  if (gx < 0) gx = 0; if (gx > MAP_TW - 1) gx = MAP_TW - 1;
+  if (gy < 0) gy = 0; if (gy > MAP_TH - 1) gy = MAP_TH - 1;
+  g_pathN = 0; g_gx = gx; g_gy = gy; g_ux = tile_cx(gx); g_uz = tile_cx(gy);
+  int dx, dz; scr_dir_delta(a[3], dx, dz);
+  if (dx || dz) g_unitYawT = atan2f((float)dx, (float)dz) * 57.29578f;
+  LOGI("scr UnitSetPosDir(\"%s\",%d,%d,dir=%x)", sarg(V, a[0], b), gx, gy, a[3]);
+  return 0;
+}
+static int scrRotate(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)c; (void)o;
+  char b[256]; int dx, dz; scr_dir_delta(a[1], dx, dz);
+  if (dx || dz) g_unitYawT = atan2f((float)dx, (float)dz) * 57.29578f;
+  LOGI("scr UnitRotate(\"%s\",dir=%x,t=%x)", sarg(V, a[0], b), a[1], c > 2 ? a[2] : 0);
+  return 0;
+}
+static int scrMovePath(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)c; (void)o;
+  char b[256]; const char* s = sarg(V, a[1], b);
+  char pb[64]; const char* pid = sarg(V, a[0], pb);
+  int n = 0;
+  for (const char* p = s; *p; p++) { /* numpad path digits -> tile steps */
+    int dx = 0, dz = 0;
+    switch (*p) {
+      case '8': dz = -1; break; case '2': dz = 1; break;
+      case '4': dx = -1; break; case '6': dx = 1; break;
+      case '7': dx = -1; dz = -1; break; case '9': dx = 1; dz = -1; break;
+      case '1': dx = -1; dz = 1; break; case '3': dx = 1; dz = 1; break;
+      default: continue;
+    }
+    step_tile(dx, dz); n++;
+  }
+  LOGI("scr UnitMovePath(\"%s\",\"%s\") steps=%d slow=%d", pid, s, n, g_scr.walkSlow);
+  return 0;
+}
+static int scrWalkDir(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)V; (void)c; (void)o;
+  int dx, dz; scr_dir_delta(a[0], dx, dz);
+  if (dx || dz) step_tile(dx, dz);
+  return 0;
+}
+static int scrMoveWait(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)V; (void)a; (void)c; (void)o;
+  return g_pathN > 0;
+}
+static int scrGetPid(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)V; (void)a; (void)c; *o = 0x1001u; return 0; /* stable non-zero handle [M0] */
+}
+static int scrGetPos(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)V; (void)a; (void)c; *o = (uint32_t)g_gy; return 0; /* X variant handled in table */
+}
+static int scrGetPosX(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)V; (void)a; (void)c; *o = (uint32_t)g_gx; return 0;
+}
+static int scrSfx(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)c; (void)o;
+  char b[256]; LOGI("scr SFXPlay(\"%s\") -> SE stand-in", sarg(V, a[0], b));
+  return 0;
+}
+static int scrBgm(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  char b[256]; const char* s = sarg(V, c > 1 ? a[1] : a[0], b);
+  LOGI("scr BGMPlay(mode=%u,\"%s\") -> boss/stage mix [M0]", a[0], s);
+  (void)V; (void)o;
+  return 0;
+}
+static int scrMovie(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)c; (void)o;
+  uint64_t& wu = g_scr.waitUntil;
+  if (wu == 0) {
+    char b[256]; LOGI("scr f=%llu MoviePlay(\"%s\") -> 60f beat", (unsigned long long)V.frame, sarg(V, a[0], b));
+    wu = V.frame + 60;
+  }
+  if (V.frame < wu) return 1;
+  wu = 0; return 0; /* movie "played" (no THP decode in PoC): beat expires, chain resumes */
+}
+static int scrIsE3(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
+  (void)V; (void)a; (void)c; *o = 0; return 0; /* retail build [BRV-SCT-005e] */
+}
+struct ScrOv { const char* n; int (*fn)(vm::Vm&, uint32_t*, int, uint32_t*); };
+static const ScrOv SCR_OVS[] = {
+  {"WaitM", scrWaitM}, {"Wait", scrWaitM}, {"WaitM2", scrWaitM}, {"WaitSecs", scrWaitM},
+  {"WaitF", scrWaitF}, {"WaitFrames", scrWaitF},
+  {"Fade", scrFade}, {"FadeIn", scrFade}, {"FadeOut", scrFade}, {"ScreenFade", scrFade},
+  {"InstantFade", scrFade}, {"FadeWait", scrFadeWait}, {"isFading", scrFadeWait}, {"IsFading", scrFadeWait},
+  {"MapLoad", scrMapLoad}, {"MapUnload", scrPass},
+  {"SetMapCamera", scrCamera}, {"InstantSetMapCamera", scrCamera},
+  {"Focus", scrFocus}, {"InstantFocus", scrPass}, {"FocusHardWait", scrFocus}, {"UnitFocusByPID", scrPass}, {"UnitFocusOff", scrPass},
+  {"TalkEvent", scrTalk}, {"TalkResume", scrPass}, {"TalkExist", scrPass},
+  {"UnitSetPosDirByPID", scrSetPos}, {"UnitRotateByPID", scrRotate}, {"UnitRotateOffPID", scrPass},
+  {"UnitMoveDirByPID", scrMovePath}, {"UnitWalkDir", scrWalkDir}, {"UnitWalkSlow",
+    [](vm::Vm& V, uint32_t* a, int c, uint32_t* o) { (void)V; (void)c; (void)o; g_scr.walkSlow = (int)a[0]; return 0; } },
+  {"UnitMoveWait", scrMoveWait}, {"UnitWaitMove", scrMoveWait}, {"UnitMoveDirWait", scrMoveWait},
+  {"UnitGetByPID", scrGetPid}, {"UnitGetXByPID", scrGetPosX}, {"UnitGetYByPID", scrGetPos},
+  {"UnitPosXByPID", scrGetPosX}, {"UnitPosYByPID", scrGetPos},
+  {"UnitAnimByPID", scrPass}, {"UnitSetAnimByPID", scrPass}, {"UnitFadeIn", scrPass}, {"UnitFadeOff", scrPass},
+  {"UnitSetEquip", scrPass}, {"UnitSetWeaponAway", scrPass}, {"UnitHideByPID", scrPass}, {"UnitShowByPID", scrPass},
+  {"SallySetByGroup", scrPass}, {"InstantDisposFirst", scrPass}, {"InstantDispos", scrPass},
+  {"DisposFirst", scrPass}, {"Dispos", scrPass}, {"DisposSetMode", scrPass}, {"InstantSetFirstMode", scrPass},
+  {"SetGrid", scrPass}, {"SetCircle", scrPass}, {"SetOutLink", scrPass},
+  {"SetWhiteBackdrop", scrPass}, {"RemoveBackdrop", scrPass},
+  {"BGMPlay", scrBgm}, {"BGMEffectPlay", scrBgm}, {"BGMFadeOut", scrPass}, {"BGMSetVol", scrPass},
+  {"SFXPlay", scrSfx}, {"SEPlay", scrSfx}, {"SEStop", scrPass},
+  {"MoviePlay", scrMovie}, {"ChapterMoviePlay", scrMovie},
+  {"IsE3Version", scrIsE3}, {"ENVSilentOn", scrPass}, {"ENVNoisyOn", scrPass}, {"ENVNoisyOff", scrPass},
+};
+static void script_init(void) {
+  const uint8_t* d; int n;
+  if (!g_res.read("scripts/c01.cmb", &d, &n)) { LOGI("script: scripts/c01.cmb absent -> direct WORLD on start"); return; }
+  std::vector<uint8_t> bytes(d, d + n);
+  if (!g_scr.cmb.load(std::move(bytes), "C01")) { LOGI("script: C01 load FAIL"); return; }
+  if (!g_res.read("scripts/natreg.csv", &d, &n)) { LOGI("script: scripts/natreg.csv absent"); return; }
+  std::string csv((const char*)d, (size_t)n);
+  size_t p = csv.find('\n'); p = p == std::string::npos ? csv.size() : p + 1; /* skip header */
+  int cnt = 0;
+  while (p < csv.size()) {
+    size_t e = csv.find('\n', p); if (e == std::string::npos) e = csv.size();
+    size_t cm = csv.find(',', p);
+    if (cm != std::string::npos && cm < e) {
+      g_scr.names.push_back(csv.substr(p, cm - p));
+      g_scr.vm.regNative({g_scr.names.back().c_str(), scrPass, atoi(csv.c_str() + cm + 1)});
+      cnt++;
+    }
+    p = e + 1;
+  }
+  g_scr.vm.log = {scr_vblog, nullptr};
+  g_scr.vm.onNative = scr_natlog;
+  g_scr.vm.addCmb(&g_scr.cmb);
+  int ov = 0;
+  for (const auto& b : SCR_OVS) {
+    auto it = g_scr.vm.nativeIx.find(b.n);
+    if (it != g_scr.vm.nativeIx.end()) { g_scr.vm.natives[it->second].fn = b.fn; ov++; }
+  }
+  g_scr.loaded = true;
+  LOGI("script: C01 recs=%d natives=%d(bound %d) entry=Opening0", (int)g_scr.cmb.recs.size(), cnt, ov);
+}
+static void script_begin(void) {
+  if (!g_scr.loaded) { scene_req(1, SC_WORLD); return; }
+  if (g_scr.vt) return; /* resume from dialog child: coroutine still live, do NOT restart [P4-M0] */
+  g_scr.fade = 1.f; g_scr.fadeTo = 1.f; g_scr.fadeSpd = 0.f; g_scr.dlgSeq = 0; /* open on black */
+  g_scr.waitUntil = 0; g_scr.ringDumped = false; /* fresh deadline slot + re-arm wedge probe */
+  delete g_scr.vt;
+  g_scr.vt = vm::start(g_scr.vm, "Opening0", nullptr, 0);
+  LOGI("script: begin Opening0 %s", g_scr.vt ? "ok" : "NO ENTRY -> WORLD");
+  if (!g_scr.vt) scene_req(1, SC_WORLD);
+}
+static void script_tick(void) {
+  g_scr.vm.frame = g_playFrames;
+  g_scr.vm.trace = true; /* op ring always on: wedge auto-dump is the debugger [P4-M0] */
+  if (g_scr.vt && !g_scr.ringDumped && g_playFrames - g_scr.lastLog > 240) {
+    LOGI("scr WEDGE f=%llu lastLog=%llu -> ring dump", (unsigned long long)g_playFrames,
+         (unsigned long long)g_scr.lastLog);
+    g_scr.vm.dumpRing(512);
+    g_scr.ringDumped = true;
+  }
+  if (g_scr.fadeSpd != 0.f) {
+    g_scr.fade += g_scr.fadeSpd;
+    if ((g_scr.fadeSpd > 0.f && g_scr.fade >= g_scr.fadeTo) ||
+        (g_scr.fadeSpd < 0.f && g_scr.fade <= g_scr.fadeTo)) { g_scr.fade = g_scr.fadeTo; g_scr.fadeSpd = 0.f; }
+  }
+  if (!g_scr.vt) return;
+  vm::StepRes r = vm::run(g_scr.vm, *g_scr.vt, 300000);
+  if (r == vm::STEP_DONE || r == vm::STEP_ERROR) {
+    LOGI("script: Opening0 %s @f=%llu -> WORLD", r == vm::STEP_DONE ? "DONE" : "ERROR",
+         (unsigned long long)g_playFrames);
+    delete g_scr.vt; g_scr.vt = nullptr;
+    g_scr.fade = g_scr.fadeTo = g_scr.fadeSpd = 0.f;
+    if (g_sm.top() == SC_SCRIPT) scene_req(1, SC_WORLD);
+    else g_scr.loaded = g_scr.loaded; /* dialog still up on WORLD: thread reaped, fine */
+  }
 }
 
 /* ---------- save plumbing [P3-SAV-001] ---------- */
@@ -1189,6 +1509,7 @@ JNIEXPORT void JNICALL Java_com_fe9_poc_MainActivity_nativeSetSurface(JNIEnv* en
 // ---------- engine ----------
 static void engine_main(AAssetManager* am) {
   load_asset(am);
+  script_init(); /* [P4-M0] C01 Opening0 on the P3-M3 VM */
   ANativeWindow* win;
   {
     std::unique_lock<std::mutex> lk(g_windowMx);
@@ -1227,7 +1548,7 @@ static void engine_main(AAssetManager* am) {
       if (top == SC_ATTRACT) {             /* explicit start input leaves attract */
         if (a == ACT_LOAD && doLoad(0)) { scene_req(1, SC_WORLD); continue; } /* CONTINUE */
         if (a == ACT_LEFT || a == ACT_RIGHT || a == ACT_UP || a == ACT_DOWN ||
-            a == ACT_CONFIRM || a == ACT_CANCEL) scene_req(1, SC_WORLD);
+            a == ACT_CONFIRM || a == ACT_CANCEL) scene_req(1, g_scr.loaded ? SC_SCRIPT : SC_WORLD);
       } else if (top == SC_WORLD) {
         if (a == ACT_SAVE) { doSave(0); continue; }
         if (a == ACT_NEW) { doNew(0); continue; }
@@ -1235,20 +1556,24 @@ static void engine_main(AAssetManager* am) {
         if (a == ACT_DIALOG) scene_req(2, SC_DIALOG);
         else if (a == ACT_BATTLE) scene_req(2, SC_BATTLE);
         else on_input(a);
-      } else {                             /* dialog/battle overlay any scene */
+      } else {                             /* dialog/battle/script overlay layer */
         if (top == SC_DIALOG && a == ACT_CONFIRM) dialog_advance();
+        else if (top == SC_SCRIPT) { /* the opening owns the world: input ignored [P4-M0] */ }
         else if (a == ACT_CONFIRM || a == ACT_CANCEL || a == ACT_BACK) scene_req(3, SC_ATTRACT);
       }
     }
     scene_tick();
     g_playFrames++;
+    if (g_scr.vt) script_tick();           /* VM pump: coroutine advances one slice/frame [P4-M0] */
     if (g_sm.top() == SC_WORLD && in.touch.tapReq) {
       int tx = -1, ty = -1;
       tap_to_tile(in.touch.tapNX, in.touch.tapNY, &tx, &ty);
       if (tx >= 0 && !g_paused.load()) { LOGI("tap->tile %d,%d (unit %d,%d)", tx, ty, g_gx, g_gy); queue_path(tx, ty); }
     }
-    /* step along queued path: 1.4 world-units/frame ~ 0.35 s/tile @20fps */
-    if (g_pathN > 0 && !g_paused.load() && g_sm.top() == SC_WORLD) {
+    /* step along queued path: 1.4 world-units/frame ~ 0.35 s/tile @20fps.
+     * Runs under SCRIPT/DIALOG too: script-driven moves (UnitMovePath) must
+     * drain or UnitMoveWait yields forever; FE9 animates units under dialogs. */
+    if (g_pathN > 0 && !g_paused.load()) {
       int tgx = g_path[0], tgy = g_path[1];
       float tx = tile_cx(tgx), tz = tile_cx(tgy);
       float dx = tx - g_ux, dz = tz - g_uz;
