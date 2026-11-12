@@ -51,3 +51,4 @@ T-COMP-001,P7,Device matrix Adreno+Mali+lowRAM,laporan 3 device,REQ-COMP-1,Human
 T-SAVE-FUZZ,P7,Save integrity fuzz 1000x,fuzz byte-flip -> recovery,REQ-SAVE-1,Desktop,Planned
 T-REL-001,P8,Build WhatsApp di hp non-dev,instal+dari file WA + main 10 mnt,§8P8,Human,Planned
 T-REL-002,P8,Repo bersih dari aset,grep payload check + hook aktif,§10,PC,Planned
+T-WORLD-SPAWN,P4,WORLD unit spawn+4-arah move+wave,adb input: boot->attract->A->Opening0->DONE->WORLD lalu assert wloop units>0 + select + moves 4-arah (kamera-relatif) + wave T5 + fps>=25 + no wedge,-,Device+agent,AUTO-PASS-2026-11-13

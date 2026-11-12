@@ -396,9 +396,13 @@ static int rng_pct2(int p) { /* FUN_8000cd88: two rolls averaged (hit rolls) */
 }
 
 static int clampi(int v, int a, int b) { return v < a ? a : (v > b ? b : v); }
+/* createTeam: -1 = lookup only; >=0 = create absent unit on that team.
+ * [P4-M1-REG] team 0 (PLAYER) is a valid creation team — must not double as
+ * the "don't create" flag, or every ally PID (PID_IKE) silently fails to
+ * spawn and world_init dereferences g_u[-1]. */
 static int wu_find(const char* pid, int createTeam) {
   for (int i = 0; i < g_nu; i++) if (!g_u[i].dead && !strcmp(g_u[i].pid, pid)) return i;
-  if (!createTeam || g_nu >= MAXU) return -1;
+  if (createTeam < 0 || g_nu >= MAXU) return -1;
   WUnit* u = &g_u[g_nu++];
   memset(u, 0, sizeof *u);
   snprintf(u->pid, sizeof u->pid, "%s", pid ? pid : "UNIT");
@@ -407,10 +411,10 @@ static int wu_find(const char* pid, int createTeam) {
   return g_nu - 1;
 }
 static int wu_find_create(const char* pid) {
-  int i = wu_find(pid, 0);
+  int i = wu_find(pid, -1);
   if (i >= 0) return i;
   int enemy = !!(pid && (strstr(pid, "THIEF") || strstr(pid, "BANDIT") || strstr(pid, "ENEMY")));
-  return wu_find(pid, enemy ? 1 : 0);
+  return wu_find(pid, enemy ? U_TEAM_ENEMY : U_TEAM_PLAYER);
 }
 static int wu_at(int gx, int gy, int team /*-1 any*/) {
   for (int i = 0; i < g_nu; i++)
@@ -561,6 +565,7 @@ static void world_init(int force) {
   for (int i = 0; i < g_nu; i++) if (!strcmp(g_u[i].pid, "PID_IKE")) { ike = i; break; }
   if (ike < 0) {
     ike = wu_find_create("PID_IKE");
+    if (ike < 0) { LOGE("wloop: cannot create PID_IKE (MAXU full)"); g_nu = 0; ike = wu_find_create("PID_IKE"); }
     g_u[ike].gx = 14; g_u[ike].gy = 14;
     g_u[ike].ux_i = tile_cx(14); g_u[ike].uz_i = tile_cz(14);
   }
@@ -1615,6 +1620,7 @@ static int scrSetPos(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   if (gy < 0) gy = 0; if (gy > MAP_TH - 1) gy = MAP_TH - 1;
   char pb[64]; const char* pid = sarg(V, a[0], pb);
   int i = wu_find_create(pid && *pid ? pid : "PID_UNKNOWN");
+  if (i < 0) { LOGE("scr: unit table full for %s", pid); return 0; }
   WUnit* u = &g_u[i];
   u->pathN = 0; u->gx = gx; u->gy = gy; u->ux_i = tile_cx(gx); u->uz_i = tile_cz(gy);
   u->hide = 0; u->dead = 0; /* SetPos = (re)appearance [FE9 UnitSetPosDirByPID] */
@@ -1637,6 +1643,7 @@ static int scrMovePath(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   char b[256]; const char* s = sarg(V, a[1], b);
   char pb[64]; const char* pid = sarg(V, a[0], pb);
   int i = wu_find_create(pid && *pid ? pid : "PID_UNKNOWN");
+  if (i < 0) { LOGE("scr: unit table full for %s", pid); return 0; }
   WUnit* u = &g_u[i];
   int n = 0;
   for (const char* p = s; *p; p++) { /* numpad path digits -> tile steps */
@@ -1668,7 +1675,7 @@ static int scrGetPid(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
   (void)c;
   char b[256]; const char* pid = sarg(V, a[0], b);
   int i = wu_find_create(pid && *pid ? pid : "PID_UNKNOWN");
-  *o = 0x1000u | (uint32_t)i; /* stable handle [M0] -> table idx [P4-M1] */
+  *o = i < 0 ? 0 : (0x1000u | (uint32_t)i); /* stable handle [M0] -> table idx [P4-M1]; 0 = invalid */
   return 0;
 }
 static int scrGetPos(vm::Vm& V, uint32_t* a, int c, uint32_t* o) {
